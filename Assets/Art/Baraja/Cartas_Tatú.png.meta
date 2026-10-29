@@ -1,0 +1,1081 @@
+fileFormatVersion: 2
+guid: a210972bb62ab1b498fdd71cff45376d
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1037615436538983803
+    second: "Cartas_Tat\xFA_0"
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_0"
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58ac1ab0246a991f0800000000000000
+      internalID: -1037615436538983803
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_1"
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2bfe3919ab6b56f4292d66663369e20c
+      internalID: 1693224137
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_2"
+      rect:
+        serializedVersion: 2
+        x: 972
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d60b4e50e337dec43a23c77e1bfde9a9
+      internalID: -1716324487
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_3"
+      rect:
+        serializedVersion: 2
+        x: 1458
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a948f6ed41ce41645b0b647afcfc787f
+      internalID: 1779542320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_4"
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d48699f2844b8f448afe5edb96d1c095
+      internalID: -1378153944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_5"
+      rect:
+        serializedVersion: 2
+        x: 2430
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1482fc2eac4cfcc4db400ceca300450b
+      internalID: -1026606060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_6"
+      rect:
+        serializedVersion: 2
+        x: 2916
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0b6dd328f5bd12f46910669e0dc53039
+      internalID: 495981601
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_7"
+      rect:
+        serializedVersion: 2
+        x: 3402
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: df91e6629184ab744ada6d0831ae0102
+      internalID: 1353137287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_8"
+      rect:
+        serializedVersion: 2
+        x: 3888
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eae3ee9ed1657e845895b4372a5c2ba1
+      internalID: 713738592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_9"
+      rect:
+        serializedVersion: 2
+        x: 4374
+        y: 2286
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a5d0753b0d40ef478ab971dda7cdfa5
+      internalID: 578696297
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_10"
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b789942ef377ff145b30b5ce9be85c45
+      internalID: -768152440
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_11"
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a5a8b3379b2b2ee43841b31be4ef4c69
+      internalID: -1882402958
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_12"
+      rect:
+        serializedVersion: 2
+        x: 972
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4ac2fda3066ec624ebb726079389ee63
+      internalID: 1522834283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_13"
+      rect:
+        serializedVersion: 2
+        x: 1458
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3cedf6568232efa4a9500f3b24b116df
+      internalID: 1356012935
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_14"
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c98ac0075a65bbd4e922bb7b2d5a19b8
+      internalID: 214541053
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_15"
+      rect:
+        serializedVersion: 2
+        x: 2430
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ad29935a52445b746853734f2fc5f914
+      internalID: 1375299867
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_16"
+      rect:
+        serializedVersion: 2
+        x: 2916
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9adac5bf63e83674db58869b69e58bf3
+      internalID: -10252508
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_17"
+      rect:
+        serializedVersion: 2
+        x: 3402
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fece49bae4bbe9d4284917c58e8935f2
+      internalID: -1330590233
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_18"
+      rect:
+        serializedVersion: 2
+        x: 3888
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7ef5a4b396ccc3b4eb691dcc324e91a9
+      internalID: 1538586535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_19"
+      rect:
+        serializedVersion: 2
+        x: 4374
+        y: 1524
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a45c7a068beeb034d8d1a5fb934d7a39
+      internalID: -202145014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_20"
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b7340614bd64eaf41b07300a92208078
+      internalID: 1600629704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_21"
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9009fdfe64bd6df46bb154cd56fc1ae4
+      internalID: -292813752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_22"
+      rect:
+        serializedVersion: 2
+        x: 972
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bdb19c67ef144f746b3d3be799ad06a3
+      internalID: 155362054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_23"
+      rect:
+        serializedVersion: 2
+        x: 1458
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fc56302d2f5b2f84f88cbb81a8df6b3e
+      internalID: -932501504
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_24"
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7f875a77db63c30439e7a1d3ab5b723f
+      internalID: 20464883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_25"
+      rect:
+        serializedVersion: 2
+        x: 2430
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bb4f7ea8caf7fff4f84efa9cc6850b38
+      internalID: -1143313228
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_26"
+      rect:
+        serializedVersion: 2
+        x: 2916
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b01b4424527df9047aa73720f168e7d9
+      internalID: 2132237406
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_27"
+      rect:
+        serializedVersion: 2
+        x: 3402
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7b7626c7b198e3146aee93794406d5fc
+      internalID: 595686138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_28"
+      rect:
+        serializedVersion: 2
+        x: 3888
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 97cea4f2daf337e43a0eb902f6089e29
+      internalID: -818692448
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_29"
+      rect:
+        serializedVersion: 2
+        x: 4374
+        y: 762
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 53d7cc7770edce941a0c3346514b4f1e
+      internalID: -2008461306
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_30"
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e8e252b959c190b4ca7a34ef76d51d6e
+      internalID: -2013607032
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_31"
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7694baef3fb6e6146b3343aaa95a6fd7
+      internalID: -378163684
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_32"
+      rect:
+        serializedVersion: 2
+        x: 972
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ce07b2c2bd4adfe47bfb4386ab47244e
+      internalID: 1424111334
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_33"
+      rect:
+        serializedVersion: 2
+        x: 1458
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4ef692cbd9ce3fa4695b4082286ae73a
+      internalID: 2111004421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_34"
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 592ad0fd86a18c342b8d8d1b478dfc28
+      internalID: -1070053921
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_35"
+      rect:
+        serializedVersion: 2
+        x: 2430
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 371718ab99805084eb92beb089489b44
+      internalID: -1262130768
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_36"
+      rect:
+        serializedVersion: 2
+        x: 2916
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 21aa6bd255ee72a43ad235a2244077da
+      internalID: 519515410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_37"
+      rect:
+        serializedVersion: 2
+        x: 3402
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1204512f680142b468a09739133b532c
+      internalID: 1251175204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_38"
+      rect:
+        serializedVersion: 2
+        x: 3888
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3db6d27f8602ddb4dbe3287a046c82ce
+      internalID: 1662841430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Cartas_Tat\xFA_39"
+      rect:
+        serializedVersion: 2
+        x: 4374
+        y: 0
+        width: 486
+        height: 762
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3dbf4e2c451e33048bdcdda035392ce4
+      internalID: -1854458400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 2ee8bd417db6ea74cbb2822084c49962
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":10.0,"y":4.0},"gridSpriteSize":{"x":486.0,"y":762.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      "Cartas_Tat\xFA_0": -1037615436538983803
+      "Cartas_Tat\xFA_1": 1693224137
+      "Cartas_Tat\xFA_10": -768152440
+      "Cartas_Tat\xFA_11": -1882402958
+      "Cartas_Tat\xFA_12": 1522834283
+      "Cartas_Tat\xFA_13": 1356012935
+      "Cartas_Tat\xFA_14": 214541053
+      "Cartas_Tat\xFA_15": 1375299867
+      "Cartas_Tat\xFA_16": -10252508
+      "Cartas_Tat\xFA_17": -1330590233
+      "Cartas_Tat\xFA_18": 1538586535
+      "Cartas_Tat\xFA_19": -202145014
+      "Cartas_Tat\xFA_2": -1716324487
+      "Cartas_Tat\xFA_20": 1600629704
+      "Cartas_Tat\xFA_21": -292813752
+      "Cartas_Tat\xFA_22": 155362054
+      "Cartas_Tat\xFA_23": -932501504
+      "Cartas_Tat\xFA_24": 20464883
+      "Cartas_Tat\xFA_25": -1143313228
+      "Cartas_Tat\xFA_26": 2132237406
+      "Cartas_Tat\xFA_27": 595686138
+      "Cartas_Tat\xFA_28": -818692448
+      "Cartas_Tat\xFA_29": -2008461306
+      "Cartas_Tat\xFA_3": 1779542320
+      "Cartas_Tat\xFA_30": -2013607032
+      "Cartas_Tat\xFA_31": -378163684
+      "Cartas_Tat\xFA_32": 1424111334
+      "Cartas_Tat\xFA_33": 2111004421
+      "Cartas_Tat\xFA_34": -1070053921
+      "Cartas_Tat\xFA_35": -1262130768
+      "Cartas_Tat\xFA_36": 519515410
+      "Cartas_Tat\xFA_37": 1251175204
+      "Cartas_Tat\xFA_38": 1662841430
+      "Cartas_Tat\xFA_39": -1854458400
+      "Cartas_Tat\xFA_4": -1378153944
+      "Cartas_Tat\xFA_5": -1026606060
+      "Cartas_Tat\xFA_6": 495981601
+      "Cartas_Tat\xFA_7": 1353137287
+      "Cartas_Tat\xFA_8": 713738592
+      "Cartas_Tat\xFA_9": 578696297
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
