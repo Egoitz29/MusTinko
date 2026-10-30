@@ -99,6 +99,7 @@ public class CartasMano3D : MonoBehaviour
             texto.fontSizeMax = 1.4f;
             texto.fontSize = 1.4f;
             texto.richText = false;
+            texto.enabled = false;
             texto.rectTransform.sizeDelta = new Vector2(3.1f, 4.4f);
             objetoTexto.transform.localScale = Vector3.one * escalaTexto;
 

@@ -1801,13 +1801,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 372653327}
   serializedVersion: 2
-  m_LocalRotation: {x: 1, y: 0, z: 0, w: 0}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
   m_LocalPosition: {x: 0.0076, y: 0.0006, z: -0.6}
   m_LocalScale: {x: 0.20863685, y: 0.13062581, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1612264586}
-  m_LocalEulerAnglesHint: {x: 180, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 180, y: 0, z: 180}
 --- !u!212 &372653329
 SpriteRenderer:
   serializedVersion: 2
@@ -2398,13 +2398,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 507675857}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.99995184, y: 0.009815109, z: 0.00000001117587, w: 4.6566123e-10}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
   m_LocalPosition: {x: -0.004, y: 0.0064, z: -0.59999526}
   m_LocalScale: {x: 0.20342094, y: 0.13313965, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1329299593}
-  m_LocalEulerAnglesHint: {x: 180, y: 0, z: -1.125}
+  m_LocalEulerAnglesHint: {x: 180, y: 0, z: 180}
 --- !u!212 &507675859
 SpriteRenderer:
   serializedVersion: 2
@@ -2477,7 +2477,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DibujoCartaAutomaticoMus
   reparto: {fileID: 183859015}
-  posicionCarta: 0
+  posicionCarta: 1
 --- !u!1 &559460996
 GameObject:
   m_ObjectHideFlags: 0
@@ -2758,13 +2758,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 591214345}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.9997015, y: 0.004358132, z: 0.023458429, w: 0.005264335}
-  m_LocalPosition: {x: 0.0074, y: 0.0034, z: -0.7}
-  m_LocalScale: {x: 0.1920284, y: 0.12945838, z: 1}
+  m_LocalRotation: {x: -0.00012110607, y: -0.99971104, z: 0.005156173, w: -0.023480805}
+  m_LocalPosition: {x: -0.0218, y: 0.0032, z: -0.76}
+  m_LocalScale: {x: 0.20389576, y: 0.12945838, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 457032626}
-  m_LocalEulerAnglesHint: {x: 179.409, y: -2.690979, z: -0.5130005}
+  m_LocalEulerAnglesHint: {x: 179.409, y: -2.690979, z: 180}
 --- !u!114 &591214348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2778,7 +2778,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DibujoCartaAutomaticoMus
   reparto: {fileID: 183859015}
-  posicionCarta: 0
+  posicionCarta: 3
 --- !u!212 &591214349
 SpriteRenderer:
   serializedVersion: 2
@@ -5991,6 +5991,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1187076107}
   - component: {fileID: 1187076108}
+  - component: {fileID: 1187076109}
   m_Layer: 0
   m_Name: ManoJugador3D
   m_TagString: Untagged
@@ -6008,7 +6009,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.8, z: -2}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1612264586}
@@ -6047,6 +6048,20 @@ MonoBehaviour:
   desplazamientoHaciaMesa: 0.055
   velocidadMovimiento: 12
   desplazamientoMaximoToque: 22
+--- !u!114 &1187076109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187076106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9c423e8b64e2f3408dee6e16dd0ce37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  camaraJugador: {fileID: 330585546}
+  inclinacionMinima: 52
 --- !u!1 &1187246330
 GameObject:
   m_ObjectHideFlags: 0
@@ -8364,6 +8379,75 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1459545729}
   m_CullTransparentMesh: 1
+--- !u!1001 &1464661303
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.05167418
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.254
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.065
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7072302
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.7069834
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -89.98
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
+      propertyPath: m_Name
+      value: TINKO_MENTA_Animaciones
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 915e5b5da32685a43956ff8221519aaa, type: 3}
 --- !u!1 &1470259293
 GameObject:
   m_ObjectHideFlags: 0
@@ -10524,7 +10608,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &1902753008
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -11150,13 +11234,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2082566926}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.9996675, y: 0.0064647794, z: 0.02443359, w: 0.005106791}
+  m_LocalRotation: {x: -0.00012106559, y: -0.9996884, z: 0.0049465788, w: -0.024466984}
   m_LocalPosition: {x: 0.003, y: 0.011, z: -1.4}
   m_LocalScale: {x: 0.19710821, y: 0.13592589, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1102788814}
-  m_LocalEulerAnglesHint: {x: 179.433, y: -2.804016, z: -0.7550049}
+  m_LocalEulerAnglesHint: {x: 179.433, y: -2.804016, z: 180}
 --- !u!114 &2082566929
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11170,7 +11254,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DibujoCartaAutomaticoMus
   reparto: {fileID: 183859015}
-  posicionCarta: 0
+  posicionCarta: 2
 --- !u!212 &2082566930
 SpriteRenderer:
   serializedVersion: 2
@@ -11564,3 +11648,4 @@ SceneRoots:
   - {fileID: 217505877}
   - {fileID: 223066081}
   - {fileID: 1187076107}
+  - {fileID: 1464661303}
