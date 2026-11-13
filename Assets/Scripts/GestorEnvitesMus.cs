@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Control de interfaz y bots. Las reglas de turnos estan en MotorTurnosIndividualesMus.
 public class GestorEnvitesMus : MonoBehaviour
 {
     private enum Situacion
@@ -20,8 +19,6 @@ public class GestorEnvitesMus : MonoBehaviour
     [SerializeField] private GameObject panelEnvites;
     [SerializeField] private RepartoPrueba reparto;
 
-    // Indices: 0=TÚ, 1=RIVAL DERECHO, 2=COMPAÑERO, 3=RIVAL IZQUIERDO.
-    // En esta prueba solo conectamos el elemento 1.
     [Header("Bocadillos 3D por jugador")]
     [SerializeField]
     private BocadilloMus3D[] bocadillosJugadores =
@@ -52,6 +49,9 @@ public class GestorEnvitesMus : MonoBehaviour
     [Range(0f, 1f)][SerializeField] private float probabilidadBotQuiere = 0.7f;
     [Range(0f, 1f)][SerializeField] private float probabilidadBotReenvida = 0.10f;
 
+    [Header("IA de envites por senas")]
+    [SerializeField] private IAEnvitesPorSenalesMus iaEnvitesPorSenales;
+
     private readonly MotorTurnosIndividualesMus turnos =
         new MotorTurnosIndividualesMus();
 
@@ -66,7 +66,6 @@ public class GestorEnvitesMus : MonoBehaviour
         "TÚ", "RIVAL DERECHO", "COMPAÑERO", "RIVAL IZQUIERDO"
     };
 
-    // Se mantiene el contrato utilizado por GestorFasesMus.
     public bool LanceCerrado =>
         gestorFases != null &&
         EsLance(gestorFases.FaseActual) &&
@@ -101,8 +100,6 @@ public class GestorEnvitesMus : MonoBehaviour
         DetenerBot();
         DetenerAnuncios();
 
-        // Nuevo lance: borramos los mensajes del lance anterior.
-        // No se borran automaticamente al cerrar el lance.
         OcultarTodosLosBocadillos();
 
         faseAnterior = fase;
@@ -162,7 +159,6 @@ public class GestorEnvitesMus : MonoBehaviour
             string mensaje = nombresJugadores[jugador] + ": " + lance +
                              (tiene ? " SÍ" : " NO");
             MostrarAnuncio(mensaje);
-            // Muestra PARES SÍ/NO y JUEGO SÍ/NO encima de quien habla.
             MostrarBocadillo(jugador, lance + (tiene ? " SÍ" : " NO"));
             Debug.Log(mensaje);
             yield return new WaitForSeconds(tiempoEntreAnuncios);
@@ -190,9 +186,6 @@ public class GestorEnvitesMus : MonoBehaviour
     {
         if (!EsFaseActual(fase)) return;
 
-        // Los anuncios de PARES/JUEGO son temporales.
-        // Al empezar las apuestas se limpian para dejar espacio
-        // a PASO / ENVIDO / QUIERO / etc.
         OcultarTodosLosBocadillos();
 
         bool[] puedenHablar = { true, true, true, true };
@@ -278,9 +271,14 @@ public class GestorEnvitesMus : MonoBehaviour
 
         bool resultado;
         string accion;
+
         if (!turnos.HayEnvitePendiente)
         {
-            if (UnityEngine.Random.value < probabilidadBotEnvida)
+            float probabilidad = ObtenerProbabilidadBot(
+                jugador, fase, IAEnvitesPorSenalesMus.Accion.Envidar,
+                probabilidadBotEnvida);
+
+            if (UnityEngine.Random.value < probabilidad)
             {
                 resultado = turnos.Envidar(jugador);
                 accion = "ENVIDA 2";
@@ -291,22 +289,38 @@ public class GestorEnvitesMus : MonoBehaviour
                 accion = "PASA";
             }
         }
-        else if (turnos.Motor.Estado !=
-                     MotorEnvitesMus.EstadoEnvite.OrdagoPendiente &&
-                 UnityEngine.Random.value < probabilidadBotReenvida)
-        {
-            resultado = turnos.Reenvidar(jugador);
-            accion = "REENVIDA 2 MÁS";
-        }
-        else if (UnityEngine.Random.value < probabilidadBotQuiere)
-        {
-            resultado = turnos.Quiero(jugador);
-            accion = "DICE QUIERO";
-        }
         else
         {
-            resultado = turnos.NoQuiero(jugador);
-            accion = "DICE NO QUIERO (POR MI PARTE)";
+            bool puedeReenvidar = turnos.Motor.Estado !=
+                MotorEnvitesMus.EstadoEnvite.OrdagoPendiente;
+
+            bool reenvida = puedeReenvidar &&
+                UnityEngine.Random.value < ObtenerProbabilidadBot(
+                    jugador, fase, IAEnvitesPorSenalesMus.Accion.Reenvidar,
+                    probabilidadBotReenvida);
+
+            if (reenvida)
+            {
+                resultado = turnos.Reenvidar(jugador);
+                accion = "REENVIDA 2 MÁS";
+            }
+            else
+            {
+                float probabilidad = ObtenerProbabilidadBot(
+                    jugador, fase, IAEnvitesPorSenalesMus.Accion.Querer,
+                    probabilidadBotQuiere);
+
+                if (UnityEngine.Random.value < probabilidad)
+                {
+                    resultado = turnos.Quiero(jugador);
+                    accion = "DICE QUIERO";
+                }
+                else
+                {
+                    resultado = turnos.NoQuiero(jugador);
+                    accion = "DICE NO QUIERO (POR MI PARTE)";
+                }
+            }
         }
 
         if (!resultado)
@@ -318,13 +332,34 @@ public class GestorEnvitesMus : MonoBehaviour
         }
 
         Debug.Log(nombresJugadores[jugador] + " " + accion);
-        // Representacion local: persiste hasta la siguiente fase
-        // o hasta que una apuesta nueva sustituya a la anterior.
         RegistrarAccionVisual(jugador, accion);
         ProcesarSiguienteTurno();
     }
 
-    // Métodos públicos: mantener los OnClick existentes del Inspector.
+    private float ObtenerProbabilidadBot(
+        int jugador,
+        GestorFasesMus.Fase fase,
+        IAEnvitesPorSenalesMus.Accion accion,
+        float probabilidadBase)
+    {
+        if (iaEnvitesPorSenales == null)
+            return probabilidadBase;
+
+        float probabilidadAjustada = iaEnvitesPorSenales.AjustarProbabilidad(
+            jugador, fase, accion, probabilidadBase);
+
+        if (probabilidadAjustada > probabilidadBase)
+        {
+            Debug.Log(
+                "[IA SENAS] " + nombresJugadores[jugador] +
+                " | " + fase + " | " + accion +
+                " | " + probabilidadBase.ToString("F2") +
+                " -> " + probabilidadAjustada.ToString("F2"));
+        }
+
+        return probabilidadAjustada;
+    }
+
     public void Pasar()
     {
         if (!EsTurnoHumano() || !turnos.Pasar(0)) return;
@@ -464,17 +499,8 @@ public class GestorEnvitesMus : MonoBehaviour
         textoEstadoApuestas.text = contenido;
     }
 
-    // -----------------------------------------------------------------
-    // BOCADILLOS DE APUESTAS (PERSISTENTES)
-    // -----------------------------------------------------------------
-    // Este metodo solo pinta acciones. La regla del lance se decide
-    // exclusivamente en MotorTurnosIndividualesMus.
-    // Asi servira tambien para acciones recibidas por red en el futuro.
     private void RegistrarAccionVisual(int jugador, string accion)
     {
-        // Una nueva apuesta sustituye visualmente a la anterior:
-        // borramos PASO, ENVIDO, QUIERO/NO QUIERO anteriores, etc.
-        // El nuevo envite se queda visible mientras lo responden.
         if (accion == "ENVIDA 2" ||
             accion == "REENVIDA 2 MÁS" ||
             accion == "LANZA ÓRDAGO")
@@ -491,7 +517,6 @@ public class GestorEnvitesMus : MonoBehaviour
             bocadillo.MostrarFijo(FraseBocadillo(accion));
     }
 
-    // No se llama al cerrar la apuesta; se llama al comenzar la siguiente.
     private void OcultarTodosLosBocadillos()
     {
         if (bocadillosJugadores == null) return;
@@ -503,9 +528,6 @@ public class GestorEnvitesMus : MonoBehaviour
         }
     }
 
-    // Presentación independiente: identificador del jugador + frase.
-    // Los índices 0..3 serán los mismos cuando incorporemos el online.
-    // MUS / NO HAY MUS y anuncios de PARES / JUEGO siguen temporales.
     public void MostrarBocadillo(int jugador, string mensaje)
     {
         if (bocadillosJugadores == null ||

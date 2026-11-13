@@ -11592,6 +11592,7 @@ MonoBehaviour:
   probabilidadBotEnvida: 0
   probabilidadBotQuiere: 1
   probabilidadBotReenvida: 0.1
+  iaEnvitesPorSenales: {fileID: 1907517584}
 --- !u!4 &1907517583
 Transform:
   m_ObjectHideFlags: 0
