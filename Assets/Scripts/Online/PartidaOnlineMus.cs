@@ -1041,7 +1041,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         GUILayout.Label("Senas:", GUILayout.Width(50));
 
         foreach (TipoSenalMus s in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))
-            if (PartidaMus.CumpleSenal(cartasLocales, r, s) && GUILayout.Button(s.ToString()))
+            if (!estado.MusCorrido && PartidaMus.CumpleSenal(cartasLocales, r, s) && GUILayout.Button(s.ToString()))
                 SolicitarSenal(s);
 
         GUILayout.EndHorizontal();

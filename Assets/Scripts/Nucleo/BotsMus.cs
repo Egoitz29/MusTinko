@@ -148,7 +148,7 @@ public class BotReglasMus : IBotMus
 
     public IEnumerable<TipoSenalMus> ElegirSenales(ObservacionMus obs, Random azar)
     {
-        if (!p.UsaSenales)
+        if (!p.UsaSenales || obs.MusCorrido)
             yield break;
 
         foreach (TipoSenalMus tipo in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))

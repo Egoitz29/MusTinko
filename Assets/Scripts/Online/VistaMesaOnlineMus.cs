@@ -1206,6 +1206,15 @@ public class VistaMesaOnlineMus : MonoBehaviour
         if (local < 0 || cartasLocalesMostradas[0] < 0 || !e.EnCurso || e.FaseActual == FaseMus.FinMano)
             return;
 
+        if (e.MusCorrido)
+        {
+            Rect aviso = new(20, EscalaGUIMus.Alto / 2f - 40, 230, 80);
+            GUI.DrawTexture(aviso, texFondo);
+            GUI.Label(new Rect(aviso.x, aviso.y + 4, aviso.width, 24), "SENAS A TU COMPANERO", estiloTitulo);
+            GUI.Label(new Rect(aviso.x + 6, aviso.y + 30, aviso.width - 12, 44), "En el mus corrido no se hacen senas", estiloPeque);
+            return;
+        }
+
         EvaluadorManoMus.Resultado r = CartasMus.Evaluar(cartasLocalesMostradas);
         List<TipoSenalMus> posibles = new();
 

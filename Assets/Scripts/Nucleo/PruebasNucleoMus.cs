@@ -47,6 +47,14 @@ public static class PruebasNucleoMus
         Comprobar(log, p.Mano == 3 && !p.MusCorridoPendiente && p.JugadorActual == 3,
             "En la mano siguiente es mano el de despues (jugador 3) y empieza a hablar el");
 
+        PartidaMus ps = new(5);
+        ps.IniciarPartida();
+        bool algunaSenaEnCorrido = false;
+        foreach (TipoSenalMus t in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))
+            for (int j = 0; j < 4; j++)
+                algunaSenaEnCorrido |= ps.PuedeHacerSenal(j, t);
+        Comprobar(log, !algunaSenaEnCorrido, "Durante el mus corrido no se admiten senas");
+
         PartidaMus pc = new(21);
         pc.IniciarPartida();
         for (int j = 0; j < 4; j++) pc.Aplicar(j, AccionMus.Mus);

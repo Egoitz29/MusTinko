@@ -618,6 +618,9 @@ public class PartidaMus
         if (jugador < 0 || jugador >= Jugadores || Fase == FaseMus.FinMano || Fase == FaseMus.FinPartida)
             return false;
 
+        if (MusCorridoPendiente)
+            return false;
+
         return CumpleSenal(CartasDe(jugador), evaluaciones[jugador], tipo);
     }
 
