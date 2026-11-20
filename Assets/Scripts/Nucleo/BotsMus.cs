@@ -212,15 +212,21 @@ public class BotReglasMus : IBotMus
 
     private static float AumentoSenal(ObservacionMus obs)
     {
+        float aumento = 0f;
+
         foreach (TipoSenalMus senal in obs.SenalesRecibidas)
         {
+            if (obs.Fase == FaseMus.Grande && senal == TipoSenalMus.TresReyes) return 0.4f;
+            if (obs.Fase == FaseMus.Chica && senal == TipoSenalMus.TresAses) return 0.4f;
+            if (obs.Fase == FaseMus.Pares && (senal == TipoSenalMus.TresReyes || senal == TipoSenalMus.TresAses)) return 0.2f;
+            if (senal == TipoSenalMus.Ciego) aumento = -0.2f;
             if (obs.Fase == FaseMus.Grande && senal == TipoSenalMus.DosReyes) return 0.25f;
             if (obs.Fase == FaseMus.Chica && senal == TipoSenalMus.DosAses) return 0.25f;
             if (obs.Fase == FaseMus.Pares && senal == TipoSenalMus.Duples) return 0.25f;
             if (obs.Fase == FaseMus.JuegoPunto && senal == TipoSenalMus.TreintaYUna) return 0.25f;
         }
 
-        return 0f;
+        return aumento;
     }
 
     public static float FuerzaLance(FaseMus fase, ObservacionMus obs)

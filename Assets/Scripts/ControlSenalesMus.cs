@@ -36,6 +36,14 @@ public class ControlSenalesMus : MonoBehaviour
 
     public void EjecutarSenal(TipoSenal tipo)
     {
+        GestosMus gestos = GetComponentInChildren<GestosMus>();
+
+        if (gestos != null && gestos.isActiveAndEnabled && gestos.Preparado)
+        {
+            gestos.Hacer((TipoSenalMus)(int)tipo);
+            return;
+        }
+
         if (animator == null || !animator.isActiveAndEnabled)
             return;
 

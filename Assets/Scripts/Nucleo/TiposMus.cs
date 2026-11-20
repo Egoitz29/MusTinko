@@ -31,7 +31,41 @@ public enum TipoSenalMus
     TreintaYUna,
     Duples,
     DosReyes,
-    DosAses
+    DosAses,
+    TresReyes,
+    TresAses,
+    Ciego
+}
+
+public static class SenalesMus
+{
+    public static string Nombre(TipoSenalMus tipo)
+    {
+        switch (tipo)
+        {
+            case TipoSenalMus.TreintaYUna: return "31";
+            case TipoSenalMus.Duples: return "DUPLES";
+            case TipoSenalMus.DosReyes: return "DOS REYES";
+            case TipoSenalMus.DosAses: return "DOS ASES";
+            case TipoSenalMus.TresReyes: return "TRES REYES";
+            case TipoSenalMus.TresAses: return "TRES ASES";
+            default: return "CIEGO (nada)";
+        }
+    }
+
+    public static string Gesto(TipoSenalMus tipo)
+    {
+        switch (tipo)
+        {
+            case TipoSenalMus.TreintaYUna: return "guino";
+            case TipoSenalMus.Duples: return "subir las cejas";
+            case TipoSenalMus.DosReyes: return "morder el labio";
+            case TipoSenalMus.DosAses: return "sacar la lengua";
+            case TipoSenalMus.TresReyes: return "morder el labio y ladear la cabeza";
+            case TipoSenalMus.TresAses: return "lengua y ladear la cabeza";
+            default: return "cerrar los ojos";
+        }
+    }
 }
 
 public enum TipoConceptoMus

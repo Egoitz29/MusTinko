@@ -61,6 +61,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
     [SerializeField] private bool colorearPersonajes = true;
     [UnityEngine.Range(0f, 1f)][SerializeField] private float intensidadColor = 0.75f;
 
+    [Header("Gestos (senas) mas claros, con GestosMus")]
+    [SerializeField] private bool usarGestosClaros = true;
+    [SerializeField] private bool mostrarBotonesSenas = true;
+
     [Header("Marcador y avisos en pantalla")]
     [SerializeField] private bool mostrarHud = true;
     [Tooltip("Con el marcador nuevo, los anuncios de texto sobran: ya estan los bocadillos y el historial.")]
@@ -85,6 +89,11 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private string modoUltimoLance;
     private FaseMus faseMostrada = FaseMus.Mus;
     private bool corridoVisual;
+    private readonly GestosMus[] gestos = new GestosMus[4];
+    private readonly HashSet<TipoSenalMus> senasHechas = new();
+    private string avisoSena;
+    private float finAvisoSena;
+    private GUIStyle estiloSena;
     private string avisoTemporal;
     private string avisoAyuda;
     private float finAvisoTemporal;
@@ -167,6 +176,27 @@ public class VistaMesaOnlineMus : MonoBehaviour
             GameObject posicion = GameObject.Find(ColoresJugadoresMus.Nombres[sitio] + "_Posicion");
             int puesto = (local + sitio) % 4;
             ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColor);
+        }
+    }
+
+    private void PrepararGestos()
+    {
+        for (int sitio = 0; sitio < 4; sitio++)
+        {
+            if (gestos[sitio] != null)
+                continue;
+
+            GameObject posicion = GameObject.Find(ColoresJugadoresMus.Nombres[sitio] + "_Posicion");
+
+            if (posicion == null)
+                continue;
+
+            Animator animador = posicion.GetComponentInChildren<Animator>(true);
+            GameObject modelo = animador != null ? animador.gameObject : posicion;
+            gestos[sitio] = modelo.GetComponent<GestosMus>();
+
+            if (gestos[sitio] == null)
+                gestos[sitio] = modelo.AddComponent<GestosMus>();
         }
     }
 
@@ -676,6 +706,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
             declaracionesJuego = 0;
             algunoTieneJuego = false;
             modoUltimoLance = null;
+            senasHechas.Clear();
 
             if (enRevision)
                 ActivarVistaJugador(true);
@@ -850,9 +881,31 @@ public class VistaMesaOnlineMus : MonoBehaviour
         partida.AnadirSenalAlHistorial(puesto, tipo);
 
         int sitio = Relativo(puesto);
+        int local = partida.PuestoLocal;
 
-        if (senales != null && sitio < senales.Length && senales[sitio] != null)
+        if (usarGestosClaros)
+        {
+            PrepararGestos();
+
+            if (gestos[sitio] != null && gestos[sitio].Preparado)
+                gestos[sitio].Hacer(tipo);
+        }
+        else if ((int)tipo < 4 && senales != null && sitio < senales.Length && senales[sitio] != null)
+        {
             senales[sitio].EjecutarSenal((ControlSenalesMus.TipoSenal)(int)tipo);
+        }
+
+        if (local >= 0 && puesto == (local + 2) % 4)
+        {
+            avisoSena = ColoresJugadoresMus.Nombre(puesto) + " te hace una sena: <b>" + SenalesMus.Nombre(tipo) +
+                        "</b>  <size=13>(" + SenalesMus.Gesto(tipo) + ")</size>";
+            finAvisoSena = Time.time + 3.5f;
+        }
+        else if (puesto == local)
+        {
+            avisoSena = "Has hecho la sena: <b>" + SenalesMus.Nombre(tipo) + "</b>";
+            finAvisoSena = Time.time + 2f;
+        }
     }
 
     private void MostrarBocadillo(int puesto, string texto, bool fijo, Color color)
@@ -1114,6 +1167,58 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         if (!string.IsNullOrEmpty(ayuda))
             GUI.Label(new Rect(Screen.width / 2f - 260, 156, 520, 28), ayuda, estiloAyuda);
+
+        if (estiloSena == null)
+        {
+            estiloSena = new GUIStyle(estiloAyuda) { richText = true, fontSize = 17 };
+            estiloSena.normal.textColor = new Color(0.85f, 0.75f, 1f);
+        }
+
+        if (avisoSena != null && Time.time < finAvisoSena)
+            GUI.Label(new Rect(Screen.width / 2f - 300, 190, 600, 34), avisoSena, estiloSena);
+
+        if (mostrarBotonesSenas)
+            DibujarBotonesSenas(e, local);
+    }
+
+    private void DibujarBotonesSenas(EstadoPublicoMus e, int local)
+    {
+        if (local < 0 || cartasLocalesMostradas[0] < 0 || !e.EnCurso || e.FaseActual == FaseMus.FinMano)
+            return;
+
+        EvaluadorManoMus.Resultado r = CartasMus.Evaluar(cartasLocalesMostradas);
+        List<TipoSenalMus> posibles = new();
+
+        foreach (TipoSenalMus tipo in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))
+            if (PartidaMus.CumpleSenal(cartasLocalesMostradas, r, tipo))
+                posibles.Add(tipo);
+
+        float alto = 34 + posibles.Count * 34;
+        Rect zona = new(20, Screen.height / 2f - alto / 2f, 230, Mathf.Max(alto, 60));
+        GUI.DrawTexture(zona, texFondo);
+        GUI.Label(new Rect(zona.x, zona.y + 4, zona.width, 24), "SENAS A TU COMPANERO", estiloTitulo);
+
+        if (posibles.Count == 0)
+        {
+            GUI.Label(new Rect(zona.x + 6, zona.y + 30, zona.width - 12, 24), "Ninguna con estas cartas", estiloPeque);
+            return;
+        }
+
+        for (int i = 0; i < posibles.Count; i++)
+        {
+            TipoSenalMus tipo = posibles[i];
+            bool hecha = senasHechas.Contains(tipo);
+            GUI.enabled = !hecha;
+
+            if (GUI.Button(new Rect(zona.x + 8, zona.y + 32 + i * 34, zona.width - 16, 30),
+                    SenalesMus.Nombre(tipo) + (hecha ? "  (hecha)" : "")))
+            {
+                senasHechas.Add(tipo);
+                partida.SolicitarSenal(tipo);
+            }
+
+            GUI.enabled = true;
+        }
     }
 
     private void Barra(Rect r, float valor, Texture2D relleno)

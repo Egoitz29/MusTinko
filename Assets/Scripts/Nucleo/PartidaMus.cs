@@ -633,6 +633,13 @@ public class PartidaMus
                 return ContarRango(cartas, 8) >= 2;
             case TipoSenalMus.DosAses:
                 return ContarRango(cartas, 1) >= 2;
+            case TipoSenalMus.TresReyes:
+                return ContarRango(cartas, 8) >= 3;
+            case TipoSenalMus.TresAses:
+                return ContarRango(cartas, 1) >= 3;
+            case TipoSenalMus.Ciego:
+                return evaluacion.Pares == EvaluadorManoMus.TipoPares.SinPares && !evaluacion.TieneJuego &&
+                       ContarRango(cartas, 8) == 0 && ContarRango(cartas, 1) <= 1;
             default:
                 return false;
         }

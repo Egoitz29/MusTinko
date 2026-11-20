@@ -137,6 +137,11 @@ public static class PruebasNucleoMus
         Comprobar(log, sn.HacerSenal(0, TipoSenalMus.DosReyes), "Jugador 0 puede senalar dos reyes");
         Comprobar(log, !sn.HacerSenal(0, TipoSenalMus.DosAses), "Jugador 0 no puede senalar dos ases sin tenerlos");
         Comprobar(log, sn.Observar(2).SenalesRecibidas.Contains(TipoSenalMus.DosReyes), "El companero (2) recibe la sena");
+        int[] tresReyes = { C("REY", "OROS"), C("3", "COPAS"), C("REY", "ESPADAS"), C("4", "OROS") };
+        int[] ciego = { C("4", "OROS"), C("5", "COPAS"), C("6", "ESPADAS"), C("SOTA", "OROS") };
+        Comprobar(log, PartidaMus.CumpleSenal(tresReyes, CartasMus.Evaluar(tresReyes), TipoSenalMus.TresReyes), "REY, 3 y REY permiten la sena de tres reyes");
+        Comprobar(log, !PartidaMus.CumpleSenal(tresReyes, CartasMus.Evaluar(tresReyes), TipoSenalMus.Ciego), "Con tres reyes no se puede decir ciego");
+        Comprobar(log, PartidaMus.CumpleSenal(ciego, CartasMus.Evaluar(ciego), TipoSenalMus.Ciego), "4-5-6-SOTA sin pares ni juego permite la sena de ciego");
         Comprobar(log, sn.Observar(1).SenalesRecibidas.Count == 0 && sn.Observar(3).SenalesRecibidas.Count == 0, "Los rivales no reciben la sena");
 
         log("== Partidas completas aleatorias ==");
