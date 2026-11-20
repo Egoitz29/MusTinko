@@ -19,6 +19,7 @@ public struct EstadoPublicoMus : INetworkSerializable
     public int ParejaEnvidante;
     public int ParejaGanadora;
     public bool PorOrdago;
+    public bool MusCorrido;
     public int TantosEnvite;
     public int MascaraBots;
     public int MascaraLegales;
@@ -43,6 +44,7 @@ public struct EstadoPublicoMus : INetworkSerializable
         s.SerializeValue(ref ParejaEnvidante);
         s.SerializeValue(ref ParejaGanadora);
         s.SerializeValue(ref PorOrdago);
+        s.SerializeValue(ref MusCorrido);
         s.SerializeValue(ref TantosEnvite);
         s.SerializeValue(ref MascaraBots);
         s.SerializeValue(ref MascaraLegales);
@@ -513,6 +515,7 @@ public class PartidaOnlineMus : NetworkBehaviour
             ParejaEnvidante = partida.Envite.ParejaEnvidante,
             ParejaGanadora = partida.ParejaGanadora,
             PorOrdago = partida.VictoriaPorOrdago,
+            MusCorrido = partida.MusCorridoPendiente,
             TantosEnvite = partida.TantosEnvite,
             Cliente0 = clientes[0],
             Cliente1 = clientes[1],
@@ -653,7 +656,11 @@ public class PartidaOnlineMus : NetworkBehaviour
             faseHistorial = FaseMus.FinPartida;
             declaracionesJuegoHistorial = 0;
             juegoEnHistorial = false;
-            AnadirLinea("<b>MANO " + manoHistorial + "</b>   (mano: " + ColoresJugadoresMus.Nombre(estado.Mano) + ")");
+            bool corrido = e.Tipo == TipoEventoMus.Accion &&
+                           (e.Accion.Tipo == TipoAccionMus.Mus || e.Accion.Tipo == TipoAccionMus.NoHayMus) && e.Dato == 1;
+            AnadirLinea("<b>MANO " + manoHistorial + "</b>   " + (corrido
+                ? "<color=#FFC94D>(MUS CORRIDO: el primero que corte sera mano)</color>"
+                : "(mano: " + ColoresJugadoresMus.Nombre(estado.Mano) + ")"));
         }
 
         if (e.Tipo != TipoEventoMus.FinMano && e.Fase != faseHistorial)
@@ -668,6 +675,10 @@ public class PartidaOnlineMus : NetworkBehaviour
         {
             case TipoEventoMus.Accion:
                 AnadirLinea("   " + ColoresJugadoresMus.Nombre(e.Jugador) + "<color=" + color + ">: " + e.Accion + "</color>");
+
+                if (e.Accion.Tipo == TipoAccionMus.NoHayMus && e.Dato == 1)
+                    AnadirLinea("<b><color=#FFC94D>   -> " + ColoresJugadoresMus.Nombre(e.Jugador) +
+                                "<color=#FFC94D> corta el mus corrido: empieza siendo MANO</color></color></b>");
                 break;
             case TipoEventoMus.Declaracion:
                 AnadirLinea("   " + ColoresJugadoresMus.Nombre(e.Jugador) + "<color=" + color + ">: " +
@@ -844,7 +855,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         GUILayout.Label("Tu puesto: " + (PuestoLocal >= 0 ? Nombre(PuestoLocal) + " | Pareja " + (PuestoLocal % 2 == 0 ? "0-2" : "1-3") : "espectador"));
         GUILayout.Label("Tantos  0-2: " + estado.Puntos0 + "   1-3: " + estado.Puntos1 + "   (a " + estado.Limite + ")");
         GUILayout.Label("Fase: " + estado.FaseActual + (estado.FaseActual == FaseMus.Mus ? " (ronda " + estado.RondaMus + ")" : "") +
-                        " | Mano: " + Nombre(estado.Mano) + " | Turno: " + Nombre(estado.JugadorActual));
+                        " | Mano: " + (estado.MusCorrido ? "mus corrido" : Nombre(estado.Mano)) + " | Turno: " + Nombre(estado.JugadorActual));
 
         if (estado.TantosApostados > 0 || estado.EstadoEnvite == (int)MotorEnvitesMus.EstadoEnvite.OrdagoPendiente)
             GUILayout.Label("Envite: " + (MotorEnvitesMus.EstadoEnvite)estado.EstadoEnvite + " | " + estado.TantosApostados + " tantos");

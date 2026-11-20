@@ -262,7 +262,7 @@ public class PartidaMus
             if (!MusPermitido)
                 return false;
 
-            Registrar(TipoEventoMus.Accion, jugador, accion);
+            Registrar(TipoEventoMus.Accion, jugador, accion, MusCorridoPendiente ? 1 : 0);
             musSeguidos++;
 
             if (musSeguidos >= Jugadores)
@@ -283,7 +283,7 @@ public class PartidaMus
         if (accion.Tipo != TipoAccionMus.NoHayMus)
             return false;
 
-        Registrar(TipoEventoMus.Accion, jugador, accion);
+        Registrar(TipoEventoMus.Accion, jugador, accion, MusCorridoPendiente ? 1 : 0);
 
         if (MusCorridoPendiente)
         {

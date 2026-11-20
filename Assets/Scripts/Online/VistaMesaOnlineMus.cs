@@ -84,7 +84,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private bool algunoTieneJuego;
     private string modoUltimoLance;
     private FaseMus faseMostrada = FaseMus.Mus;
+    private bool corridoVisual;
     private string avisoTemporal;
+    private string avisoAyuda;
     private float finAvisoTemporal;
     private Vector3 posicionCamaraGuardada;
     private Quaternion rotacionCamaraGuardada;
@@ -168,8 +170,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
     }
 
-    private void Avisar(string texto, float segundos)
+    private void Avisar(string texto, float segundos, string ayuda = null)
     {
+        avisoAyuda = ayuda;
         avisoTemporal = texto;
         finAvisoTemporal = Time.time + segundos;
     }
@@ -748,7 +751,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
                     modoUltimoLance = algunoTieneJuego ? "JUEGO" : "PUNTO";
                     Avisar(algunoTieneJuego
                         ? "HAY JUEGO: se juega a JUEGO"
-                        : "NADIE TIENE JUEGO: se juega a PUNTO", 3.5f);
+                        : "NADIE TIENE JUEGO: se juega a PUNTO", 3.5f,
+                        algunoTieneJuego
+                        ? "JUEGO: 31 es la mejor, luego 32, 40, 37, 36, 35, 34 y 33"
+                        : "PUNTO: gana quien mas se acerca a 30");
                 }
             }
 
@@ -756,6 +762,13 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         TipoAccionMus tipo = e.Accion.Tipo;
+
+        if (tipo == TipoAccionMus.Mus || tipo == TipoAccionMus.NoHayMus)
+            corridoVisual = e.Dato == 1 && tipo == TipoAccionMus.Mus;
+
+        if (tipo == TipoAccionMus.NoHayMus && e.Dato == 1)
+            Avisar(ColoresJugadoresMus.Nombre(e.Jugador) + " CORTA: EMPIEZA SIENDO MANO", 3.5f,
+                "En las siguientes manos, la mano va pasando al siguiente jugador");
 
         if (tipo == TipoAccionMus.Envidar || tipo == TipoAccionMus.Reenvidar || tipo == TipoAccionMus.Ordago)
             OcultarBocadillos();
@@ -1082,7 +1095,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
             GUI.Label(new Rect(r.x, r.y + 4, r.width, 22), titulos[i], estiloTitulo);
 
             string detalle = i == 0
-                ? (activa == 0 ? "Ronda " + e.RondaMus : "Mano: " + Nombre(e.Mano))
+                ? ((cola.Count > 0 ? corridoVisual : e.MusCorrido) ? "MUS CORRIDO\nel que corte\nsera mano" : activa == 0 ? "Ronda " + e.RondaMus + "\nMano: " + Nombre(e.Mano) : "Mano: " + Nombre(e.Mano))
                 : resultadosLance[i - 1] ?? "";
 
             GUI.Label(new Rect(r.x + 3, r.y + 30, r.width - 6, 56), detalle, estiloPeque);
@@ -1093,9 +1106,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         if (avisoTemporal != null && Time.time < finAvisoTemporal)
         {
             banner = avisoTemporal;
-            ayuda = modoUltimoLance == "PUNTO"
-                ? "PUNTO: gana quien mas se acerca a 30 (no hay pares de 31)"
-                : "JUEGO: 31 es la mejor, luego 32, 40, 37, 36, 35, 34 y 33";
+            ayuda = avisoAyuda;
         }
 
         if (!string.IsNullOrEmpty(banner))
@@ -1146,7 +1157,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
         switch (e.FaseActual)
         {
             case FaseMus.Mus:
-                ayuda ??= "MUS para cambiar cartas, NO HAY MUS para jugar con estas";
+                ayuda ??= e.MusCorrido
+                    ? "MUS CORRIDO: si dices NO HAY MUS, empiezas siendo mano"
+                    : "MUS para cambiar cartas, NO HAY MUS para jugar con estas";
                 return "TE TOCA: MUS?";
             case FaseMus.Descarte:
                 ayuda ??= "Toca las cartas que quieres cambiar y pulsa descartar";

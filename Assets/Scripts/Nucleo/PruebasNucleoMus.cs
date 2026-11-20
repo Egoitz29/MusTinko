@@ -42,6 +42,19 @@ public static class PruebasNucleoMus
         p.Aplicar(2, AccionMus.NoHayMus);
         Comprobar(log, p.Mano == 2 && p.Fase == FaseMus.Grande, "Quien corta el mus corrido pasa a ser mano (jugador 2)");
         Comprobar(log, p.JugadorActual == 2, "En Grande habla primero el mano");
+        while (PartidaMus.EsLance(p.Fase)) p.Aplicar(p.JugadorActual, AccionMus.Pasar);
+        p.SiguienteMano();
+        Comprobar(log, p.Mano == 3 && !p.MusCorridoPendiente && p.JugadorActual == 3,
+            "En la mano siguiente es mano el de despues (jugador 3) y empieza a hablar el");
+
+        PartidaMus pc = new(21);
+        pc.IniciarPartida();
+        for (int j = 0; j < 4; j++) pc.Aplicar(j, AccionMus.Mus);
+        for (int j = 0; j < 4; j++) pc.Aplicar(j, AccionMus.Descartar(1));
+        Comprobar(log, pc.MusCorridoPendiente && pc.JugadorActual == 0, "Si todos dan mus en el corrido, se sigue rotando (vuelve a hablar el 0)");
+        pc.Aplicar(0, AccionMus.Mus);
+        pc.Aplicar(1, AccionMus.NoHayMus);
+        Comprobar(log, pc.Mano == 1 && !pc.MusCorridoPendiente, "El primero que corta en la segunda vuelta (jugador 1) es mano");
 
         log("== Descarte ==");
         PartidaMus d = new(11);
