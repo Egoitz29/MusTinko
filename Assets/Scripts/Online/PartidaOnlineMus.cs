@@ -198,6 +198,8 @@ public class PartidaOnlineMus : NetworkBehaviour
     private GUIStyle estiloHistorial;
 
     public bool ModoRevision { get; set; }
+    public bool HistorialAlRitmoDeLaMesa { get; set; }
+    public bool EsperandoAnimaciones { get; set; }
     private Vector2 scroll;
 
     public override void OnNetworkSpawn()
@@ -335,6 +337,9 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         if (partida.Fase == FaseMus.FinMano)
         {
+            if (EsperandoAnimaciones)
+                momentoSiguienteMano = Mathf.Max(momentoSiguienteMano, Time.time + esperaFinMano);
+
             if (!siguienteManoManual && Time.time >= momentoSiguienteMano)
                 SiguienteManoServidor();
             return;
@@ -599,7 +604,8 @@ public class PartidaOnlineMus : NetworkBehaviour
                 break;
         }
 
-        AnadirAlHistorial(e);
+        if (!HistorialAlRitmoDeLaMesa)
+            AnadirAlHistorial(e);
 
 
         EventoRecibido?.Invoke(e);
@@ -607,6 +613,14 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     [Rpc(SendTo.ClientsAndHost)]
     private void SenalVisibleRpc(int jugador, int tipo)
+    {
+        if (!HistorialAlRitmoDeLaMesa)
+            AnadirSenalAlHistorial(jugador, (TipoSenalMus)tipo);
+
+        SenalRecibida?.Invoke(jugador, (TipoSenalMus)tipo);
+    }
+
+    public void AnadirSenalAlHistorial(int jugador, TipoSenalMus tipo)
     {
         bool esDeMiPareja = PuestoLocal >= 0 && (jugador == PuestoLocal || jugador == (PuestoLocal + 2) % 4);
 
@@ -619,8 +633,6 @@ public class PartidaOnlineMus : NetworkBehaviour
             AnadirLinea("<color=#C9A0FF>>> " + texto.Replace(NombresPuesto[jugador], ColoresJugadoresMus.Nombre(jugador)) + "</color>");
             Debug.Log("[MUS ONLINE] " + texto);
         }
-
-        SenalRecibida?.Invoke(jugador, (TipoSenalMus)tipo);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -631,7 +643,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         ManosReveladas?.Invoke(manos.Cartas);
     }
 
-    private void AnadirAlHistorial(EventoMus e)
+    public void AnadirAlHistorial(EventoMus e)
     {
         if (reiniciarHistorial && e.Tipo != TipoEventoMus.FinMano)
         {
@@ -943,7 +955,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         }
         else
         {
-            if (estado.FaseActual == FaseMus.FinMano && siguienteManoManual &&
+            if (estado.FaseActual == FaseMus.FinMano && siguienteManoManual && !HistorialAlRitmoDeLaMesa &&
                 GUILayout.Button("SIGUIENTE MANO", GUILayout.Height(32)))
                 SiguienteManoServidor();
 

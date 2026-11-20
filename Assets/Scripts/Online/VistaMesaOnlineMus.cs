@@ -83,6 +83,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private int declaracionesJuego;
     private bool algunoTieneJuego;
     private string modoUltimoLance;
+    private FaseMus faseMostrada = FaseMus.Mus;
     private string avisoTemporal;
     private float finAvisoTemporal;
     private Vector3 posicionCamaraGuardada;
@@ -121,6 +122,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         reparto.DesactivarRepartoInicial();
+        partida.HistorialAlRitmoDeLaMesa = true;
 
         Conectar(botonMus, () => Pedir(AccionMus.Mus));
         Conectar(botonNoHayMus, () => Pedir(AccionMus.NoHayMus));
@@ -510,6 +512,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
         if (colorearPersonajes && partida.PuestoLocal != puestoColoreado)
             ColorearPersonajes();
 
+        partida.EsperandoAnimaciones = cola.Count > 0;
+
         if (!partida.IsSpawned)
         {
             MostrarBotones(false);
@@ -548,7 +552,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         ActualizarBotonesSenas(e, local);
 
         if (botonSiguienteMano != null && !enRevision)
-            Activar(botonSiguienteMano, partida.PuedePasarDeMano);
+            Activar(botonSiguienteMano, false);
 
         if (textoFase != null && !mostrarHud)
             textoFase.text = !empezada ? "ESPERANDO PARTIDA ONLINE" : TextoFase(e, miTurno);
@@ -700,6 +704,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
     private void ProcesarEvento(EventoMus e)
     {
+        partida.AnadirAlHistorial(e);
+        faseMostrada = e.Tipo == TipoEventoMus.FinMano ? FaseMus.FinMano : e.Fase;
+
         if (e.Tipo == TipoEventoMus.LanceCerrado)
         {
             limpiarAlSiguienteEvento = true;
@@ -827,6 +834,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
     private void ProcesarSenal(int puesto, TipoSenalMus tipo)
     {
+        partida.AnadirSenalAlHistorial(puesto, tipo);
+
         int sitio = Relativo(puesto);
 
         if (senales != null && sitio < senales.Length && senales[sitio] != null)
@@ -1062,13 +1071,14 @@ public class VistaMesaOnlineMus : MonoBehaviour
         GUI.Label(new Rect(x + 8, 84, wm, 18), "a " + e.Limite + " tantos", estiloPeque);
 
         string[] titulos = { "MUS", "GRANDE", "CHICA", "PARES", modoUltimoLance ?? "JUEGO/PUNTO" };
-        int activa = e.FaseActual == FaseMus.Mus || e.FaseActual == FaseMus.Descarte ? 0 : IndiceLance(e.FaseActual) + 1;
+        FaseMus fase = cola.Count > 0 ? faseMostrada : e.FaseActual;
+        int activa = fase == FaseMus.Mus || fase == FaseMus.Descarte ? 0 : IndiceLance(fase) + 1;
         float wc = (ancho - wm - 16f) / 5f;
 
         for (int i = 0; i < 5; i++)
         {
             Rect r = new(x + wm + 8 + i * wc, 12, wc - 6, 88);
-            GUI.DrawTexture(r, i == activa && e.EnCurso && e.FaseActual != FaseMus.FinMano ? texCeldaActiva : texCelda);
+            GUI.DrawTexture(r, i == activa && e.EnCurso && fase != FaseMus.FinMano ? texCeldaActiva : texCelda);
             GUI.Label(new Rect(r.x, r.y + 4, r.width, 22), titulos[i], estiloTitulo);
 
             string detalle = i == 0
@@ -1105,14 +1115,14 @@ public class VistaMesaOnlineMus : MonoBehaviour
     {
         ayuda = null;
 
+        if (cola.Count > 0)
+            return null;
+
         if (!e.EnCurso)
             return TextoFase(e, false);
 
         if (e.FaseActual == FaseMus.FinMano)
             return "FIN DE LA MANO";
-
-        if (cola.Count > 0)
-            return null;
 
         bool miTurno = local >= 0 && e.JugadorActual == local;
         bool hayEnvite = e.EstadoEnvite == (int)MotorEnvitesMus.EstadoEnvite.PendienteRespuesta ||
