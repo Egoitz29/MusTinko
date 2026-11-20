@@ -192,6 +192,8 @@ public class PartidaOnlineMus : NetworkBehaviour
     private bool reiniciarHistorial = true;
     private int manoHistorial;
     private FaseMus faseHistorial = FaseMus.FinPartida;
+    private int declaracionesJuegoHistorial;
+    private bool juegoEnHistorial;
     private Vector2 scrollHistorial;
     private GUIStyle estiloHistorial;
 
@@ -614,7 +616,7 @@ public class PartidaOnlineMus : NetworkBehaviour
                 ? "Haces la sena " + (TipoSenalMus)tipo
                 : NombresPuesto[jugador] + " (tu companero) te hace la sena " + (TipoSenalMus)tipo;
 
-            AnadirLinea("<color=#C9A0FF>>> " + texto + "</color>");
+            AnadirLinea("<color=#C9A0FF>>> " + texto.Replace(NombresPuesto[jugador], ColoresJugadoresMus.Nombre(jugador)) + "</color>");
             Debug.Log("[MUS ONLINE] " + texto);
         }
 
@@ -637,7 +639,9 @@ public class PartidaOnlineMus : NetworkBehaviour
             manoHistorial++;
             reiniciarHistorial = false;
             faseHistorial = FaseMus.FinPartida;
-            AnadirLinea("<b>MANO " + manoHistorial + "</b>   (mano: " + NombreCorto(estado.Mano) + ")");
+            declaracionesJuegoHistorial = 0;
+            juegoEnHistorial = false;
+            AnadirLinea("<b>MANO " + manoHistorial + "</b>   (mano: " + ColoresJugadoresMus.Nombre(estado.Mano) + ")");
         }
 
         if (e.Tipo != TipoEventoMus.FinMano && e.Fase != faseHistorial)
@@ -651,11 +655,22 @@ public class PartidaOnlineMus : NetworkBehaviour
         switch (e.Tipo)
         {
             case TipoEventoMus.Accion:
-                AnadirLinea("<color=" + color + ">   " + NombreCorto(e.Jugador) + ": " + e.Accion + "</color>");
+                AnadirLinea("   " + ColoresJugadoresMus.Nombre(e.Jugador) + "<color=" + color + ">: " + e.Accion + "</color>");
                 break;
             case TipoEventoMus.Declaracion:
-                AnadirLinea("<color=" + color + ">   " + NombreCorto(e.Jugador) + ": " +
+                AnadirLinea("   " + ColoresJugadoresMus.Nombre(e.Jugador) + "<color=" + color + ">: " +
                             (e.Fase == FaseMus.Pares ? "pares " : "juego ") + (e.Dato == 1 ? "SI" : "no") + "</color>");
+
+                if (e.Fase == FaseMus.JuegoPunto)
+                {
+                    declaracionesJuegoHistorial++;
+                    juegoEnHistorial |= e.Dato == 1;
+
+                    if (declaracionesJuegoHistorial == 4)
+                        AnadirLinea("<b><color=" + color + ">   " + (juegoEnHistorial
+                            ? "Hay juego: se juega a JUEGO"
+                            : "Nadie tiene juego: se juega a PUNTO") + "</color></b>");
+                }
                 break;
             case TipoEventoMus.LanceCerrado:
                 AnadirLinea("<b><color=" + color + ">   -> " + ResultadoLance(e) + "</color></b>");

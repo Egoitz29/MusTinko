@@ -57,6 +57,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
     [SerializeField] private float pausaDeclaracion = 0.8f;
     [SerializeField] private float pausaCierreLance = 1.5f;
 
+    [Header("Colores de los personajes (segun su nombre)")]
+    [SerializeField] private bool colorearPersonajes = true;
+    [UnityEngine.Range(0f, 1f)][SerializeField] private float intensidadColor = 0.75f;
+
     [Header("Marcador y avisos en pantalla")]
     [SerializeField] private bool mostrarHud = true;
     [Tooltip("Con el marcador nuevo, los anuncios de texto sobran: ya estan los bocadillos y el historial.")]
@@ -75,6 +79,12 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private bool tablaVisible;
     private TablaTanteoMus.Tabla tabla;
     private int[] manosVistas;
+    private int puestoColoreado = -2;
+    private int declaracionesJuego;
+    private bool algunoTieneJuego;
+    private string modoUltimoLance;
+    private string avisoTemporal;
+    private float finAvisoTemporal;
     private Vector3 posicionCamaraGuardada;
     private Quaternion rotacionCamaraGuardada;
     private bool camaraMovida;
@@ -141,6 +151,25 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         ActivarVistaJugador(false);
+    }
+
+    private void ColorearPersonajes()
+    {
+        puestoColoreado = partida.PuestoLocal;
+        int local = Mathf.Max(0, puestoColoreado);
+
+        for (int sitio = 0; sitio < 4; sitio++)
+        {
+            GameObject posicion = GameObject.Find(ColoresJugadoresMus.Nombres[sitio] + "_Posicion");
+            int puesto = (local + sitio) % 4;
+            ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColor);
+        }
+    }
+
+    private void Avisar(string texto, float segundos)
+    {
+        avisoTemporal = texto;
+        finAvisoTemporal = Time.time + segundos;
     }
 
     private void Encolar(Action accion, float pausa)
@@ -478,6 +507,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
     {
         ProcesarCola();
 
+        if (colorearPersonajes && partida.PuestoLocal != puestoColoreado)
+            ColorearPersonajes();
+
         if (!partida.IsSpawned)
         {
             MostrarBotones(false);
@@ -634,6 +666,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
             for (int i = 0; i < resultadosLance.Length; i++)
                 resultadosLance[i] = null;
 
+            declaracionesJuego = 0;
+            algunoTieneJuego = false;
+            modoUltimoLance = null;
+
             if (enRevision)
                 ActivarVistaJugador(true);
         }
@@ -694,6 +730,21 @@ public class VistaMesaOnlineMus : MonoBehaviour
             string texto = (e.Fase == FaseMus.Pares ? "PARES " : "JUEGO ") + (e.Dato == 1 ? "SI" : "NO");
             MostrarBocadillo(e.Jugador, texto, true, e.Dato == 1 ? ColorSi : ColorNo);
             Anunciar(Nombre(e.Jugador) + ": " + texto);
+
+            if (e.Fase == FaseMus.JuegoPunto)
+            {
+                declaracionesJuego++;
+                algunoTieneJuego |= e.Dato == 1;
+
+                if (declaracionesJuego == 4)
+                {
+                    modoUltimoLance = algunoTieneJuego ? "JUEGO" : "PUNTO";
+                    Avisar(algunoTieneJuego
+                        ? "HAY JUEGO: se juega a JUEGO"
+                        : "NADIE TIENE JUEGO: se juega a PUNTO", 3.5f);
+                }
+            }
+
             return;
         }
 
@@ -928,8 +979,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
             int[] mano = { manosVistas[puesto * 4], manosVistas[puesto * 4 + 1], manosVistas[puesto * 4 + 2], manosVistas[puesto * 4 + 3] };
             EvaluadorManoMus.Resultado r = CartasMus.Evaluar(mano);
             string resumen = r.DetallePares + ", " + (r.TieneJuego ? "juego " : "punto ") + r.PuntosJuego;
-            string titulo = "<color=" + (nuestro ? "#7CD67C" : "#FF7A6E") + ">" + Nombre(puesto) + (puesto == local ? " (tu)" : "") +
-                            "</color>  <size=12>" + resumen + "</size>";
+            string titulo = ColoresJugadoresMus.Nombre(puesto) + (puesto == local ? " (tu)" : "") +
+                            "  <size=12><color=" + (nuestro ? "#7CD67C" : "#FF7A6E") + ">" + (nuestro ? "nosotros" : "ellos") + "</color>  " + resumen + "</size>";
 
             GUI.Label(new Rect(zona.x, y, zona.width, 24), titulo, estiloCabecera);
 
@@ -977,7 +1028,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         estiloTitulo.normal.textColor = Color.white;
         estiloPeque = new GUIStyle(GUI.skin.label) { fontSize = 12, alignment = TextAnchor.UpperCenter, wordWrap = true };
         estiloPeque.normal.textColor = new Color(1f, 0.95f, 0.8f);
-        estiloBanner = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        estiloBanner = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true };
         estiloBanner.normal.textColor = Color.white;
         estiloBanner.normal.background = texFondo;
         estiloAyuda = new GUIStyle(GUI.skin.label) { fontSize = 15, alignment = TextAnchor.MiddleCenter, wordWrap = true };
@@ -1010,7 +1061,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         Barra(new Rect(x + 16, 76, wm - 16, 8), suyos / (float)limite, texEllos);
         GUI.Label(new Rect(x + 8, 84, wm, 18), "a " + e.Limite + " tantos", estiloPeque);
 
-        string[] titulos = { "MUS", "GRANDE", "CHICA", "PARES", "JUEGO" };
+        string[] titulos = { "MUS", "GRANDE", "CHICA", "PARES", modoUltimoLance ?? "JUEGO/PUNTO" };
         int activa = e.FaseActual == FaseMus.Mus || e.FaseActual == FaseMus.Descarte ? 0 : IndiceLance(e.FaseActual) + 1;
         float wc = (ancho - wm - 16f) / 5f;
 
@@ -1028,6 +1079,14 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         string banner = TextoBanner(e, local, out string ayuda);
+
+        if (avisoTemporal != null && Time.time < finAvisoTemporal)
+        {
+            banner = avisoTemporal;
+            ayuda = modoUltimoLance == "PUNTO"
+                ? "PUNTO: gana quien mas se acerca a 30 (no hay pares de 31)"
+                : "JUEGO: 31 es la mejor, luego 32, 40, 37, 36, 35, 34 y 33";
+        }
 
         if (!string.IsNullOrEmpty(banner))
             GUI.Label(new Rect(Screen.width / 2f - 260, 112, 520, 42), banner, estiloBanner);
@@ -1061,15 +1120,16 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         if (hayEnvite && PartidaMus.EsLance(e.FaseActual))
         {
-            ayuda = e.EstadoEnvite == (int)MotorEnvitesMus.EstadoEnvite.OrdagoPendiente
+            ayuda = (e.FaseActual == FaseMus.JuegoPunto && modoUltimoLance != null ? "[" + modoUltimoLance + "]  " : "") +
+                (e.EstadoEnvite == (int)MotorEnvitesMus.EstadoEnvite.OrdagoPendiente
                 ? "ORDAGO de " + Pareja(e.ParejaEnvidante) + ": si se quiere, se acaba la partida"
-                : "En juego: " + e.TantosApostados + " tantos (envida " + Pareja(e.ParejaEnvidante) + ")";
+                : "En juego: " + e.TantosApostados + " tantos (envida " + Pareja(e.ParejaEnvidante) + ")");
         }
 
         if (!miTurno)
         {
             int j = e.JugadorActual;
-            string quien = j < 0 ? "" : Nombre(j) + (local >= 0 && j == (local + 2) % 4 ? " (tu companero)" : local >= 0 ? " (rival)" : "");
+            string quien = j < 0 ? "" : ColoresJugadoresMus.Nombre(j) + (local >= 0 && j == (local + 2) % 4 ? " (tu companero)" : local >= 0 ? " (rival)" : "");
             return "Turno de " + quien;
         }
 
@@ -1084,6 +1144,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
             default:
                 if (hayEnvite)
                     return "TE TOCA RESPONDER";
+                if (e.FaseActual == FaseMus.JuegoPunto && modoUltimoLance != null)
+                    ayuda ??= "Se juega a " + modoUltimoLance + ": PASO, ENVIDO u ORDAGO";
                 ayuda ??= "PASO, ENVIDO u ORDAGO";
                 return "TE TOCA HABLAR";
         }
