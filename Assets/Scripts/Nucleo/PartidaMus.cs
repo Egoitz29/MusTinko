@@ -463,7 +463,9 @@ public class PartidaMus
         }
 
         registros[indice] = registro;
-        Registrar(TipoEventoMus.LanceCerrado, -1, default, (int)motor.Estado);
+        Registrar(TipoEventoMus.LanceCerrado,
+            registro.Tipo == TipoRegistro.Rechazado ? motor.ParejaGanadoraNegada : -1,
+            new AccionMus(TipoAccionMus.Envidar, registro.Tantos), (int)motor.Estado);
 
         if (ComprobarVictoria(0, 0, "Negada en " + Fase))
             return;
@@ -486,7 +488,7 @@ public class PartidaMus
 
         desglose.Add(new ConceptoTanteoMus(indice, TipoConceptoMus.Ordago, ganador % 2, 0, ganador));
 
-        Registrar(TipoEventoMus.LanceCerrado, -1, default, (int)MotorEnvitesMus.EstadoEnvite.OrdagoAceptado);
+        Registrar(TipoEventoMus.LanceCerrado, ganador % 2, default, (int)MotorEnvitesMus.EstadoEnvite.OrdagoAceptado);
         TerminarPartida(ganador % 2, true, "Ordago aceptado en " + Fase);
     }
 

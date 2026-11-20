@@ -11,6 +11,11 @@ public class ReveladorManosMus : MonoBehaviour
     [Header("Posicion de la mesa")]
     [SerializeField] private float alturaCartas = 0.865f;
 
+    [Header("Dibujos de las cartas")]
+    [SerializeField] private bool usarDibujosDeCartas = true;
+    [SerializeField] private string rutaBaraja = "Baraja/Cartas_Tinko";
+    [SerializeField] private float altoDibujo = 0.23f;
+
     [Header("Distribucion")]
     [SerializeField] private float distanciaFilas = 0.43f;
     [SerializeField] private float distanciaLaterales = 0.74f;
@@ -230,6 +235,29 @@ public class ReveladorManosMus : MonoBehaviour
         texto.rectTransform.sizeDelta =
             new Vector2(9f, 10f);
 
+
+        Sprite dibujo = usarDibujosDeCartas
+            ? BarajaSpritesMus.Obtener(contenido, rutaBaraja)
+            : null;
+
+        if (dibujo != null)
+        {
+            GameObject objetoDibujo = new GameObject("Dibujo");
+            objetoDibujo.transform.SetParent(carta.transform, false);
+            objetoDibujo.transform.localPosition = new Vector3(0f, 0.0075f, 0f);
+            objetoDibujo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+            SpriteRenderer sr = objetoDibujo.AddComponent<SpriteRenderer>();
+            sr.sprite = dibujo;
+
+            float escala = altoDibujo / dibujo.bounds.size.y;
+            objetoDibujo.transform.localScale = Vector3.one * escala;
+
+            baseCarta.transform.localScale = new Vector3(
+                dibujo.bounds.size.x * escala + 0.01f, 0.012f, altoDibujo + 0.01f);
+
+            objetoTexto.SetActive(false);
+        }
 
         // =====================================
         // REGISTRAR LA CARTA

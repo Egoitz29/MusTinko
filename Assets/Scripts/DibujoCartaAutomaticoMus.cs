@@ -17,7 +17,8 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
 
     // El PNG Cartas_Tatú.png debe estar en Assets/Resources/Baraja/.
     // Ya debe estar cortado en 40 sprites (Multiple, 10 x 4).
-    private const string RutaBaraja = "Baraja/Cartas_Tatú";
+    [Header("Baraja en Resources (Cartas_Tinko = nueva, Cartas_Tatú = antigua)")]
+    [SerializeField] private string rutaBaraja = "Baraja/Cartas_Tinko";
 
     private readonly Sprite[] spritesPorIndice = new Sprite[40];
     private SpriteRenderer dibujo;
@@ -28,7 +29,7 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
     {
         dibujo = GetComponent<SpriteRenderer>();
 
-        Sprite[] sprites = Resources.LoadAll<Sprite>(RutaBaraja);
+        Sprite[] sprites = Resources.LoadAll<Sprite>(rutaBaraja);
         foreach (Sprite sprite in sprites)
         {
             // Unity crea nombres como Cartas_Tatú_0 ... Cartas_Tatú_39.
@@ -49,7 +50,7 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
         {
             Debug.LogError(
                 $"DibujoCartaAutomaticoMus: encontradas {encontrados}/40 cartas en " +
-                $"Resources/{RutaBaraja}. Revisa la ubicacion, el corte y los nombres.", this);
+                $"Resources/{rutaBaraja}. Revisa la ubicacion, el corte y los nombres.", this);
             enabled = false;
             return;
         }
