@@ -4468,6 +4468,12 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   ocultarEnOnline: []
+  camaraJugador: {fileID: 0}
+  camaraRevision: {fileID: 0}
+  controlCamaraJugador: {fileID: 0}
+  panelCartas: {fileID: 0}
+  botonSiguienteMano: {fileID: 0}
+  mostrarTablaTanteo: 1
   textoFase: {fileID: 0}
   textoMarcador: {fileID: 0}
   textoAnuncios: {fileID: 0}
@@ -8513,7 +8519,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1391156183
 MonoBehaviour:
   m_ObjectHideFlags: 0
