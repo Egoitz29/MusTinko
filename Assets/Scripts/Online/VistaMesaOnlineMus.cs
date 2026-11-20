@@ -1162,7 +1162,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
         {
             Rect r = new(x + wm + 8 + i * wc, 12, wc - 6, 88);
             GUI.DrawTexture(r, i == activa && e.EnCurso && fase != FaseMus.FinMano ? texCeldaActiva : texCelda);
+            int tamanoTitulo = estiloTitulo.fontSize;
+            if (titulos[i].Length > 8) estiloTitulo.fontSize = 12;
             GUI.Label(new Rect(r.x, r.y + 4, r.width, 22), titulos[i], estiloTitulo);
+            estiloTitulo.fontSize = tamanoTitulo;
 
             string detalle = i == 0
                 ? ((cola.Count > 0 ? corridoVisual : e.MusCorrido) ? "MUS CORRIDO\nel que corte\nsera mano" : activa == 0 ? "Ronda " + e.RondaMus + "\nMano: " + Nombre(e.Mano) : "Mano: " + Nombre(e.Mano))
