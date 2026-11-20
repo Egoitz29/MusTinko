@@ -116,8 +116,9 @@ public class PartidaOnlineMus : NetworkBehaviour
     [SerializeField] private int maxRondasMus = 0;
 
     [Header("Bots")]
-    [SerializeField] private float esperaBot = 0.8f;
-    [SerializeField] private float esperaFinMano = 4f;
+    [SerializeField] private float esperaBot = 1.5f;
+    [SerializeField] private float esperaFinMano = 8f;
+    [SerializeField] private bool siguienteManoManual = true;
     [SerializeField] private TextAsset parametrosBotEntrenado;
 
     [Header("Registro para entrenamiento")]
@@ -138,6 +139,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private readonly System.Random azarBots = new();
     private float momentoAccionBot;
     private float momentoSiguienteMano;
+    private bool pausado;
     private int manoConSenalesBots = -1;
     private RegistroExperienciasMus registro;
     private int idPartida;
@@ -275,9 +277,16 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (!IsServer || partida == null || partida.PartidaTerminada)
             return;
 
+        if (pausado)
+        {
+            momentoAccionBot = Time.time + esperaBot;
+            momentoSiguienteMano = Time.time + esperaFinMano;
+            return;
+        }
+
         if (partida.Fase == FaseMus.FinMano)
         {
-            if (Time.time >= momentoSiguienteMano)
+            if (!siguienteManoManual && Time.time >= momentoSiguienteMano)
                 SiguienteManoServidor();
             return;
         }
@@ -536,9 +545,12 @@ public class PartidaOnlineMus : NetworkBehaviour
                 break;
         }
 
-        ultimosEventos.Add(e.Fase + ": " + e);
+        string linea = TextoEvento(e);
 
-        if (ultimosEventos.Count > 8)
+        if (linea != null)
+            ultimosEventos.Add(linea);
+
+        if (ultimosEventos.Count > 14)
             ultimosEventos.RemoveAt(0);
 
         EventoRecibido?.Invoke(e);
@@ -556,6 +568,23 @@ public class PartidaOnlineMus : NetworkBehaviour
     {
         manosReveladas = manos.Cartas;
     }
+
+    private static string TextoEvento(EventoMus e)
+    {
+        switch (e.Tipo)
+        {
+            case TipoEventoMus.Accion:
+                return NombreCorto(e.Jugador) + " dice " + e.Accion;
+            case TipoEventoMus.Declaracion:
+                return NombreCorto(e.Jugador) + ": " + (e.Fase == FaseMus.Pares ? "PARES " : "JUEGO ") + (e.Dato == 1 ? "SI" : "NO");
+            case TipoEventoMus.LanceCerrado:
+                return "----- " + e.Fase.ToString().ToUpper() + " cerrado (" + (MotorEnvitesMus.EstadoEnvite)e.Dato + ") -----";
+            default:
+                return "===== FIN DE LA MANO =====";
+        }
+    }
+
+    private static string NombreCorto(int p) => p >= 0 && p < 4 ? NombresPuesto[p] : "-";
 
     private void LimpiarBocadillos()
     {
@@ -671,20 +700,52 @@ public class PartidaOnlineMus : NetworkBehaviour
         }
         else if (estado.FaseActual == FaseMus.FinMano)
         {
-            GUILayout.Label("Fin de la mano. La siguiente empieza en unos segundos...");
+            if (IsServer && siguienteManoManual)
+            {
+                if (GUILayout.Button("SIGUIENTE MANO", GUILayout.Height(30)))
+                    SiguienteManoServidor();
+            }
+            else
+            {
+                GUILayout.Label(IsServer ? "Fin de la mano. La siguiente empieza en unos segundos..." : "Fin de la mano. Esperando al host...");
+            }
         }
         else
         {
             DibujarAcciones();
         }
 
+        if (IsServer)
+            DibujarControlesHost();
+
         GUILayout.Space(4);
+        GUILayout.Label("HISTORIAL (lo mas reciente abajo):");
 
         foreach (string e in ultimosEventos)
             GUILayout.Label(e);
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+
+    private void DibujarControlesHost()
+    {
+        GUILayout.Space(4);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Velocidad bots: " + esperaBot.ToString("0.0") + " s", GUILayout.Width(170));
+        esperaBot = GUILayout.HorizontalSlider(esperaBot, 0.2f, 5f);
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        siguienteManoManual = GUILayout.Toggle(siguienteManoManual, " Pasar de mano con boton");
+
+        if (GUILayout.Button(pausado ? "REANUDAR" : "PAUSA", GUILayout.Height(26)))
+            pausado = !pausado;
+
+        GUILayout.EndHorizontal();
+
+        if (pausado)
+            GUILayout.Label("PARTIDA EN PAUSA (los bots esperan)");
     }
 
     private void DibujarManoLocal()
