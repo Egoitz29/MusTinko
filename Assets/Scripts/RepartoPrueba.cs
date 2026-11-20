@@ -8,6 +8,9 @@ public class RepartoPrueba : MonoBehaviour
     [Header("Cartas visibles del jugador local")]
     [SerializeField] private CartaSeleccionable[] cartas;
 
+    [Header("Online: desactivar para recibir las cartas del servidor")]
+    [SerializeField] private bool repartirAlIniciar = true;
+
     private const int NumeroJugadores = 4;
     private const int CartasPorJugador = 4;
 
@@ -35,7 +38,30 @@ public class RepartoPrueba : MonoBehaviour
 
     private void Start()
     {
-        RepartirMano();
+        if (repartirAlIniciar)
+            RepartirMano();
+    }
+
+    public void DesactivarRepartoInicial()
+    {
+        repartirAlIniciar = false;
+    }
+
+    public void EstablecerManoExterna(int jugador, string[] nuevasCartas)
+    {
+        if (jugador < 0 || jugador >= NumeroJugadores ||
+            nuevasCartas == null || nuevasCartas.Length != CartasPorJugador)
+        {
+            Debug.LogError("EstablecerManoExterna: datos de mano incorrectos.");
+            return;
+        }
+
+        for (int i = 0; i < CartasPorJugador; i++)
+            manos[jugador, i] = nuevasCartas[i] ?? "";
+
+        if (jugador == 0 && ValidarCartas() &&
+            !string.IsNullOrEmpty(manos[0, 0]))
+            ActualizarManoLocal();
     }
 
     public void RepartirMano()

@@ -121,12 +121,17 @@ public class PartidaOnlineMus : NetworkBehaviour
     [SerializeField] private bool siguienteManoManual = true;
     [SerializeField] private TextAsset parametrosBotEntrenado;
 
+    [Header("Interfaz de prueba (desactivar en la mesa 3D)")]
+    [SerializeField] private bool mostrarPanelPrueba = true;
+    [SerializeField] private bool mostrarHistorial = true;
+
     [Header("Registro para entrenamiento")]
     [SerializeField] private bool registrarDecisiones = true;
 
     public event Action<EventoMus> EventoRecibido;
     public event Action<int, TipoSenalMus> SenalRecibida;
     public event Action ManoPrivadaActualizada;
+    public event Action<int[]> ManosReveladas;
 
     public EstadoPublicoMus Estado => estado;
     public int PuestoLocal { get; private set; } = -1;
@@ -576,6 +581,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private void ManosReveladasRpc(ManosReveladasMus manos)
     {
         manosReveladas = manos.Cartas;
+        ManosReveladas?.Invoke(manos.Cartas);
     }
 
     private static string TextoEvento(EventoMus e)
@@ -646,10 +652,22 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private static string Nombre(int p) => p >= 0 && p < 4 ? p + " " + NombresPuesto[p] : "-";
 
+    public bool PartidaEmpezada => estado.EnCurso || estado.ParejaGanadora >= 0;
+
     private void OnGUI()
     {
         if (!IsSpawned)
             return;
+
+        if (!mostrarPanelPrueba)
+        {
+            DibujarControlesCompactos();
+
+            if (mostrarHistorial && PartidaEmpezada)
+                DibujarHistorial();
+
+            return;
+        }
 
         float ancho = Mathf.Min(560f, Screen.width - 40f);
         GUILayout.BeginArea(new Rect(20, 240, ancho, Screen.height - 260), "MUS TINKO - PARTIDA ONLINE", GUI.skin.window);
@@ -743,6 +761,46 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         foreach (string e in ultimosEventos)
             GUILayout.Label(e);
+
+        GUILayout.EndArea();
+    }
+
+    private void DibujarControlesCompactos()
+    {
+        if (!IsServer)
+        {
+            if (!PartidaEmpezada)
+            {
+                GUILayout.BeginArea(new Rect(20, 240, 360, 60), GUI.skin.window);
+                GUILayout.Label("Esperando a que el host empiece la partida...");
+                GUILayout.EndArea();
+            }
+
+            return;
+        }
+
+        GUILayout.BeginArea(new Rect(20, 240, 360, 150), "HOST", GUI.skin.window);
+
+        if (!PartidaEmpezada)
+        {
+            GUILayout.Label("Conectados: " + NetworkManager.ConnectedClientsIds.Count + " (el resto, bots)");
+
+            if (GUILayout.Button("EMPEZAR PARTIDA", GUILayout.Height(32)))
+                EmpezarPartidaServidor();
+        }
+        else if (!estado.EnCurso)
+        {
+            if (GUILayout.Button("NUEVA PARTIDA", GUILayout.Height(32)))
+                EmpezarPartidaServidor();
+        }
+        else
+        {
+            if (estado.FaseActual == FaseMus.FinMano && siguienteManoManual &&
+                GUILayout.Button("SIGUIENTE MANO", GUILayout.Height(32)))
+                SiguienteManoServidor();
+
+            DibujarControlesHost();
+        }
 
         GUILayout.EndArea();
     }
