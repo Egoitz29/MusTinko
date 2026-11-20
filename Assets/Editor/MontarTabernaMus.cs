@@ -17,6 +17,13 @@ public class MontarTabernaMus : EditorWindow
     private float multiplicadorLuces = 1.5f;
     private bool ajustarAmbiente = true;
     private float intensidadSol = 0.35f;
+    private bool mesaRedonda = true;
+    private bool sillas = true;
+    private bool sillaParaTi;
+    private bool luzSobreLaMesa = true;
+    private float fuerzaLuzMesa = 3f;
+    private bool sombrasEnLuces;
+    private bool modoMovil;
 
     [MenuItem("Mus TINKO/Montar taberna alrededor de la mesa")]
     public static void Abrir()
@@ -40,6 +47,16 @@ public class MontarTabernaMus : EditorWindow
         multiplicadorLuces = EditorGUILayout.Slider("Fuerza de las luces", multiplicadorLuces, 0.2f, 4f);
         ajustarAmbiente = EditorGUILayout.Toggle("Ambiente calido de interior", ajustarAmbiente);
         intensidadSol = EditorGUILayout.Slider("Luz del sol (Directional)", intensidadSol, 0f, 1.5f);
+        sombrasEnLuces = EditorGUILayout.Toggle("Sombras en las antorchas (pesado)", sombrasEnLuces);
+        modoMovil = EditorGUILayout.Toggle("Modo movil (menos luces, para Android)", modoMovil);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Mesa de Mus", EditorStyles.boldLabel);
+        mesaRedonda = EditorGUILayout.Toggle("Mesa redonda del pack", mesaRedonda);
+        sillas = EditorGUILayout.Toggle("Sillas en los asientos", sillas);
+        sillaParaTi = EditorGUILayout.Toggle("Silla tambien en tu sitio", sillaParaTi);
+        luzSobreLaMesa = EditorGUILayout.Toggle("Luz calida sobre la mesa", luzSobreLaMesa);
+        fuerzaLuzMesa = EditorGUILayout.Slider("Fuerza luz de la mesa", fuerzaLuzMesa, 0.5f, 8f);
 
         EditorGUILayout.Space();
 
@@ -115,6 +132,9 @@ public class MontarTabernaMus : EditorWindow
 
             foreach (LuzTaberna l in Luces)
             {
+                if (modoMovil && l.Alcance < 6f)
+                    continue;
+
                 GameObject go = new("Luz_" + (++i));
                 go.transform.SetParent(luces, false);
                 go.transform.localPosition = l.Posicion;
@@ -123,9 +143,12 @@ public class MontarTabernaMus : EditorWindow
                 luz.color = l.Color;
                 luz.intensity = l.Intensidad * multiplicadorLuces;
                 luz.range = l.Alcance;
-                luz.shadows = l.Alcance > 6f ? LightShadows.Soft : LightShadows.None;
+                luz.shadows = sombrasEnLuces && l.Alcance > 6f ? LightShadows.Soft : LightShadows.None;
+                luz.renderMode = modoMovil ? LightRenderMode.ForceVertex : LightRenderMode.Auto;
             }
         }
+
+        MontarMesa(raiz.transform);
 
         if (ajustarAmbiente)
         {
@@ -146,6 +169,107 @@ public class MontarTabernaMus : EditorWindow
         EditorSceneManager.MarkSceneDirty(raiz.scene);
         Selection.activeGameObject = raiz;
         Debug.Log("[TABERNA] Montada: " + creados + " piezas, " + omitidos + " omitidas (cerca de la mesa o sin prefab). Guarda la escena para conservarla.");
+    }
+
+    private void MontarMesa(Transform raiz)
+    {
+        Transform mesaMus = Hijo(raiz, "MesaMus");
+        GameObject tablero = GameObject.Find("TableroMesa");
+        Vector3 centroMesa = tablero != null ? tablero.transform.position : centro;
+        centroMesa.y = 0f;
+        float alturaMesa = tablero != null ? Limites(tablero).max.y : 0.85f;
+
+        if (mesaRedonda)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Rutas["Round Large Table"]);
+
+            if (prefab != null)
+            {
+                GameObject mesa = (GameObject)PrefabUtility.InstantiatePrefab(prefab, mesaMus);
+                mesa.name = "MesaRedondaMus";
+                mesa.transform.SetPositionAndRotation(centroMesa, Quaternion.identity);
+                mesa.transform.localScale = Vector3.one;
+                float alto = Limites(mesa).size.y;
+
+                if (alto > 0.01f)
+                    mesa.transform.localScale = Vector3.one * (alturaMesa / alto);
+
+                Bounds b = Limites(mesa);
+                mesa.transform.position += new Vector3(centroMesa.x - b.center.x, -b.min.y, centroMesa.z - b.center.z);
+
+                if (tablero != null)
+                    foreach (Renderer r in tablero.GetComponentsInChildren<Renderer>())
+                    {
+                        Undo.RecordObject(r, "Ocultar tablero");
+                        r.enabled = false;
+                    }
+            }
+        }
+
+        if (sillas)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Rutas["Backing Chair"]);
+
+            foreach (string nombre in new[] { "AsientoIzquierda", "AsientoDerecha", "AsientoFrente", "AsientoJugador" })
+            {
+                GameObject asiento = GameObject.Find(nombre);
+
+                if (asiento == null || prefab == null || (nombre == "AsientoJugador" && !sillaParaTi))
+                    continue;
+
+                float alturaAsiento = Limites(asiento).max.y;
+                Vector3 pos = asiento.transform.position;
+                pos.y = 0f;
+                Vector3 haciaMesa = centroMesa - pos;
+                haciaMesa.y = 0f;
+
+                GameObject silla = (GameObject)PrefabUtility.InstantiatePrefab(prefab, mesaMus);
+                silla.name = "Silla_" + nombre;
+                silla.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(haciaMesa.sqrMagnitude > 0.001f ? haciaMesa : Vector3.forward));
+                silla.transform.localScale = Vector3.one;
+                float alto = Limites(silla).size.y;
+
+                if (alto > 0.01f)
+                    silla.transform.localScale = Vector3.one * (alturaAsiento / (0.47f * alto));
+
+                silla.transform.position += Vector3.up * -Limites(silla).min.y;
+
+                foreach (Renderer r in asiento.GetComponentsInChildren<Renderer>())
+                {
+                    Undo.RecordObject(r, "Ocultar asiento");
+                    r.enabled = false;
+                }
+            }
+        }
+
+        if (luzSobreLaMesa)
+        {
+            GameObject go = new("LuzSobreLaMesa");
+            go.transform.SetParent(mesaMus, false);
+            go.transform.position = centroMesa + Vector3.up * 2.4f;
+            Light luz = go.AddComponent<Light>();
+            luz.type = LightType.Point;
+            luz.color = new Color(1f, 0.85f, 0.65f);
+            luz.intensity = fuerzaLuzMesa;
+            luz.range = 4.5f;
+            luz.shadows = LightShadows.None;
+            luz.renderMode = LightRenderMode.ForcePixel;
+        }
+    }
+
+    private static Bounds Limites(GameObject objeto)
+    {
+        Renderer[] renderers = objeto.GetComponentsInChildren<Renderer>();
+
+        if (renderers.Length == 0)
+            return new Bounds(objeto.transform.position, Vector3.zero);
+
+        Bounds b = renderers[0].bounds;
+
+        for (int i = 1; i < renderers.Length; i++)
+            b.Encapsulate(renderers[i].bounds);
+
+        return b;
     }
 
     private static Transform Hijo(Transform padre, string nombre)

@@ -59,7 +59,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
     [Header("Colores de los personajes (segun su nombre)")]
     [SerializeField] private bool colorearPersonajes = true;
-    [UnityEngine.Range(0f, 1f)][SerializeField] private float intensidadColor = 0.75f;
+    [Tooltip("0 = sin color, 1 = color puro. Valores bajos dejan los personajes claros como antes.")]
+    [UnityEngine.Range(0f, 1f)][SerializeField] private float intensidadColorSuave = 0.4f;
 
     [Header("Gestos (senas) mas claros, con GestosMus")]
     [SerializeField] private bool usarGestosClaros = true;
@@ -173,10 +174,24 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         for (int sitio = 0; sitio < 4; sitio++)
         {
-            GameObject posicion = GameObject.Find(ColoresJugadoresMus.Nombres[sitio] + "_Posicion");
+            GameObject posicion = ModeloEnSitio(sitio);
             int puesto = (local + sitio) % 4;
-            ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColor);
+            ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColorSuave);
         }
+    }
+
+    private GameObject[] modelosPorSitio;
+
+    private GameObject ModeloEnSitio(int sitio)
+    {
+        if (modelosPorSitio == null)
+        {
+            Transform camara = camaraJugador != null ? camaraJugador.transform : Camera.main != null ? Camera.main.transform : null;
+            Vector3 referencia = camara != null && !camaraMovida ? camara.position : camara != null ? posicionCamaraGuardada : new Vector3(0f, 0f, -3f);
+            modelosPorSitio = SitiosMesaMus.Asignar(Vector3.zero, referencia);
+        }
+
+        return modelosPorSitio[sitio];
     }
 
     private void PrepararGestos()
@@ -186,7 +201,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
             if (gestos[sitio] != null)
                 continue;
 
-            GameObject posicion = GameObject.Find(ColoresJugadoresMus.Nombres[sitio] + "_Posicion");
+            GameObject posicion = ModeloEnSitio(sitio);
 
             if (posicion == null)
                 continue;
@@ -931,6 +946,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
     private void OnGUI()
     {
+        EscalaGUIMus.Aplicar();
+
         if (mostrarHud && !enRevision)
             DibujarHud();
 
@@ -949,7 +966,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         if (!tablaVisible)
         {
-            Rect zonaBotones = new(Screen.width / 2f - 200, Screen.height - 70, 400, 50);
+            Rect zonaBotones = new(EscalaGUIMus.Ancho / 2f - 200, EscalaGUIMus.Alto - 70, 400, 50);
             GUILayout.BeginArea(zonaBotones);
             GUILayout.BeginHorizontal();
 
@@ -964,9 +981,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
             return;
         }
 
-        float ancho = Mathf.Min(1150f, Screen.width - 40f);
-        float alto = Mathf.Min(660f, Screen.height - 40f);
-        Rect zona = new(Screen.width / 2f - ancho / 2f, Screen.height / 2f - alto / 2f, ancho, alto);
+        float ancho = Mathf.Min(1150f, EscalaGUIMus.Ancho - 40f);
+        float alto = Mathf.Min(660f, EscalaGUIMus.Alto - 40f);
+        Rect zona = new(EscalaGUIMus.Ancho / 2f - ancho / 2f, EscalaGUIMus.Alto / 2f - alto / 2f, ancho, alto);
         GUI.DrawTexture(zona, texFondo);
         GUI.DrawTexture(zona, texFondo);
 
@@ -1125,8 +1142,8 @@ public class VistaMesaOnlineMus : MonoBehaviour
         int suyos = pareja == 0 ? e.Puntos1 : e.Puntos0;
         int limite = Mathf.Max(1, e.Limite);
 
-        float ancho = Mathf.Min(700f, Screen.width - 40f);
-        float x = Screen.width / 2f - ancho / 2f;
+        float ancho = Mathf.Min(700f, EscalaGUIMus.Ancho - 40f);
+        float x = EscalaGUIMus.Ancho / 2f - ancho / 2f;
         GUI.DrawTexture(new Rect(x, 8, ancho, 96), texFondo);
 
         float wm = 160f;
@@ -1163,10 +1180,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         if (!string.IsNullOrEmpty(banner))
-            GUI.Label(new Rect(Screen.width / 2f - 260, 112, 520, 42), banner, estiloBanner);
+            GUI.Label(new Rect(EscalaGUIMus.Ancho / 2f - 260, 112, 520, 42), banner, estiloBanner);
 
         if (!string.IsNullOrEmpty(ayuda))
-            GUI.Label(new Rect(Screen.width / 2f - 260, 156, 520, 28), ayuda, estiloAyuda);
+            GUI.Label(new Rect(EscalaGUIMus.Ancho / 2f - 260, 156, 520, 28), ayuda, estiloAyuda);
 
         if (estiloSena == null)
         {
@@ -1175,7 +1192,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         if (avisoSena != null && Time.time < finAvisoSena)
-            GUI.Label(new Rect(Screen.width / 2f - 300, 190, 600, 34), avisoSena, estiloSena);
+            GUI.Label(new Rect(EscalaGUIMus.Ancho / 2f - 300, 190, 600, 34), avisoSena, estiloSena);
 
         if (mostrarBotonesSenas)
             DibujarBotonesSenas(e, local);
@@ -1194,7 +1211,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
                 posibles.Add(tipo);
 
         float alto = 34 + posibles.Count * 34;
-        Rect zona = new(20, Screen.height / 2f - alto / 2f, 230, Mathf.Max(alto, 60));
+        Rect zona = new(20, EscalaGUIMus.Alto / 2f - alto / 2f, 230, Mathf.Max(alto, 60));
         GUI.DrawTexture(zona, texFondo);
         GUI.Label(new Rect(zona.x, zona.y + 4, zona.width, 24), "SENAS A TU COMPANERO", estiloTitulo);
 

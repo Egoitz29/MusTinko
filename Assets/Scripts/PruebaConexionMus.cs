@@ -1,14 +1,36 @@
-
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class PruebaConexionMus : MonoBehaviour
 {
+    private const string ClaveIp = "MusTinko_UltimaIp";
+
+    [SerializeField] private ushort puerto = 7777;
+
     private NetworkManager red;
     private string estado = "Sin conectar";
+    private string ipHost = "127.0.0.1";
+    private string ipLocal = "";
 
     private void Start()
     {
+        Application.targetFrameRate = 60;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
+        try
+        {
+            ipHost = PlayerPrefs.GetString(ClaveIp, "127.0.0.1");
+        }
+        catch
+        {
+            ipHost = "127.0.0.1";
+        }
+
+        ipLocal = ObtenerIpLocal();
         red = NetworkManager.Singleton;
 
         if (red == null)
@@ -24,21 +46,24 @@ public class PruebaConexionMus : MonoBehaviour
 
     private void OnGUI()
     {
+        EscalaGUIMus.Aplicar();
+
         if (red != null && red.IsListening)
         {
             string texto = red.IsHost
-                ? "HOST  |  conectados: " + red.ConnectedClients.Count
+                ? "HOST  |  conectados: " + red.ConnectedClients.Count + (string.IsNullOrEmpty(ipLocal) ? "" : "  |  tu IP: " + ipLocal)
                 : (red.IsConnectedClient ? "CLIENTE  |  conectado" : "CLIENTE  |  conectando...");
 
-            GUI.Box(new Rect(20, Screen.height - 34, 260, 26), texto);
+            GUI.Box(new Rect(20, EscalaGUIMus.Alto - 40, 420, 30), texto);
+
+            if (GUI.Button(new Rect(450, EscalaGUIMus.Alto - 40, 110, 30), "SALIR"))
+                red.Shutdown();
+
             return;
         }
 
-        GUILayout.BeginArea(
-            new Rect(20, 20, 350, 210),
-            "MUS TINKO - MULTIJUGADOR",
-            GUI.skin.window
-        );
+        float ancho = Mathf.Min(460f, EscalaGUIMus.Ancho - 40f);
+        GUILayout.BeginArea(new Rect(20, 20, ancho, 330), "MUS TINKO", GUI.skin.window);
 
         GUILayout.Label("Estado: " + estado);
 
@@ -48,41 +73,39 @@ public class PruebaConexionMus : MonoBehaviour
             return;
         }
 
-        if (!red.IsListening)
-        {
-            if (GUILayout.Button("INICIAR HOST", GUILayout.Height(40)))
-                IniciarHost();
+        if (GUILayout.Button("CREAR PARTIDA (host, el resto bots)", GUILayout.Height(54)))
+            IniciarHost();
 
-            if (GUILayout.Button("CONECTAR CLIENTE", GUILayout.Height(40)))
-                IniciarCliente();
-        }
-        else
-        {
-            GUILayout.Label(red.IsHost ? "ROL: HOST" : "ROL: CLIENTE");
+        if (!string.IsNullOrEmpty(ipLocal))
+            GUILayout.Label("Tu IP en esta red: " + ipLocal + "   (los demas se unen con ella)");
 
-            if (red.IsHost)
-            {
-                GUILayout.Label(
-                    "Jugadores conectados: " + red.ConnectedClients.Count
-                );
-            }
-            else
-            {
-                GUILayout.Label(
-                    red.IsConnectedClient ? "Conexion establecida" : "Conectando..."
-                );
-            }
-        }
+        GUILayout.Space(10);
+        GUILayout.Label("Unirse a la partida de otro (misma WiFi):");
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("IP del host:", GUILayout.Width(90));
+        ipHost = GUILayout.TextField(ipHost, 40, GUILayout.Height(40));
+        GUILayout.EndHorizontal();
+
+        if (GUILayout.Button("UNIRSE", GUILayout.Height(54)))
+            IniciarCliente();
 
         GUILayout.EndArea();
     }
 
+    private UnityTransport Transporte => red != null ? red.GetComponent<UnityTransport>() : null;
+
     private void IniciarHost()
     {
+        UnityTransport transporte = Transporte;
+
+        if (transporte != null)
+            transporte.SetConnectionData("127.0.0.1", puerto, "0.0.0.0");
+
         if (red.StartHost())
         {
             estado = "Host iniciado";
-            Debug.Log("[MUS ONLINE] Host iniciado correctamente.");
+            Debug.Log("[MUS ONLINE] Host iniciado. IP local: " + ipLocal + ":" + puerto);
         }
         else
         {
@@ -93,16 +116,67 @@ public class PruebaConexionMus : MonoBehaviour
 
     private void IniciarCliente()
     {
+        string ip = string.IsNullOrWhiteSpace(ipHost) ? "127.0.0.1" : ipHost.Trim();
+        UnityTransport transporte = Transporte;
+
+        if (transporte != null)
+            transporte.SetConnectionData(ip, puerto);
+
+        try
+        {
+            PlayerPrefs.SetString(ClaveIp, ip);
+            PlayerPrefs.Save();
+        }
+        catch
+        {
+        }
+
         if (red.StartClient())
         {
-            estado = "Conectando...";
-            Debug.Log("[MUS ONLINE] Intentando conectar al host.");
+            estado = "Conectando a " + ip + "...";
+            Debug.Log("[MUS ONLINE] Intentando conectar a " + ip + ":" + puerto);
         }
         else
         {
             estado = "Error al iniciar cliente";
             Debug.LogError("[MUS ONLINE] No se pudo iniciar el cliente.");
         }
+    }
+
+    private static string ObtenerIpLocal()
+    {
+        try
+        {
+            foreach (NetworkInterface interfaz in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (interfaz.OperationalStatus != OperationalStatus.Up ||
+                    interfaz.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                    continue;
+
+                foreach (UnicastIPAddressInformation direccion in interfaz.GetIPProperties().UnicastAddresses)
+                {
+                    IPAddress ip = direccion.Address;
+
+                    if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
+                        return ip.ToString();
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            foreach (IPAddress ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+                if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
+                    return ip.ToString();
+        }
+        catch
+        {
+        }
+
+        return "";
     }
 
     private void ClienteConectado(ulong id)
@@ -126,7 +200,7 @@ public class PruebaConexionMus : MonoBehaviour
         if (red.IsHost)
             estado = "Jugadores conectados: " + red.ConnectedClients.Count;
         else
-            estado = "Cliente desconectado";
+            estado = "Desconectado. Revisa la IP y que esteis en la misma WiFi.";
     }
 
     private void OnDestroy()

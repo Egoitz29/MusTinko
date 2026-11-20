@@ -198,6 +198,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private bool juegoEnHistorial;
     private Vector2 scrollHistorial;
     private GUIStyle estiloHistorial;
+    private bool historialAbierto = !Application.isMobilePlatform;
 
     public bool ModoRevision { get; set; }
     public bool HistorialAlRitmoDeLaMesa { get; set; }
@@ -818,6 +819,8 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private void OnGUI()
     {
+        EscalaGUIMus.Aplicar();
+
         if (!IsSpawned)
             return;
 
@@ -834,8 +837,8 @@ public class PartidaOnlineMus : NetworkBehaviour
             return;
         }
 
-        float ancho = Mathf.Min(560f, Screen.width - 40f);
-        GUILayout.BeginArea(new Rect(20, 240, ancho, Screen.height - 260), "MUS TINKO - PARTIDA ONLINE", GUI.skin.window);
+        float ancho = Mathf.Min(560f, EscalaGUIMus.Ancho - 40f);
+        GUILayout.BeginArea(new Rect(20, 240, ancho, EscalaGUIMus.Alto - 260), "MUS TINKO - PARTIDA ONLINE", GUI.skin.window);
         scroll = GUILayout.BeginScrollView(scroll);
 
         if (!estado.EnCurso && estado.ParejaGanadora < 0)
@@ -925,8 +928,23 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (estiloHistorial == null)
             estiloHistorial = new GUIStyle(GUI.skin.label) { richText = true, fontSize = 14 };
 
-        float ancho = Mathf.Min(380f, Screen.width * 0.3f);
-        GUILayout.BeginArea(new Rect(Screen.width - ancho - 20, 20, ancho, Screen.height - 40), "HISTORIAL DE LA MANO", GUI.skin.window);
+        float ancho = Mathf.Min(380f, EscalaGUIMus.Ancho * 0.3f);
+        float x = EscalaGUIMus.Ancho - ancho - 20;
+
+        if (!historialAbierto)
+        {
+            if (GUI.Button(new Rect(EscalaGUIMus.Ancho - 150, 20, 130, 40), "HISTORIAL"))
+                historialAbierto = true;
+            return;
+        }
+
+        if (GUI.Button(new Rect(x, 20, ancho, 30), "OCULTAR HISTORIAL"))
+        {
+            historialAbierto = false;
+            return;
+        }
+
+        GUILayout.BeginArea(new Rect(x, 52, ancho, EscalaGUIMus.Alto * 0.58f), "HISTORIAL DE LA MANO", GUI.skin.window);
         scrollHistorial = GUILayout.BeginScrollView(scrollHistorial);
 
         foreach (string e in ultimosEventos)
