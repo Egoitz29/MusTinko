@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 602494583}
   - component: {fileID: 602494585}
   - component: {fileID: 602494586}
+  - component: {fileID: 602494587}
   m_Layer: 0
   m_Name: EstadoPartidaOnline
   m_TagString: Untagged
@@ -187,7 +188,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 602494582}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80d219d74c8f1eb4983e51ef813ee196, type: 3}
   m_Name: 
@@ -200,12 +201,31 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 602494582}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 814a750603e53c64a8289429b9199b14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PruebaTurnosMusOnline
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &602494587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 602494582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f57e9adbd2319424c84d9e1c52a5993e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PartidaOnlineMus
+  ShowTopMostFoldoutHeaderGroup: 1
+  limiteTantos: 40
+  maxRondasMus: 0
+  esperaBot: 0.8
+  esperaFinMano: 4
+  parametrosBotEntrenado: {fileID: 0}
+  registrarDecisiones: 1
 --- !u!1 &705133819
 GameObject:
   m_ObjectHideFlags: 0
