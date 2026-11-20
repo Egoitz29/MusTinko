@@ -189,6 +189,13 @@ public class PartidaOnlineMus : NetworkBehaviour
     private int[] manosReveladas;
     private int mascaraDescarte;
     private readonly List<string> ultimosEventos = new();
+    private bool reiniciarHistorial = true;
+    private int manoHistorial;
+    private FaseMus faseHistorial = FaseMus.FinPartida;
+    private Vector2 scrollHistorial;
+    private GUIStyle estiloHistorial;
+
+    public bool ModoRevision { get; set; }
     private Vector2 scroll;
 
     public override void OnNetworkSpawn()
@@ -590,10 +597,7 @@ public class PartidaOnlineMus : NetworkBehaviour
                 break;
         }
 
-        string linea = TextoEvento(e);
-
-        if (linea != null)
-            ultimosEventos.Add(linea);
+        AnadirAlHistorial(e);
 
 
         EventoRecibido?.Invoke(e);
@@ -610,7 +614,7 @@ public class PartidaOnlineMus : NetworkBehaviour
                 ? "Haces la sena " + (TipoSenalMus)tipo
                 : NombresPuesto[jugador] + " (tu companero) te hace la sena " + (TipoSenalMus)tipo;
 
-            ultimosEventos.Add(">> " + texto);
+            AnadirLinea("<color=#C9A0FF>>> " + texto + "</color>");
             Debug.Log("[MUS ONLINE] " + texto);
         }
 
@@ -625,18 +629,89 @@ public class PartidaOnlineMus : NetworkBehaviour
         ManosReveladas?.Invoke(manos.Cartas);
     }
 
-    private static string TextoEvento(EventoMus e)
+    private void AnadirAlHistorial(EventoMus e)
     {
+        if (reiniciarHistorial && e.Tipo != TipoEventoMus.FinMano)
+        {
+            ultimosEventos.Clear();
+            manoHistorial++;
+            reiniciarHistorial = false;
+            faseHistorial = FaseMus.FinPartida;
+            AnadirLinea("<b>MANO " + manoHistorial + "</b>   (mano: " + NombreCorto(estado.Mano) + ")");
+        }
+
+        if (e.Tipo != TipoEventoMus.FinMano && e.Fase != faseHistorial)
+        {
+            faseHistorial = e.Fase;
+            AnadirLinea("<b><color=" + ColorFase(e.Fase) + ">== " + NombreFase(e.Fase) + " ==</color></b>");
+        }
+
+        string color = ColorFase(e.Fase);
+
         switch (e.Tipo)
         {
             case TipoEventoMus.Accion:
-                return NombreCorto(e.Jugador) + " dice " + e.Accion;
+                AnadirLinea("<color=" + color + ">   " + NombreCorto(e.Jugador) + ": " + e.Accion + "</color>");
+                break;
             case TipoEventoMus.Declaracion:
-                return NombreCorto(e.Jugador) + ": " + (e.Fase == FaseMus.Pares ? "PARES " : "JUEGO ") + (e.Dato == 1 ? "SI" : "NO");
+                AnadirLinea("<color=" + color + ">   " + NombreCorto(e.Jugador) + ": " +
+                            (e.Fase == FaseMus.Pares ? "pares " : "juego ") + (e.Dato == 1 ? "SI" : "no") + "</color>");
+                break;
             case TipoEventoMus.LanceCerrado:
-                return "----- " + e.Fase.ToString().ToUpper() + " cerrado (" + (MotorEnvitesMus.EstadoEnvite)e.Dato + ") -----";
+                AnadirLinea("<b><color=" + color + ">   -> " + ResultadoLance(e) + "</color></b>");
+                break;
             default:
-                return "===== FIN DE LA MANO =====";
+                AnadirLinea("<b>FIN DE LA MANO</b>");
+                reiniciarHistorial = true;
+                break;
+        }
+    }
+
+    private string ResultadoLance(EventoMus e)
+    {
+        string pareja = PuestoLocal < 0
+            ? (e.Jugador == 0 ? "pareja 0-2" : "pareja 1-3")
+            : (e.Jugador == PuestoLocal % 2 ? "NOSOTROS" : "ELLOS");
+
+        switch ((MotorEnvitesMus.EstadoEnvite)e.Dato)
+        {
+            case MotorEnvitesMus.EstadoEnvite.Aceptado: return "Querido a " + e.Accion.Valor + " (se cuenta al final)";
+            case MotorEnvitesMus.EstadoEnvite.Rechazado: return "No querido: +" + e.Accion.Valor + " " + pareja;
+            case MotorEnvitesMus.EstadoEnvite.OrdagoAceptado: return "ORDAGO QUERIDO";
+            default: return "En paso (se cuenta al final)";
+        }
+    }
+
+    private void AnadirLinea(string linea)
+    {
+        ultimosEventos.Add(linea);
+
+        while (ultimosEventos.Count > 60)
+            ultimosEventos.RemoveAt(0);
+
+        scrollHistorial.y = float.MaxValue;
+    }
+
+    private static string ColorFase(FaseMus fase)
+    {
+        switch (fase)
+        {
+            case FaseMus.Mus: return "#7CD67C";
+            case FaseMus.Descarte: return "#BBBBBB";
+            case FaseMus.Grande: return "#FFC94D";
+            case FaseMus.Chica: return "#6EC6FF";
+            case FaseMus.Pares: return "#FF8AD8";
+            case FaseMus.JuegoPunto: return "#FF9B5E";
+            default: return "#FFFFFF";
+        }
+    }
+
+    private static string NombreFase(FaseMus fase)
+    {
+        switch (fase)
+        {
+            case FaseMus.JuegoPunto: return "JUEGO / PUNTO";
+            default: return fase.ToString().ToUpper();
         }
     }
 
@@ -710,6 +785,9 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         if (!mostrarPanelPrueba)
         {
+            if (ModoRevision)
+                return;
+
             DibujarControlesCompactos();
 
             if (mostrarHistorial && PartidaEmpezada)
@@ -806,15 +884,17 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private void DibujarHistorial()
     {
-        float ancho = Mathf.Min(420f, Screen.width * 0.35f);
-        GUILayout.BeginArea(new Rect(Screen.width - ancho - 20, 20, ancho, Screen.height - 40), "HISTORIAL (lo mas reciente abajo)", GUI.skin.window);
+        if (estiloHistorial == null)
+            estiloHistorial = new GUIStyle(GUI.skin.label) { richText = true, fontSize = 14 };
 
-        while (ultimosEventos.Count > 30)
-            ultimosEventos.RemoveAt(0);
+        float ancho = Mathf.Min(380f, Screen.width * 0.3f);
+        GUILayout.BeginArea(new Rect(Screen.width - ancho - 20, 20, ancho, Screen.height - 40), "HISTORIAL DE LA MANO", GUI.skin.window);
+        scrollHistorial = GUILayout.BeginScrollView(scrollHistorial);
 
         foreach (string e in ultimosEventos)
-            GUILayout.Label(e);
+            GUILayout.Label(e, estiloHistorial);
 
+        GUILayout.EndScrollView();
         GUILayout.EndArea();
     }
 
@@ -824,7 +904,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         {
             if (!PartidaEmpezada)
             {
-                GUILayout.BeginArea(new Rect(20, 240, 360, 60), GUI.skin.window);
+                GUILayout.BeginArea(new Rect(20, 20, 360, 60), GUI.skin.window);
                 GUILayout.Label("Esperando a que el host empiece la partida...");
                 GUILayout.EndArea();
             }
@@ -832,7 +912,7 @@ public class PartidaOnlineMus : NetworkBehaviour
             return;
         }
 
-        GUILayout.BeginArea(new Rect(20, 240, 360, 150), "HOST", GUI.skin.window);
+        GUILayout.BeginArea(new Rect(20, 20, 360, 150), "HOST", GUI.skin.window);
 
         if (!PartidaEmpezada)
         {

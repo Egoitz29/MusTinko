@@ -24,6 +24,16 @@ public class PruebaConexionMus : MonoBehaviour
 
     private void OnGUI()
     {
+        if (red != null && red.IsListening)
+        {
+            string texto = red.IsHost
+                ? "HOST  |  conectados: " + red.ConnectedClients.Count
+                : (red.IsConnectedClient ? "CLIENTE  |  conectado" : "CLIENTE  |  conectando...");
+
+            GUI.Box(new Rect(20, Screen.height - 34, 260, 26), texto);
+            return;
+        }
+
         GUILayout.BeginArea(
             new Rect(20, 20, 350, 210),
             "MUS TINKO - MULTIJUGADOR",
