@@ -32,6 +32,7 @@ public class PartidaMus
     private readonly int[] puntos = new int[2];
     private readonly int[] puntosInicioMano = new int[2];
     private readonly List<EventoMus> historial = new();
+    private readonly List<ConceptoTanteoMus> desglose = new();
     private readonly List<TipoSenalMus>[] senalesRecibidas =
     {
         new List<TipoSenalMus>(), new List<TipoSenalMus>(),
@@ -57,6 +58,7 @@ public class PartidaMus
     public string MotivoVictoria { get; private set; } = "";
     public bool PartidaTerminada => Fase == FaseMus.FinPartida;
     public IReadOnlyList<EventoMus> Historial => historial;
+    public IReadOnlyList<ConceptoTanteoMus> Desglose => desglose;
     public MotorEnvitesMus Envite => turnos.Motor;
 
     public event Action<EventoMus> EventoRegistrado;
@@ -146,6 +148,7 @@ public class PartidaMus
         }
 
         historial.Clear();
+        desglose.Clear();
         puntosInicioMano[0] = puntos[0];
         puntosInicioMano[1] = puntos[1];
         turnos.Reiniciar();
@@ -446,6 +449,8 @@ public class PartidaMus
                 registro.Tipo = TipoRegistro.Rechazado;
                 registro.Tantos = motor.TantosPorNegada;
                 puntos[motor.ParejaGanadoraNegada] += motor.TantosPorNegada;
+                desglose.Add(new ConceptoTanteoMus(indice, TipoConceptoMus.NoQuerido,
+                    motor.ParejaGanadoraNegada, motor.TantosPorNegada));
                 break;
 
             case MotorEnvitesMus.EstadoEnvite.OrdagoAceptado:
@@ -479,6 +484,8 @@ public class PartidaMus
         if (ganador < 0)
             ganador = Mano;
 
+        desglose.Add(new ConceptoTanteoMus(indice, TipoConceptoMus.Ordago, ganador % 2, 0, ganador));
+
         Registrar(TipoEventoMus.LanceCerrado, -1, default, (int)MotorEnvitesMus.EstadoEnvite.OrdagoAceptado);
         TerminarPartida(ganador % 2, true, "Ordago aceptado en " + Fase);
     }
@@ -496,16 +503,15 @@ public class PartidaMus
             int ganador = GanadorLance(lance, out bool hayJuego);
             int pareja = ganador >= 0 ? ganador % 2 : -1;
             RegistroLance registro = registros[lance];
-            string nombre = NombreLance(lance, hayJuego);
 
             if (registro.Tipo == TipoRegistro.Aceptado)
             {
                 if (pareja >= 0)
-                    Sumar(pareja, registro.Tantos, nombre + " querido", ref ganancia0, ref ganancia1);
+                    Sumar(new ConceptoTanteoMus(lance, TipoConceptoMus.Querido, pareja, registro.Tantos), ref ganancia0, ref ganancia1);
             }
             else if (registro.Tipo == TipoRegistro.Paso && lance <= 1 && pareja >= 0)
             {
-                Sumar(pareja, 1, nombre + " en paso", ref ganancia0, ref ganancia1);
+                Sumar(new ConceptoTanteoMus(lance, TipoConceptoMus.EnPaso, pareja, 1), ref ganancia0, ref ganancia1);
             }
 
             if (lance == 2 && pareja >= 0)
@@ -518,7 +524,7 @@ public class PartidaMus
                     int valor = ValorPares(evaluaciones[j].Pares);
 
                     if (valor > 0)
-                        Sumar(pareja, valor, "Pares J" + j, ref ganancia0, ref ganancia1);
+                        Sumar(new ConceptoTanteoMus(lance, TipoConceptoMus.Pares, pareja, valor, j), ref ganancia0, ref ganancia1);
                 }
             }
 
@@ -531,13 +537,13 @@ public class PartidaMus
                         if (j % 2 != pareja || !evaluaciones[j].TieneJuego)
                             continue;
 
-                        Sumar(pareja, evaluaciones[j].PuntosJuego == 31 ? 3 : 2,
-                            "Juego J" + j, ref ganancia0, ref ganancia1);
+                        Sumar(new ConceptoTanteoMus(lance, TipoConceptoMus.Juego, pareja,
+                            evaluaciones[j].PuntosJuego == 31 ? 3 : 2, j), ref ganancia0, ref ganancia1);
                     }
                 }
                 else
                 {
-                    Sumar(pareja, 1, "Punto", ref ganancia0, ref ganancia1);
+                    Sumar(new ConceptoTanteoMus(lance, TipoConceptoMus.Punto, pareja, 1), ref ganancia0, ref ganancia1);
                 }
             }
         }
@@ -552,15 +558,16 @@ public class PartidaMus
         Registrar(TipoEventoMus.FinMano, -1, default);
     }
 
-    private void Sumar(int pareja, int tantos, string concepto, ref int ganancia0, ref int ganancia1)
+    private void Sumar(ConceptoTanteoMus concepto, ref int ganancia0, ref int ganancia1)
     {
-        if (PartidaTerminada || tantos <= 0)
+        if (PartidaTerminada || concepto.Tantos <= 0)
             return;
 
-        if (pareja == 0) ganancia0 += tantos;
-        else ganancia1 += tantos;
+        if (concepto.Pareja == 0) ganancia0 += concepto.Tantos;
+        else ganancia1 += concepto.Tantos;
 
-        ComprobarVictoria(ganancia0, ganancia1, concepto);
+        desglose.Add(concepto);
+        ComprobarVictoria(ganancia0, ganancia1, concepto.Tipo + " en " + NombreLance(concepto.Lance, true));
     }
 
     private bool ComprobarVictoria(int pendientes0, int pendientes1, string motivo)

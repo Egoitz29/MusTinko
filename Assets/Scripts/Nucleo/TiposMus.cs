@@ -34,6 +34,37 @@ public enum TipoSenalMus
     DosAses
 }
 
+public enum TipoConceptoMus
+{
+    EnPaso,
+    Querido,
+    NoQuerido,
+    Pares,
+    Juego,
+    Punto,
+    Ordago
+}
+
+public readonly struct ConceptoTanteoMus
+{
+    public readonly int Lance;
+    public readonly TipoConceptoMus Tipo;
+    public readonly int Pareja;
+    public readonly int Tantos;
+    public readonly int Jugador;
+
+    public ConceptoTanteoMus(int lance, TipoConceptoMus tipo, int pareja, int tantos, int jugador = -1)
+    {
+        Lance = lance;
+        Tipo = tipo;
+        Pareja = pareja;
+        Tantos = tantos;
+        Jugador = jugador;
+    }
+
+    public bool CobradoAlMomento => Tipo == TipoConceptoMus.NoQuerido;
+}
+
 public enum TipoEventoMus
 {
     Accion,

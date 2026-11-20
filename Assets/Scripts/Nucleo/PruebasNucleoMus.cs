@@ -144,6 +144,36 @@ public static class PruebasNucleoMus
         Comprobar(log, malCerradas == 0, "Todas terminan por 40 tantos u ordago");
         log("  (" + reloj.ElapsedMilliseconds + " ms)");
 
+        log("== Desglose del tanteo ==");
+        bool desgloseCuadra = true;
+        int manosRevisadas = 0;
+        for (int s = 0; s < 300; s++)
+        {
+            PartidaMus pd = new(9000 + s, 40, 4);
+            Random azarD = new(s);
+            pd.IniciarPartida();
+            int pasosD = 0;
+            while (!pd.PartidaTerminada && pasosD++ < 20000)
+            {
+                if (pd.Fase == FaseMus.FinMano)
+                {
+                    int suma0 = 0, suma1 = 0;
+                    foreach (ConceptoTanteoMus c in pd.Desglose)
+                    {
+                        if (c.Pareja == 0) suma0 += c.Tantos; else suma1 += c.Tantos;
+                    }
+                    if (suma0 != pd.PuntosGanadosEnMano(0) || suma1 != pd.PuntosGanadosEnMano(1))
+                        desgloseCuadra = false;
+                    manosRevisadas++;
+                    pd.SiguienteMano();
+                    continue;
+                }
+                List<AccionMus> legalesD = pd.AccionesLegales(pd.JugadorActual);
+                pd.Aplicar(pd.JugadorActual, legalesD[azarD.Next(legalesD.Count)]);
+            }
+        }
+        Comprobar(log, desgloseCuadra && manosRevisadas > 0, "El desglose suma exactamente los tantos de la mano (" + manosRevisadas + " manos)");
+
         log("== Invariantes paso a paso ==");
         bool invariantes = true;
         for (int s = 0; s < 300 && invariantes; s++)

@@ -15,11 +15,40 @@ public static class Program
             case "pruebas": return PruebasNucleoMus.Ejecutar(Console.WriteLine) == 0 ? 0 : 1;
             case "comparar": Comparar(n > 0 ? n : 2000); return 0;
             case "entrenar": Entrenar(n > 0 ? n : 30, args.Length > 2 ? int.Parse(args[2]) : 400); return 0;
+            case "tabla": Tabla(n); return 0;
             case "registrar": Registrar(n > 0 ? n : 200, args.Length > 2 ? args[2] : "salida/experiencias.jsonl"); return 0;
             default:
                 Console.WriteLine("Uso: pruebas | comparar [partidas] | entrenar [generaciones] [partidasPorGen] | registrar [partidas] [archivo]");
                 return 1;
         }
+    }
+
+    private static void Tabla(int semilla)
+    {
+        string[] nombres = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
+        PartidaMus p = new(semilla, 40, 4);
+        p.IniciarPartida();
+        IBotMus[] bots = { new BotReglasMus("A", ParametrosBotMus.Agresivo()), new BotReglasMus("B", ParametrosBotMus.Equilibrado()),
+                           new BotReglasMus("C", ParametrosBotMus.Agresivo()), new BotReglasMus("D", ParametrosBotMus.Equilibrado()) };
+        Random azar = new(semilla);
+        while (p.Fase != FaseMus.FinMano && !p.PartidaTerminada)
+        {
+            int j = p.JugadorActual;
+            p.Aplicar(j, bots[j].Decidir(p.Observar(j), p.AccionesLegales(j), azar));
+        }
+        int[] todas = new int[16];
+        for (int j = 0; j < 4; j++)
+        {
+            for (int c = 0; c < 4; c++) todas[j * 4 + c] = p.Carta(j, c);
+            Console.WriteLine(nombres[j] + ": " + string.Join(" ", Array.ConvertAll(p.CartasDe(j), CartasMus.TextoCorto)));
+        }
+        foreach (EventoMus e in p.Historial) Console.WriteLine("   " + e);
+        TablaTanteoMus.Tabla t = TablaTanteoMus.Construir(p.Desglose, todas, 0, nombres);
+        Console.WriteLine();
+        Console.WriteLine(string.Format("{0,-8}| {1,-40}| {2}", "", "NOSOTROS (LILA-MENTA)", "ELLOS"));
+        foreach (TablaTanteoMus.Fila f in t.Filas)
+            Console.WriteLine(string.Format("{0,-8}| {1,-40}| {2}", f.Lance, string.Join("; ", f.Nosotros), string.Join("; ", f.Ellos)));
+        Console.WriteLine(string.Format("{0,-8}| {1,-40}| {2}", "TOTAL", "+" + t.TotalNosotros, "+" + t.TotalEllos));
     }
 
     private static void Comparar(int partidas)

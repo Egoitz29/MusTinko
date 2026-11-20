@@ -99,10 +99,42 @@ public struct EventoRedMus : INetworkSerializable
 public struct ManosReveladasMus : INetworkSerializable
 {
     public int[] Cartas;
+    public int[] Desglose;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref Cartas);
+        s.SerializeValue(ref Desglose);
+    }
+
+    public static int[] Empaquetar(IReadOnlyList<ConceptoTanteoMus> conceptos)
+    {
+        int[] datos = new int[conceptos.Count * 5];
+
+        for (int i = 0; i < conceptos.Count; i++)
+        {
+            datos[i * 5] = conceptos[i].Lance;
+            datos[i * 5 + 1] = (int)conceptos[i].Tipo;
+            datos[i * 5 + 2] = conceptos[i].Pareja;
+            datos[i * 5 + 3] = conceptos[i].Tantos;
+            datos[i * 5 + 4] = conceptos[i].Jugador;
+        }
+
+        return datos;
+    }
+
+    public static ConceptoTanteoMus[] Desempaquetar(int[] datos)
+    {
+        if (datos == null)
+            return new ConceptoTanteoMus[0];
+
+        ConceptoTanteoMus[] conceptos = new ConceptoTanteoMus[datos.Length / 5];
+
+        for (int i = 0; i < conceptos.Length; i++)
+            conceptos[i] = new ConceptoTanteoMus(datos[i * 5], (TipoConceptoMus)datos[i * 5 + 1],
+                datos[i * 5 + 2], datos[i * 5 + 3], datos[i * 5 + 4]);
+
+        return conceptos;
     }
 }
 
@@ -136,6 +168,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     public EstadoPublicoMus Estado => estado;
     public int PuestoLocal { get; private set; } = -1;
     public IReadOnlyList<int> CartasLocales => cartasLocales;
+    public ConceptoTanteoMus[] UltimoDesglose { get; private set; } = new ConceptoTanteoMus[0];
 
     private PartidaMus partida;
     private readonly ulong[] clientes = { SinCliente, SinCliente, SinCliente, SinCliente };
@@ -148,6 +181,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private int manoConSenalesBots = -1;
     private RegistroExperienciasMus registro;
     private int idPartida;
+    private int numeroMano;
 
     private EstadoPublicoMus estado;
     private readonly int[] cartasLocales = { -1, -1, -1, -1 };
@@ -241,6 +275,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         idPartida++;
         registro?.EmpezarPartida(idPartida);
         partida.IniciarPartida();
+        numeroMano++;
         momentoAccionBot = Time.time + esperaBot;
 
         Debug.Log("[MUS ONLINE] Partida iniciada. Humanos: " + (4 - ContarBots()) + ", bots: " + ContarBots());
@@ -331,6 +366,7 @@ public class PartidaOnlineMus : NetworkBehaviour
             return;
 
         partida.SiguienteMano();
+        numeroMano++;
         manosReveladas = null;
         momentoAccionBot = Time.time + esperaBot;
         Difundir();
@@ -436,7 +472,11 @@ public class PartidaOnlineMus : NetworkBehaviour
             for (int c = 0; c < 4; c++)
                 todas[p * 4 + c] = partida.Carta(p, c);
 
-        ManosReveladasRpc(new ManosReveladasMus { Cartas = todas });
+        ManosReveladasRpc(new ManosReveladasMus
+        {
+            Cartas = todas,
+            Desglose = ManosReveladasMus.Empaquetar(partida.Desglose)
+        });
     }
 
     private void Difundir()
@@ -485,7 +525,7 @@ public class PartidaOnlineMus : NetworkBehaviour
                 continue;
 
             int[] cartas = partida.CartasDe(p);
-            string firma = partida.ManosJugadas + ":" + string.Join(",", cartas);
+            string firma = numeroMano + ":" + string.Join(",", cartas);
 
             if (firma == firmaManoEnviada[p])
                 continue;
@@ -581,6 +621,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private void ManosReveladasRpc(ManosReveladasMus manos)
     {
         manosReveladas = manos.Cartas;
+        UltimoDesglose = ManosReveladasMus.Desempaquetar(manos.Desglose);
         ManosReveladas?.Invoke(manos.Cartas);
     }
 
@@ -624,6 +665,14 @@ public class PartidaOnlineMus : NetworkBehaviour
     public void SolicitarSenal(TipoSenalMus tipo)
     {
         SenalRpc((int)tipo);
+    }
+
+    public bool PuedePasarDeMano => IsServer && estado.EnCurso && estado.FaseActual == FaseMus.FinMano;
+
+    public void PedirSiguienteMano()
+    {
+        if (PuedePasarDeMano)
+            SiguienteManoServidor();
     }
 
     private void AbrirRegistro()
@@ -715,6 +764,10 @@ public class PartidaOnlineMus : NetworkBehaviour
                 for (int c = 0; c < 4; c++) cartas[c] = CartasMus.TextoCorto(manosReveladas[p * 4 + c]);
                 GUILayout.Label("Mano de " + Nombre(p) + ": " + string.Join(" ", cartas));
             }
+
+            foreach (ConceptoTanteoMus c in UltimoDesglose)
+                GUILayout.Label("  " + TablaTanteoMus.NombreLance(c.Lance, true) + ": " + TablaTanteoMus.TextoConcepto(c, manosReveladas, NombresPuesto) +
+                                " -> pareja " + (c.Pareja == 0 ? "0-2" : "1-3"));
         }
 
         if (!estado.EnCurso)

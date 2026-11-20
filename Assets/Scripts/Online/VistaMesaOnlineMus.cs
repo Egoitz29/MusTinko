@@ -39,6 +39,14 @@ public class VistaMesaOnlineMus : MonoBehaviour
     [SerializeField] private Button[] botonesSenas = new Button[4];
     [SerializeField] private GameObject[] ocultarEnOnline = new GameObject[0];
 
+    [Header("Fin de mano: camara de la mesa y tabla de tantos")]
+    [SerializeField] private Camera camaraJugador;
+    [SerializeField] private Camera camaraRevision;
+    [SerializeField] private CamaraMus controlCamaraJugador;
+    [SerializeField] private GameObject panelCartas;
+    [SerializeField] private Button botonSiguienteMano;
+    [SerializeField] private bool mostrarTablaTanteo = true;
+
     [Header("Textos")]
     [SerializeField] private TMP_Text textoFase;
     [SerializeField] private TMP_Text textoMarcador;
@@ -48,6 +56,11 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private bool limpiarAlSiguienteEvento;
     private int[] cartasLocalesMostradas = { -1, -1, -1, -1 };
     private bool manosEnMesa;
+    private bool enRevision;
+    private bool tablaVisible;
+    private TablaTanteoMus.Tabla tabla;
+    private GUIStyle estiloTexto;
+    private GUIStyle estiloCabecera;
 
     private void Awake()
     {
@@ -75,6 +88,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
         Conectar(botonQuiero, () => Pedir(AccionMus.Quiero));
         Conectar(botonNoQuiero, () => Pedir(AccionMus.NoQuiero));
         Conectar(botonOrdago, () => Pedir(AccionMus.Ordago));
+        Conectar(botonSiguienteMano, () => partida.PedirSiguienteMano());
 
         for (int i = 0; i < botonesSenas.Length && i < 4; i++)
         {
@@ -85,6 +99,40 @@ public class VistaMesaOnlineMus : MonoBehaviour
         foreach (GameObject objeto in ocultarEnOnline)
             if (objeto != null)
                 objeto.SetActive(false);
+
+        ActivarVistaJugador(false);
+    }
+
+    private void ActivarVistaJugador(bool recentrar)
+    {
+        enRevision = false;
+        tablaVisible = false;
+
+        if (camaraJugador != null) camaraJugador.enabled = true;
+        if (camaraRevision != null) camaraRevision.enabled = false;
+
+        if (controlCamaraJugador != null)
+        {
+            controlCamaraJugador.enabled = true;
+            if (recentrar) controlCamaraJugador.RecentrarVista();
+        }
+
+        if (panelCartas != null) panelCartas.SetActive(true);
+    }
+
+    private void ActivarVistaRevision()
+    {
+        enRevision = true;
+        tablaVisible = mostrarTablaTanteo;
+
+        if (camaraRevision != null)
+        {
+            if (camaraJugador != null) camaraJugador.enabled = false;
+            if (controlCamaraJugador != null) controlCamaraJugador.enabled = false;
+            camaraRevision.enabled = true;
+        }
+
+        if (panelCartas != null) panelCartas.SetActive(false);
     }
 
     private void OnEnable()
@@ -179,7 +227,20 @@ public class VistaMesaOnlineMus : MonoBehaviour
             pantalla.enabled = false;
 
         foreach (VistaFinalManoMus vista in FindObjectsByType<VistaFinalManoMus>(FindObjectsSortMode.None))
+        {
+            if (camaraJugador == null) camaraJugador = Leer<Camera>(vista, "camaraJugador");
+            if (camaraRevision == null) camaraRevision = Leer<Camera>(vista, "camaraRevision");
+            if (controlCamaraJugador == null) controlCamaraJugador = Leer<CamaraMus>(vista, "controlCamaraJugador");
+            if (panelCartas == null) panelCartas = Leer<GameObject>(vista, "panelCartas");
+
+            GameObject siguiente = Leer<GameObject>(vista, "botonSiguienteMano");
+            if (botonSiguienteMano == null && siguiente != null) botonSiguienteMano = siguiente.GetComponent<Button>();
+
+            GameObject repartir = Leer<GameObject>(vista, "botonRepartirPrueba");
+            if (repartir != null) repartir.SetActive(false);
+
             vista.enabled = false;
+        }
     }
 
     private void OcultarAdemas(Button boton)
@@ -291,6 +352,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         ActualizarBotonesSenas(e, local);
 
+        if (botonSiguienteMano != null)
+            Activar(botonSiguienteMano, partida.PuedePasarDeMano);
+
         if (textoFase != null)
             textoFase.text = !empezada ? "ESPERANDO PARTIDA ONLINE" : TextoFase(e, miTurno);
 
@@ -378,10 +442,18 @@ public class VistaMesaOnlineMus : MonoBehaviour
     {
         int[] nuevas = new int[4];
 
-        for (int i = 0; i < 4; i++)
-            nuevas[i] = partida.CartasLocales[i];
+        bool iguales = true;
 
-        bool manoNueva = cartasLocalesMostradas[0] < 0 || manosEnMesa;
+        for (int i = 0; i < 4; i++)
+        {
+            nuevas[i] = partida.CartasLocales[i];
+            iguales &= nuevas[i] == cartasLocalesMostradas[i];
+        }
+
+        if (iguales && enRevision)
+            return;
+
+        bool manoNueva = cartasLocalesMostradas[0] < 0 || manosEnMesa || enRevision;
         cartasLocalesMostradas = nuevas;
         reparto.EstablecerManoExterna(0, CartasMus.ATexto(nuevas));
 
@@ -395,6 +467,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
             manosEnMesa = false;
             OcultarBocadillos();
+
+            if (enRevision)
+                ActivarVistaJugador(true);
         }
     }
 
@@ -414,6 +489,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
             revelador.MostrarManos();
 
         manosEnMesa = true;
+
+        int pareja = partida.PuestoLocal >= 0 ? partida.PuestoLocal % 2 : 0;
+        tabla = TablaTanteoMus.Construir(partida.UltimoDesglose, todas, pareja, NombresPuesto);
+        ActivarVistaRevision();
     }
 
     private void AlEvento(EventoMus e)
@@ -514,6 +593,82 @@ public class VistaMesaOnlineMus : MonoBehaviour
         foreach (BocadilloMus3D b in bocadillos)
             if (b != null)
                 b.Ocultar();
+    }
+
+    private void OnGUI()
+    {
+        if (!enRevision || tabla == null)
+            return;
+
+        if (estiloTexto == null)
+        {
+            estiloTexto = new GUIStyle(GUI.skin.label) { fontSize = 16, wordWrap = true };
+            estiloCabecera = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold };
+        }
+
+        if (!tablaVisible)
+        {
+            if (GUI.Button(new Rect(Screen.width / 2f - 90, 20, 180, 40), "VER TANTEO"))
+                tablaVisible = true;
+            return;
+        }
+
+        float ancho = Mathf.Min(760f, Screen.width - 40f);
+        float alto = Mathf.Min(520f, Screen.height - 40f);
+        Rect zona = new(Screen.width / 2f - ancho / 2f, Screen.height / 2f - alto / 2f, ancho, alto);
+
+        GUILayout.BeginArea(zona, "TANTEO DE LA MANO", GUI.skin.window);
+        float columna = (ancho - 150f) / 2f;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("", estiloCabecera, GUILayout.Width(110));
+        GUILayout.Label("NOSOTROS", estiloCabecera, GUILayout.Width(columna));
+        GUILayout.Label("ELLOS", estiloCabecera, GUILayout.Width(columna));
+        GUILayout.EndHorizontal();
+
+        foreach (TablaTanteoMus.Fila fila in tabla.Filas)
+        {
+            GUILayout.BeginHorizontal(GUI.skin.box);
+            GUILayout.Label(fila.Lance, estiloCabecera, GUILayout.Width(110));
+            GUILayout.Label(fila.Nosotros.Count == 0 ? "-" : string.Join("\n", fila.Nosotros), estiloTexto, GUILayout.Width(columna));
+            GUILayout.Label(fila.Ellos.Count == 0 ? "-" : string.Join("\n", fila.Ellos), estiloTexto, GUILayout.Width(columna));
+            GUILayout.EndHorizontal();
+        }
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("TOTAL MANO", estiloCabecera, GUILayout.Width(110));
+        GUILayout.Label("+" + tabla.TotalNosotros, estiloCabecera, GUILayout.Width(columna));
+        GUILayout.Label("+" + tabla.TotalEllos, estiloCabecera, GUILayout.Width(columna));
+        GUILayout.EndHorizontal();
+
+        EstadoPublicoMus e = partida.Estado;
+        int parejaLocal = partida.PuestoLocal >= 0 ? partida.PuestoLocal % 2 : 0;
+        int nuestros = parejaLocal == 0 ? e.Puntos0 : e.Puntos1;
+        int suyos = parejaLocal == 0 ? e.Puntos1 : e.Puntos0;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("MARCADOR", estiloCabecera, GUILayout.Width(110));
+        GUILayout.Label(nuestros + " / " + e.Limite, estiloCabecera, GUILayout.Width(columna));
+        GUILayout.Label(suyos + " / " + e.Limite, estiloCabecera, GUILayout.Width(columna));
+        GUILayout.EndHorizontal();
+
+        if (tabla.CobradoAntesNosotros + tabla.CobradoAntesEllos > 0)
+            GUILayout.Label("\"Ya sumado\": los no queridos se cobran en el momento, durante la mano.", estiloTexto);
+
+        if (!e.EnCurso)
+            GUILayout.Label(TextoFase(e, false), estiloCabecera);
+
+        GUILayout.FlexibleSpace();
+        GUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("VER LA MESA", GUILayout.Height(36)))
+            tablaVisible = false;
+
+        if (partida.PuedePasarDeMano && GUILayout.Button("SIGUIENTE MANO", GUILayout.Height(36)))
+            partida.PedirSiguienteMano();
+
+        GUILayout.EndHorizontal();
+        GUILayout.EndArea();
     }
 
     private void Anunciar(string texto)
