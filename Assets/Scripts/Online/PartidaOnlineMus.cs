@@ -550,8 +550,6 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (linea != null)
             ultimosEventos.Add(linea);
 
-        if (ultimosEventos.Count > 14)
-            ultimosEventos.RemoveAt(0);
 
         EventoRecibido?.Invoke(e);
     }
@@ -559,7 +557,18 @@ public class PartidaOnlineMus : NetworkBehaviour
     [Rpc(SendTo.ClientsAndHost)]
     private void SenalVisibleRpc(int jugador, int tipo)
     {
-        Debug.Log("[MUS ONLINE] " + NombresPuesto[jugador] + " hace la sena " + (TipoSenalMus)tipo);
+        bool esDeMiPareja = PuestoLocal >= 0 && (jugador == PuestoLocal || jugador == (PuestoLocal + 2) % 4);
+
+        if (esDeMiPareja)
+        {
+            string texto = jugador == PuestoLocal
+                ? "Haces la sena " + (TipoSenalMus)tipo
+                : NombresPuesto[jugador] + " (tu companero) te hace la sena " + (TipoSenalMus)tipo;
+
+            ultimosEventos.Add(">> " + texto);
+            Debug.Log("[MUS ONLINE] " + texto);
+        }
+
         SenalRecibida?.Invoke(jugador, (TipoSenalMus)tipo);
     }
 
@@ -718,13 +727,23 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (IsServer)
             DibujarControlesHost();
 
-        GUILayout.Space(4);
-        GUILayout.Label("HISTORIAL (lo mas reciente abajo):");
+        GUILayout.EndScrollView();
+        GUILayout.EndArea();
+
+        DibujarHistorial();
+    }
+
+    private void DibujarHistorial()
+    {
+        float ancho = Mathf.Min(420f, Screen.width * 0.35f);
+        GUILayout.BeginArea(new Rect(Screen.width - ancho - 20, 20, ancho, Screen.height - 40), "HISTORIAL (lo mas reciente abajo)", GUI.skin.window);
+
+        while (ultimosEventos.Count > 30)
+            ultimosEventos.RemoveAt(0);
 
         foreach (string e in ultimosEventos)
             GUILayout.Label(e);
 
-        GUILayout.EndScrollView();
         GUILayout.EndArea();
     }
 
