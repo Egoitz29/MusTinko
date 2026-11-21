@@ -46,9 +46,11 @@ public class SimuladorMus
                 continue;
             }
 
-            if (PartidaMus.EsLance(partida.Fase) && manoSenales != partida.ManosJugadas)
+            int momentoSenales = partida.ManosJugadas * 100 + partida.RondaMus * 2 + (PartidaMus.EsLance(partida.Fase) ? 1 : 0);
+
+            if ((partida.Fase == FaseMus.Mus || PartidaMus.EsLance(partida.Fase)) && !partida.MusCorridoPendiente && manoSenales != momentoSenales)
             {
-                manoSenales = partida.ManosJugadas;
+                manoSenales = momentoSenales;
 
                 for (int j = 0; j < PartidaMus.Jugadores; j++)
                     foreach (TipoSenalMus senal in bots[j].ElegirSenales(partida.Observar(j), azar))

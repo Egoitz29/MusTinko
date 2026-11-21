@@ -348,9 +348,11 @@ public class PartidaOnlineMus : NetworkBehaviour
             return;
         }
 
-        if (PartidaMus.EsLance(partida.Fase) && manoConSenalesBots != partida.ManosJugadas)
+        int momentoSenales = partida.ManosJugadas * 100 + partida.RondaMus * 2 + (PartidaMus.EsLance(partida.Fase) ? 1 : 0);
+
+        if ((partida.Fase == FaseMus.Mus || PartidaMus.EsLance(partida.Fase)) && !partida.MusCorridoPendiente && manoConSenalesBots != momentoSenales)
         {
-            manoConSenalesBots = partida.ManosJugadas;
+            manoConSenalesBots = momentoSenales;
 
             for (int p = 0; p < 4; p++)
                 if (bots[p] != null)

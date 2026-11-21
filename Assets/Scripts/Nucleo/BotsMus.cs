@@ -35,8 +35,8 @@ public class ParametrosBotMus
     public float UmbralQuererOrdago = 0.85f;
     public float ProbabilidadFarol = 0.05f;
     public float ProbabilidadSenal = 0.8f;
-    public float AumentoPorSenal = 0.25f;
-    public float AumentoQuererPorSenal = 0.15f;
+    public float AumentoPorSenal = 0.9f;
+    public float AumentoQuererPorSenal = 0.85f;
     public bool UsaSenales = true;
 
     public const int NumeroParametros = 10;
@@ -62,8 +62,8 @@ public class ParametrosBotMus
             UmbralQuererOrdago = Limitar(v[5]),
             ProbabilidadFarol = Math.Min(0.5f, Limitar(v[6])),
             ProbabilidadSenal = Limitar(v[7]),
-            AumentoPorSenal = Math.Min(0.6f, Limitar(v[8])),
-            AumentoQuererPorSenal = Math.Min(0.6f, Limitar(v[9])),
+            AumentoPorSenal = Limitar(v[8]),
+            AumentoQuererPorSenal = Limitar(v[9]),
             UsaSenales = usaSenales
         };
     }
@@ -163,7 +163,10 @@ public class BotReglasMus : IBotMus
     {
         bool puedeMus = Contiene(legales, TipoAccionMus.Mus);
 
-        if (!puedeMus || FuerzaMus(obs.Evaluacion, obs.Cartas) >= p.UmbralCortarMus)
+        float propia = FuerzaMus(obs.Evaluacion, obs.Cartas);
+        float companero = p.UsaSenales ? FuerzaMusCompanero(obs) * p.AumentoPorSenal : 0f;
+
+        if (!puedeMus || Math.Max(propia, companero) >= p.UmbralCortarMus)
             return AccionMus.NoHayMus;
 
         return AccionMus.Mus;
@@ -171,15 +174,15 @@ public class BotReglasMus : IBotMus
 
     private AccionMus DecidirLance(ObservacionMus obs, IReadOnlyList<AccionMus> legales, Random azar)
     {
-        float fuerza = FuerzaLance(obs.Fase, obs);
-        float aumentoSenal = p.UsaSenales ? AumentoSenal(obs) : 0f;
+        float propia = FuerzaLance(obs.Fase, obs);
+        float companero = EstimacionCompanero(obs, p.UsaSenales);
         bool pendiente = Contiene(legales, TipoAccionMus.Quiero);
         bool ordagoPendiente = obs.EstadoEnvite == MotorEnvitesMus.EstadoEnvite.OrdagoPendiente;
         bool desesperado = obs.PuntosRivales >= obs.Limite - 5 && obs.PuntosPropios < obs.Limite - 10;
 
         if (!pendiente)
         {
-            float valor = fuerza + aumentoSenal * p.AumentoPorSenal / 0.25f;
+            float valor = Math.Max(propia, companero * p.AumentoPorSenal);
 
             if (valor >= p.UmbralOrdago || (desesperado && valor >= p.UmbralOrdago - 0.15f))
                 return AccionMus.Ordago;
@@ -190,7 +193,7 @@ public class BotReglasMus : IBotMus
             return AccionMus.Pasar;
         }
 
-        float valorRespuesta = fuerza + aumentoSenal * p.AumentoQuererPorSenal / 0.25f;
+        float valorRespuesta = Math.Max(propia, companero * p.AumentoQuererPorSenal);
 
         if (ordagoPendiente)
         {
@@ -210,23 +213,71 @@ public class BotReglasMus : IBotMus
         return AccionMus.NoQuiero;
     }
 
-    private static float AumentoSenal(ObservacionMus obs)
+    public static float EstimacionCompanero(ObservacionMus obs, bool usaSenales)
     {
-        float aumento = 0f;
+        float estimacion = 0f;
+
+        foreach (EventoMus e in obs.HistorialMano)
+        {
+            if (e.Tipo != TipoEventoMus.Declaracion || e.Jugador != obs.Companero || e.Dato != 1)
+                continue;
+
+            if (obs.Fase == FaseMus.Pares && e.Fase == FaseMus.Pares) estimacion = Math.Max(estimacion, 0.35f);
+            if (obs.Fase == FaseMus.JuegoPunto && e.Fase == FaseMus.JuegoPunto) estimacion = Math.Max(estimacion, 0.4f);
+        }
+
+        if (!usaSenales)
+            return estimacion;
+
+        foreach (TipoSenalMus senal in obs.SenalesRecibidas)
+            estimacion = Math.Max(estimacion, ValorSenal(obs.Fase, senal));
+
+        return estimacion;
+    }
+
+    public static float FuerzaMusCompanero(ObservacionMus obs)
+    {
+        float f = 0f;
 
         foreach (TipoSenalMus senal in obs.SenalesRecibidas)
         {
-            if (obs.Fase == FaseMus.Grande && senal == TipoSenalMus.TresReyes) return 0.4f;
-            if (obs.Fase == FaseMus.Chica && senal == TipoSenalMus.TresAses) return 0.4f;
-            if (obs.Fase == FaseMus.Pares && (senal == TipoSenalMus.TresReyes || senal == TipoSenalMus.TresAses)) return 0.2f;
-            if (senal == TipoSenalMus.Ciego) aumento = -0.2f;
-            if (obs.Fase == FaseMus.Grande && senal == TipoSenalMus.DosReyes) return 0.25f;
-            if (obs.Fase == FaseMus.Chica && senal == TipoSenalMus.DosAses) return 0.25f;
-            if (obs.Fase == FaseMus.Pares && senal == TipoSenalMus.Duples) return 0.25f;
-            if (obs.Fase == FaseMus.JuegoPunto && senal == TipoSenalMus.TreintaYUna) return 0.25f;
+            switch (senal)
+            {
+                case TipoSenalMus.TreintaYUna: f = Math.Max(f, 0.9f); break;
+                case TipoSenalMus.Duples: f = Math.Max(f, 0.85f); break;
+                case TipoSenalMus.TresReyes:
+                case TipoSenalMus.TresAses: f = Math.Max(f, 0.8f); break;
+                case TipoSenalMus.DosReyes: f = Math.Max(f, 0.5f); break;
+                case TipoSenalMus.DosAses: f = Math.Max(f, 0.4f); break;
+            }
         }
 
-        return aumento;
+        return f;
+    }
+
+    public static float ValorSenal(FaseMus fase, TipoSenalMus senal)
+    {
+        switch (fase)
+        {
+            case FaseMus.Grande:
+                return senal == TipoSenalMus.TresReyes ? 0.85f : senal == TipoSenalMus.DosReyes ? 0.6f : 0f;
+            case FaseMus.Chica:
+                return senal == TipoSenalMus.TresAses ? 0.85f : senal == TipoSenalMus.DosAses ? 0.6f : 0f;
+            case FaseMus.Pares:
+                switch (senal)
+                {
+                    case TipoSenalMus.Duples: return 0.9f;
+                    case TipoSenalMus.TresReyes:
+                    case TipoSenalMus.TresAses: return 0.72f;
+                    case TipoSenalMus.DosReyes: return 0.5f;
+                    case TipoSenalMus.DosAses: return 0.35f;
+                    default: return 0f;
+                }
+            case FaseMus.JuegoPunto:
+                return senal == TipoSenalMus.TreintaYUna ? 1f : 0f;
+            default:
+                return 0f;
+        }
     }
 
     public static float FuerzaLance(FaseMus fase, ObservacionMus obs)
