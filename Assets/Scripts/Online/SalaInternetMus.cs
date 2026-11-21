@@ -117,8 +117,14 @@ public class SalaInternetMus : MonoBehaviour
         estado = "";
     }
 
+    public string Estado => estado;
+    public bool Ocupado => ocupado;
+
     private void OnGUI()
     {
+        if (VistaMesaOnlineMus.InterfazNuevaActiva)
+            return;
+
         EscalaGUIMus.Aplicar();
 
         NetworkManager red = NetworkManager.Singleton;

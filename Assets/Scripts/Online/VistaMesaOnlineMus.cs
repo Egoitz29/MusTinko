@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class VistaMesaOnlineMus : MonoBehaviour
+public partial class VistaMesaOnlineMus : MonoBehaviour
 {
     private static readonly string[] NombresPuesto = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
 
@@ -174,6 +174,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
         }
 
         ActivarVistaJugador(false);
+
+        if (usarInterfazNueva)
+            CrearInterfaz();
     }
 
     private void ColorearPersonajes()
@@ -568,6 +571,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private void Update()
     {
         ProcesarCola();
+
+        if (lienzoUI != null)
+            ActualizarInterfaz();
 
         if (colorearPersonajes && partida.PuestoLocal != puestoColoreado)
             ColorearPersonajes();
@@ -1061,6 +1067,9 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
     private void OnGUI()
     {
+        if (InterfazNuevaActiva)
+            return;
+
         EscalaGUIMus.Aplicar();
 
         if (mostrarHud && !enRevision)

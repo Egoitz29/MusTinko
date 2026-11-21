@@ -49,8 +49,30 @@ public class PruebaConexionMus : MonoBehaviour
         red.OnClientDisconnectCallback += ClienteDesconectado;
     }
 
+    public string Estado => estado;
+    public string IpLocal => ipLocal;
+    public string IpGuardada => ipHost;
+    public bool Conectado => red != null && red.IsListening;
+
+    public void CrearPartida() => IniciarHost();
+
+    public void Unirse(string ip)
+    {
+        ipHost = string.IsNullOrWhiteSpace(ip) ? ipHost : ip.Trim();
+        IniciarCliente();
+    }
+
+    public void Salir()
+    {
+        if (red != null && red.IsListening)
+            red.Shutdown();
+    }
+
     private void OnGUI()
     {
+        if (VistaMesaOnlineMus.InterfazNuevaActiva)
+            return;
+
         EscalaGUIMus.Aplicar();
 
         if (red != null && red.IsListening)

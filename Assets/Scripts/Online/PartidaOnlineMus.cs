@@ -657,6 +657,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (reiniciarHistorial && e.Tipo != TipoEventoMus.FinMano)
         {
             ultimosEventos.Clear();
+            VersionHistorial++;
             manoHistorial++;
             reiniciarHistorial = false;
             faseHistorial = FaseMus.FinPartida;
@@ -726,9 +727,19 @@ public class PartidaOnlineMus : NetworkBehaviour
         }
     }
 
+    public IReadOnlyList<string> LineasHistorial => ultimosEventos;
+    public int VersionHistorial { get; private set; }
+
+    public bool Pausado
+    {
+        get => pausado;
+        set => pausado = value;
+    }
+
     private void AnadirLinea(string linea)
     {
         ultimosEventos.Add(linea);
+        VersionHistorial++;
 
         while (ultimosEventos.Count > 60)
             ultimosEventos.RemoveAt(0);
@@ -824,6 +835,9 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private void OnGUI()
     {
+        if (VistaMesaOnlineMus.InterfazNuevaActiva)
+            return;
+
         EscalaGUIMus.Aplicar();
 
         if (!IsSpawned)
