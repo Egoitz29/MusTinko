@@ -59,6 +59,46 @@ public static class AndroidMus
     [MenuItem("Mus TINKO/Android/4. Generar e instalar en el movil conectado por USB")]
     public static void GenerarEInstalar() => Construir(true, true);
 
+    [MenuItem("Mus TINKO/Android/5. Build rapida de prueba (Mono, ARMv7)")]
+    public static void BuildRapida()
+    {
+        if (!EditorUtility.DisplayDialog("Build rapida",
+                "Cambia a Mono + ARMv7 para compilar mucho mas rapido. Solo funciona en moviles que aceptan apps de 32 bits " +
+                "(muchos Motorola si, los Pixel 7 o mas nuevos no). Para la version buena usa otra vez la opcion 1.",
+                "Hacer build rapida", "Cancelar"))
+            return;
+
+        PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.Mono2x);
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
+        Construir(true, false);
+    }
+
+    private const string SimboloInternet = "MUS_TINKO_INTERNET";
+
+    [MenuItem("Mus TINKO/Internet/Activar salas por Internet (Relay)")]
+    public static void ActivarInternet() => CambiarSimbolo(true);
+
+    [MenuItem("Mus TINKO/Internet/Desactivar salas por Internet")]
+    public static void DesactivarInternet() => CambiarSimbolo(false);
+
+    private static void CambiarSimbolo(bool activar)
+    {
+        foreach (NamedBuildTarget destino in new[] { NamedBuildTarget.Standalone, NamedBuildTarget.Android })
+        {
+            string actuales = PlayerSettings.GetScriptingDefineSymbols(destino);
+            System.Collections.Generic.List<string> lista = new(actuales.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries));
+            lista.Remove(SimboloInternet);
+
+            if (activar)
+                lista.Add(SimboloInternet);
+
+            PlayerSettings.SetScriptingDefineSymbols(destino, string.Join(";", lista));
+        }
+
+        Debug.Log("[INTERNET] Salas por Internet " + (activar ? "ACTIVADAS" : "desactivadas") +
+                  ". Unity recompilara los scripts. Si salen errores en SalaInternetMus, desactivalas y avisa.");
+    }
+
     private static void Construir(bool desarrollo, bool instalar)
     {
         if (!File.Exists(EscenaJuego))

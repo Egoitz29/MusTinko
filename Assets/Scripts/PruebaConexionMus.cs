@@ -33,6 +33,11 @@ public class PruebaConexionMus : MonoBehaviour
         ipLocal = ObtenerIpLocal();
         red = NetworkManager.Singleton;
 
+#if MUS_TINKO_INTERNET
+        if (GetComponent<SalaInternetMus>() == null)
+            gameObject.AddComponent<SalaInternetMus>();
+#endif
+
         if (red == null)
         {
             estado = "ERROR: Falta NetworkManager";
