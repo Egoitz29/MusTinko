@@ -212,6 +212,7 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         NetworkManager.OnClientConnectedCallback += ClienteConectado;
         NetworkManager.OnClientDisconnectCallback += ClienteDesconectado;
+        PrepararSala();
     }
 
     public override void OnNetworkDespawn()
@@ -231,14 +232,108 @@ public class PartidaOnlineMus : NetworkBehaviour
         base.OnDestroy();
     }
 
+    private readonly ulong[] sitiosSala = { SinCliente, SinCliente, SinCliente, SinCliente };
+    private readonly ulong[] sitiosSalaVistos = { SinCliente, SinCliente, SinCliente, SinCliente };
+    private static readonly int[] OrdenSitiosLibres = { 2, 1, 3, 0 };
+
+    public bool PartidaEnCurso => partida != null && !partida.PartidaTerminada;
+    public ulong ClienteEnSitio(int puesto) => puesto >= 0 && puesto < 4 ? sitiosSalaVistos[puesto] : SinCliente;
+
+    public void ElegirSitio(int puesto) => ElegirSitioRpc(puesto);
+
+    private void PrepararSala()
+    {
+        if (!IsServer)
+            return;
+
+        for (int p = 0; p < 4; p++)
+            if (sitiosSala[p] != SinCliente && !EstaConectado(sitiosSala[p]))
+                sitiosSala[p] = SinCliente;
+
+        if (Array.IndexOf(sitiosSala, Unity.Netcode.NetworkManager.ServerClientId) < 0)
+            SentarEnLibre(Unity.Netcode.NetworkManager.ServerClientId, true);
+
+        foreach (ulong id in NetworkManager.ConnectedClientsIds)
+            if (Array.IndexOf(sitiosSala, id) < 0)
+                SentarEnLibre(id, false);
+
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+    }
+
+    private bool EstaConectado(ulong id)
+    {
+        foreach (ulong c in NetworkManager.ConnectedClientsIds)
+            if (c == id)
+                return true;
+
+        return false;
+    }
+
+    private void SentarEnLibre(ulong id, bool esHost)
+    {
+        if (esHost && sitiosSala[0] == SinCliente)
+        {
+            sitiosSala[0] = id;
+            return;
+        }
+
+        foreach (int p in OrdenSitiosLibres)
+        {
+            if (sitiosSala[p] != SinCliente)
+                continue;
+
+            sitiosSala[p] = id;
+            return;
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ElegirSitioRpc(int puesto, RpcParams parametros = default)
+    {
+        if (PartidaEnCurso || puesto < 0 || puesto > 3)
+            return;
+
+        ulong quien = parametros.Receive.SenderClientId;
+
+        if (sitiosSala[puesto] != SinCliente && sitiosSala[puesto] != quien)
+            return;
+
+        for (int p = 0; p < 4; p++)
+            if (sitiosSala[p] == quien)
+                sitiosSala[p] = SinCliente;
+
+        sitiosSala[puesto] = quien;
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3)
+    {
+        sitiosSalaVistos[0] = c0;
+        sitiosSalaVistos[1] = c1;
+        sitiosSalaVistos[2] = c2;
+        sitiosSalaVistos[3] = c3;
+    }
+
     private void ClienteConectado(ulong id)
     {
         if (partida != null && !partida.PartidaTerminada)
             EstadoParaClienteRpc(estado, RpcTarget.Single(id, RpcTargetUse.Temp));
+        else
+            PrepararSala();
+
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
     }
 
     private void ClienteDesconectado(ulong id)
     {
+        for (int p = 0; p < 4; p++)
+            if (sitiosSala[p] == id && !PartidaEnCurso)
+                sitiosSala[p] = SinCliente;
+
+        if (!PartidaEnCurso)
+            SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+
         if (partida == null)
             return;
 
@@ -261,17 +356,10 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (!IsServer)
             return;
 
-        List<ulong> conectados = new();
+        PrepararSala();
 
-        foreach (ulong id in NetworkManager.ConnectedClientsIds)
-            if (id != Unity.Netcode.NetworkManager.ServerClientId)
-                conectados.Add(id);
-
-        conectados.Sort();
-        clientes[0] = Unity.Netcode.NetworkManager.ServerClientId;
-
-        for (int p = 1; p < 4; p++)
-            clientes[p] = p - 1 < conectados.Count ? conectados[p - 1] : SinCliente;
+        for (int p = 0; p < 4; p++)
+            clientes[p] = sitiosSala[p];
 
         for (int p = 0; p < 4; p++)
         {
