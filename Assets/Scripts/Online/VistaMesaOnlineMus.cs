@@ -1175,6 +1175,12 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     {
         int sitio = Relativo(puesto);
 
+        if (InterfazNuevaActiva && lienzoUI != null)
+        {
+            MostrarBocadilloUI(sitio, texto, color, fijo);
+            return;
+        }
+
         if (bocadillos == null || sitio >= bocadillos.Length || bocadillos[sitio] == null)
             return;
 
@@ -1184,6 +1190,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
     private void OcultarBocadillos()
     {
+        if (lienzoUI != null)
+            OcultarBocadillosUI();
+
         if (bocadillos == null)
             return;
 

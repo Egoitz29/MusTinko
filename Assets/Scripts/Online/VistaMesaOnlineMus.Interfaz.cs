@@ -82,6 +82,7 @@ public partial class VistaMesaOnlineMus
         CrearPanelHost();
         CrearSala();
         CrearChat();
+        CrearBocadillosUI();
         CrearTanteo();
         CrearMenu();
 
@@ -92,6 +93,147 @@ public partial class VistaMesaOnlineMus
     {
         if (lienzoUI != null)
             InterfazNuevaActiva = false;
+    }
+
+    private sealed class BocadilloUI
+    {
+        public RectTransform Raiz;
+        public RectTransform Cola;
+        public TextMeshProUGUI Texto;
+        public float Inicio;
+        public float Hasta;
+        public bool Visible;
+    }
+
+    private readonly BocadilloUI[] bocadillosUI = new BocadilloUI[4];
+
+    [Header("Bocadillos en pantalla")]
+    [SerializeField] private float alturaBocadillos = 0.5f;
+    [SerializeField] private float margenSuperiorBocadillos = 330f;
+
+    private void CrearBocadillosUI()
+    {
+        foreach (BocadilloMus3D b in bocadillos)
+            if (b != null)
+                b.Ocultar();
+
+        for (int sitio = 0; sitio < 4; sitio++)
+        {
+            GameObject go = new("Bocadillo_" + sitio, typeof(RectTransform), typeof(Image));
+            RectTransform rt = Rect(go, raizUI, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(220, 80));
+            rt.pivot = new Vector2(0.5f, 0f);
+            Image cuerpo = go.GetComponent<Image>();
+            cuerpo.sprite = SpriteUI("bocadillo", 34);
+            cuerpo.type = Image.Type.Sliced;
+            cuerpo.raycastTarget = false;
+
+            GameObject cola = new("Cola", typeof(RectTransform), typeof(Image));
+            RectTransform rc = cola.GetComponent<RectTransform>();
+            rc.SetParent(rt, false);
+            rc.anchorMin = rc.anchorMax = new Vector2(0.35f, 0f);
+            rc.pivot = new Vector2(0.3f, 1f);
+            rc.anchoredPosition = new Vector2(0, 8);
+            rc.sizeDelta = new Vector2(44, 30);
+            Image ic = cola.GetComponent<Image>();
+            ic.sprite = SpriteUI("bocadillo_cola", 0);
+            ic.raycastTarget = false;
+
+            TextMeshProUGUI t = Texto(go.transform, "", 30, Tinta, false, TextAlignmentOptions.Center, false);
+            t.fontStyle = FontStyles.Bold;
+            t.enableWordWrapping = false;
+            t.rectTransform.offsetMin = new Vector2(18, 14);
+            t.rectTransform.offsetMax = new Vector2(-18, -12);
+
+            go.SetActive(false);
+            bocadillosUI[sitio] = new BocadilloUI { Raiz = rt, Cola = rc, Texto = t };
+        }
+    }
+
+    private void MostrarBocadilloUI(int sitio, string texto, Color color, bool fijo)
+    {
+        if (sitio < 0 || sitio > 3 || bocadillosUI[sitio] == null)
+            return;
+
+        BocadilloUI b = bocadillosUI[sitio];
+        b.Texto.text = texto;
+        b.Texto.color = Color.Lerp(color, Tinta, 0.25f);
+        float ancho = Mathf.Clamp(b.Texto.GetPreferredValues(texto).x + 56f, 150f, 460f);
+        b.Raiz.sizeDelta = new Vector2(ancho, 80);
+        b.Inicio = Time.time;
+        b.Hasta = fijo ? float.MaxValue : Time.time + 2.5f;
+        b.Visible = true;
+    }
+
+    private void OcultarBocadillosUI()
+    {
+        foreach (BocadilloUI b in bocadillosUI)
+            if (b != null)
+            {
+                b.Visible = false;
+                b.Raiz.gameObject.SetActive(false);
+            }
+    }
+
+    private void ActualizarBocadillosUI(bool mostrar)
+    {
+        Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+        Vector2 mitad = raizUI.rect.size * 0.5f;
+
+        for (int sitio = 0; sitio < 4; sitio++)
+        {
+            BocadilloUI b = bocadillosUI[sitio];
+
+            if (b == null)
+                continue;
+
+            if (Time.time > b.Hasta)
+                b.Visible = false;
+
+            bool visible = mostrar && b.Visible;
+            Vector2 pos;
+            bool colaIzquierda = true;
+
+            if (sitio == 0)
+            {
+                pos = new Vector2(0f, -mitad.y + 150f);
+            }
+            else
+            {
+                GameObject modelo = ModeloEnSitio(sitio);
+
+                if (modelo == null || cam == null)
+                {
+                    b.Raiz.gameObject.SetActive(false);
+                    continue;
+                }
+
+                Vector3 punto = modelo.transform.position + Vector3.up * (alturaCabezas + alturaBocadillos);
+                Vector3 pantalla = cam.WorldToScreenPoint(punto);
+
+                if (pantalla.z <= 0f)
+                    visible = false;
+
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(raizUI, pantalla, null, out pos);
+                colaIzquierda = pos.x <= 0f;
+            }
+
+            float ancho = b.Raiz.sizeDelta.x;
+            pos.x = Mathf.Clamp(pos.x, -mitad.x + ancho * 0.5f + 20f, mitad.x - ancho * 0.5f - 20f);
+            pos.y = Mathf.Clamp(pos.y, -mitad.y + 140f, mitad.y - margenSuperiorBocadillos - 80f);
+
+            if (b.Raiz.gameObject.activeSelf != visible)
+                b.Raiz.gameObject.SetActive(visible);
+
+            if (!visible)
+                continue;
+
+            b.Raiz.anchoredPosition = pos;
+            float k = Mathf.Clamp01((Time.time - b.Inicio) / 0.22f);
+            float escala = Mathf.Lerp(0.5f, 1f, k) + 0.12f * Mathf.Sin(k * Mathf.PI);
+            b.Raiz.localScale = Vector3.one * escala;
+            b.Cola.anchorMin = b.Cola.anchorMax = new Vector2(colaIzquierda ? 0.3f : 0.7f, 0f);
+            b.Cola.localScale = new Vector3(colaIzquierda ? 1f : -1f, 1f, 1f);
+        }
     }
 
     private void OcultarBotonesDeLaEscena()
@@ -552,41 +694,78 @@ public partial class VistaMesaOnlineMus
 
     private GameObject panelSalaUI;
     private TextMeshProUGUI txtSalaUI;
-    private readonly Button[] botonesSitio = new Button[4];
-    private readonly Image[] imagenesSitio = new Image[4];
-    private readonly TextMeshProUGUI[] textosSitio = new TextMeshProUGUI[4];
 
-    private void CrearSala()
+    private sealed class DiagramaMesa
     {
-        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(760, 560));
-        panelSalaUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+        public readonly Image[] Sillas = new Image[4];
+        public readonly TextMeshProUGUI[] Etiquetas = new TextMeshProUGUI[4];
+        public readonly Button[] Botones = new Button[4];
+    }
 
-        GameObject titulo = new("Titulo", typeof(RectTransform));
-        Rect(titulo, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -20), new Vector2(700, 70));
-        Texto(titulo.transform, "ELIGE TU SITIO", 54, Oro, true);
+    private DiagramaMesa diagramaMenu, diagramaSala;
 
-        GameObject mesa = new("Mesa", typeof(RectTransform), typeof(Image));
-        Rect(mesa, panelSalaUI.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(170, 170));
-        mesa.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+    private DiagramaMesa CrearDiagrama(Transform padre, Vector2 ancla, Vector2 centro, float tam, Action<int> alElegir)
+    {
+        DiagramaMesa d = new();
+        GameObject mesa = new("MesaArriba", typeof(RectTransform), typeof(Image));
+        RectTransform rm = Rect(mesa, padre, ancla, centro, new Vector2(tam, tam));
+        rm.pivot = new Vector2(0.5f, 0.5f);
         Image imgMesa = mesa.GetComponent<Image>();
-        imgMesa.sprite = SpriteUI("panel_madera_oscura", 30);
-        imgMesa.type = Image.Type.Sliced;
+        imgMesa.sprite = SpriteUI("mesa_arriba", 0);
+        imgMesa.preserveAspect = true;
+        imgMesa.raycastTarget = false;
 
-        Vector2[] posiciones = { new(0, -175), new(235, -10), new(0, 155), new(-235, -10) };
+        float distancia = tam * 0.64f;
+        float silla = tam * 0.4f;
+        Vector2[] direccion = { new(0, -1), new(1, 0), new(0, 1), new(-1, 0) };
+        float[] giro = { 0f, 90f, 180f, -90f };
 
         for (int p = 0; p < 4; p++)
         {
             int puesto = p;
-            Button b = Boton(panelSalaUI.transform, puesto % 2 == 0 ? "azul" : "rojo", ColoresJugadoresMus.Nombres[puesto], new Vector2(250, 92), () => partida.ElegirSitio(puesto), 24);
-            RectTransform rb = Rect(b.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0.5f), posiciones[p], new Vector2(250, 92));
-            rb.pivot = new Vector2(0.5f, 0.5f);
-            botonesSitio[p] = b;
-            imagenesSitio[p] = b.GetComponent<Image>();
-            textosSitio[p] = b.GetComponentInChildren<TextMeshProUGUI>();
+            GameObject go = new("Silla_" + p, typeof(RectTransform), typeof(Image), typeof(Button));
+            RectTransform rs = Rect(go, padre, ancla, centro + direccion[p] * distancia, new Vector2(silla, silla));
+            rs.pivot = new Vector2(0.5f, 0.5f);
+            rs.localRotation = Quaternion.Euler(0f, 0f, giro[p]);
+            Image img = go.GetComponent<Image>();
+            img.sprite = SpriteUI("silla_arriba", 0);
+            Button b = go.GetComponent<Button>();
+            b.onClick.AddListener(() => alElegir(puesto));
+            d.Sillas[p] = img;
+            d.Botones[p] = b;
+
+            float hueco = p % 2 == 0 ? silla * 0.5f + 34f : silla * 0.5f + 96f;
+            GameObject et = new("Etiqueta_" + p, typeof(RectTransform));
+            RectTransform re = Rect(et, padre, ancla, centro + direccion[p] * (distancia + hueco), new Vector2(190, 70));
+            re.pivot = new Vector2(0.5f, 0.5f);
+            d.Etiquetas[p] = Texto(et.transform, "", 30, Crema, true);
         }
 
+        return d;
+    }
+
+    private void PintarSitio(DiagramaMesa d, int puesto, string rol, bool mio, bool elegible)
+    {
+        Color baseColor = mio ? new Color(1f, 0.82f, 0.3f) : puesto % 2 == 0 ? new Color(0.45f, 0.62f, 0.95f) : new Color(0.9f, 0.4f, 0.35f);
+        d.Sillas[puesto].color = elegible || mio ? baseColor : baseColor * 0.55f;
+        d.Sillas[puesto].rectTransform.localScale = Vector3.one * (mio ? 1.12f : 1f);
+        d.Botones[puesto].interactable = elegible || mio;
+        d.Etiquetas[puesto].text = ColoresJugadoresMus.Nombre(puesto) + "\n<size=65%>" + rol + "</size>";
+    }
+
+    private void CrearSala()
+    {
+        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -30), new Vector2(820, 720));
+        panelSalaUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+
+        GameObject titulo = new("Titulo", typeof(RectTransform));
+        Rect(titulo, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -18), new Vector2(760, 70));
+        Texto(titulo.transform, "ELIGE TU SITIO", 54, Oro, true);
+
+        diagramaSala = CrearDiagrama(panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -370), 250, puesto => partida.ElegirSitio(puesto));
+
         GameObject pie = new("Pie", typeof(RectTransform));
-        Rect(pie, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(700, 50));
+        Rect(pie, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(760, 56));
         txtSalaUI = Texto(pie.transform, "", 20, Crema);
     }
 
@@ -599,21 +778,25 @@ public partial class VistaMesaOnlineMus
             return;
 
         ulong yo = NetworkManager.Singleton.LocalClientId;
+        int miSitio = -1;
+
+        for (int p = 0; p < 4; p++)
+            if (partida.ClienteEnSitio(p) == yo)
+                miSitio = p;
 
         for (int p = 0; p < 4; p++)
         {
             ulong c = partida.ClienteEnSitio(p);
             bool mio = c == yo;
-            string estadoSitio = mio ? "TU" : c == PartidaOnlineMus.SinCliente ? "libre (bot)" : "jugador";
-            string pareja = p % 2 == 0 ? "pareja A" : "pareja B";
-            textosSitio[p].text = ColoresJugadoresMus.Nombres[p] + "  <size=60%>" + pareja + "</size>\n<size=75%>" + estadoSitio + "</size>";
-            imagenesSitio[p].sprite = SpriteUI(mio ? "boton_dorado" : p % 2 == 0 ? "boton_azul" : "boton_rojo", 22);
-            botonesSitio[p].interactable = mio || c == PartidaOnlineMus.SinCliente;
+            bool libre = c == PartidaOnlineMus.SinCliente;
+            string relacion = miSitio < 0 || mio ? "" : p == (miSitio + 2) % 4 ? " · companero" : " · rival";
+            string rol = mio ? "TU" : (libre ? "libre (bot)" : "jugador") + relacion;
+            PintarSitio(diagramaSala, p, rol, mio, libre);
         }
 
         txtSalaUI.text = partida.IsServer
-            ? "Toca un sitio libre para cambiarte. Tu companero se sienta enfrente. Luego, EMPEZAR PARTIDA."
-            : "Toca un sitio libre para cambiarte. Esperando a que el host empiece...";
+            ? "Toca una silla libre para cambiarte. Tu companero se sienta enfrente. Luego, EMPEZAR PARTIDA."
+            : "Toca una silla libre para cambiarte. Esperando a que el host empiece...";
     }
 
     private void CrearTanteo()
@@ -733,8 +916,6 @@ public partial class VistaMesaOnlineMus
         Texto(c.transform, ellos, tamano, Tinta, false, TextAlignmentOptions.TopLeft, false);
     }
 
-    private readonly Button[] botonesSitioMenu = new Button[4];
-    private TextMeshProUGUI txtParejasMenuUI;
     private const string ClaveSitio = "MusTinko_SitioPreferido";
     private int sitioPreferido = -1;
     private bool sitioPedido;
@@ -772,11 +953,10 @@ public partial class VistaMesaOnlineMus
         int elegido = SitioPreferido;
 
         for (int p = 0; p < 4; p++)
-            botonesSitioMenu[p].GetComponent<Image>().sprite = SpriteUI(p == elegido ? "boton_dorado" : p % 2 == 0 ? "boton_azul" : "boton_rojo", 22);
-
-        int companero = (elegido + 2) % 4;
-        txtParejasMenuUI.text = "Juegas con " + ColoresJugadoresMus.Nombre(companero) + " contra " +
-                                ColoresJugadoresMus.Nombre((elegido + 1) % 4) + " y " + ColoresJugadoresMus.Nombre((elegido + 3) % 4);
+        {
+            string rol = p == elegido ? "TU" : p == (elegido + 2) % 4 ? "companero" : "rival";
+            PintarSitio(diagramaMenu, p, rol, p == elegido, true);
+        }
     }
 
     private void PedirSitioAlEntrar(bool enMesa)
@@ -820,58 +1000,48 @@ public partial class VistaMesaOnlineMus
         Estirar(rt, 0);
         panelMenuUI.GetComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, 0.7f);
 
-        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 1020));
+        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1340, 880));
         caja.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
-        Rect(titulo, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -30), new Vector2(700, 140));
+        Rect(titulo, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -16), new Vector2(900, 130));
         Texto(titulo.transform, "Mus TINKO", 120, Oro, true);
 
         GameObject etiqueta = new("EtiquetaSitio", typeof(RectTransform));
-        Rect(etiqueta, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -172), new Vector2(680, 36));
-        Texto(etiqueta.transform, "ELIGE TU SITIO", 28, Oro, true);
+        Rect(etiqueta, caja.transform, new Vector2(0.5f, 1f), new Vector2(-330, -150), new Vector2(560, 40));
+        Texto(etiqueta.transform, "ELIGE TU SITIO EN LA MESA", 32, Oro, true);
+        diagramaMenu = CrearDiagrama(caja.transform, new Vector2(0.5f, 1f), new Vector2(-330, -500), 280, ElegirSitioPreferido);
 
-        for (int p = 0; p < 4; p++)
-        {
-            int puesto = p;
-            Button b = Boton(caja.transform, puesto % 2 == 0 ? "azul" : "rojo", ColoresJugadoresMus.Nombres[puesto], new Vector2(160, 70), () => ElegirSitioPreferido(puesto), 24);
-            Rect(b.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(-255 + puesto * 170, -214), new Vector2(160, 70));
-            botonesSitioMenu[puesto] = b;
-        }
-
-        GameObject parejas = new("Parejas", typeof(RectTransform));
-        Rect(parejas, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -288), new Vector2(680, 30));
-        txtParejasMenuUI = Texto(parejas.transform, "", 18, Crema);
-
-        float y = -330;
-        Button jugar = Boton(caja.transform, "dorado", "JUGAR CONTRA BOTS", new Vector2(600, 96), () =>
+        float x = 300;
+        float y = -190;
+        Button jugar = Boton(caja.transform, "dorado", "JUGAR CONTRA BOTS", new Vector2(560, 96), () =>
         {
             empezarAlConectar = true;
             conexion?.CrearPartida();
         }, 34);
-        Rect(jugar.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(600, 96));
+        Rect(jugar.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 96));
 
         y -= 110;
-        Button crear = Boton(caja.transform, "azul", "CREAR PARTIDA (MISMA WIFI)", new Vector2(600, 86), () => conexion?.CrearPartida(), 28);
-        Rect(crear.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(600, 86));
+        Button crear = Boton(caja.transform, "azul", "CREAR PARTIDA (MISMA WIFI)", new Vector2(560, 84), () => conexion?.CrearPartida(), 28);
+        Rect(crear.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 84));
 
-        y -= 104;
-        campoIpUI = Campo(caja.transform, new Vector2(-110, y), new Vector2(380, 76), "IP del host", conexion != null ? conexion.IpGuardada : "127.0.0.1");
-        Button unirse = Boton(caja.transform, "verde", "UNIRSE", new Vector2(200, 76), () => conexion?.Unirse(campoIpUI.text), 28);
-        Rect(unirse.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(200, y), new Vector2(200, 76));
+        y -= 100;
+        campoIpUI = Campo(caja.transform, new Vector2(x - 95, y), new Vector2(360, 74), "IP del host", conexion != null ? conexion.IpGuardada : "127.0.0.1");
+        Button unirse = Boton(caja.transform, "verde", "UNIRSE", new Vector2(190, 74), () => conexion?.Unirse(campoIpUI.text), 28);
+        Rect(unirse.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x + 185, y), new Vector2(190, 74));
 
 #if MUS_TINKO_INTERNET
-        y -= 110;
-        Button sala = Boton(caja.transform, "morado", "CREAR SALA POR INTERNET", new Vector2(600, 86), () => SalaInternet()?.CrearSala(), 28);
-        Rect(sala.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(600, 86));
-        y -= 100;
-        campoCodigoUI = Campo(caja.transform, new Vector2(-110, y), new Vector2(380, 76), "Codigo de sala", "");
-        Button unirseCodigo = Boton(caja.transform, "morado", "UNIRSE", new Vector2(200, 76), () => SalaInternet()?.UnirseConCodigo(campoCodigoUI.text), 28);
-        Rect(unirseCodigo.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(200, y), new Vector2(200, 76));
+        y -= 104;
+        Button sala = Boton(caja.transform, "morado", "CREAR SALA POR INTERNET", new Vector2(560, 84), () => SalaInternet()?.CrearSala(), 28);
+        Rect(sala.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 84));
+        y -= 98;
+        campoCodigoUI = Campo(caja.transform, new Vector2(x - 95, y), new Vector2(360, 74), "Codigo de sala", "");
+        Button unirseCodigo = Boton(caja.transform, "morado", "UNIRSE", new Vector2(190, 74), () => SalaInternet()?.UnirseConCodigo(campoCodigoUI.text), 28);
+        Rect(unirseCodigo.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x + 185, y), new Vector2(190, 74));
 #endif
 
         GameObject estado = new("Estado", typeof(RectTransform));
-        Rect(estado, caja.transform, new Vector2(0.5f, 0f), new Vector2(0, 30), new Vector2(680, 110));
+        Rect(estado, caja.transform, new Vector2(0.5f, 0f), new Vector2(300, 30), new Vector2(580, 120));
         txtEstadoMenuUI = Texto(estado.transform, "", 24, Crema);
     }
 
@@ -945,6 +1115,7 @@ public partial class VistaMesaOnlineMus
 
         bool revision = enRevision && empezada;
         ActualizarChat(enMesa);
+        ActualizarBocadillosUI(empezada && !revision);
         grupoHud.SetActive(empezada && !revision);
         ActualizarHost(enMesa, empezada, revision);
         ActualizarSala(enMesa, empezada);
