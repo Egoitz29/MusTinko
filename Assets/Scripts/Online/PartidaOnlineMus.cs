@@ -827,9 +827,29 @@ public class PartidaOnlineMus : NetworkBehaviour
         DifundirMiradas();
     }
 
+    private int momentoCartasNuevas = -1;
+
     private void ActualizarMiradasBots()
     {
         bool cambio = false;
+
+        // Cuando llegan cartas nuevas (reparto o descarte), los bots se quedan un rato mirandolas.
+        int momentoCartas = partida.ManosJugadas * 100 + partida.RondaMus;
+
+        if (momentoCartas != momentoCartasNuevas)
+        {
+            momentoCartasNuevas = momentoCartas;
+
+            for (int p = 0; p < 4; p++)
+            {
+                if (bots[p] == null)
+                    continue;
+
+                partida.Mirar(p, PartidaMus.MiraCartas);
+                proximoCambioMirada[p] = Time.time + 1.5f + (float)azarBots.NextDouble() * 2.5f;
+                cambio = true;
+            }
+        }
 
         for (int p = 0; p < 4; p++)
         {
@@ -847,13 +867,14 @@ public class PartidaOnlineMus : NetworkBehaviour
             int objetivo;
 
             if (companeroQuiereSenar && r < 0.6) objetivo = companero;
-            else if (actual >= 0 && actual != p && r < 0.65) objetivo = actual;
-            else if (r < 0.8) objetivo = companero;
-            else if (r < 0.9) objetivo = (p + 1 + 2 * azarBots.Next(2)) % 4;
+            else if (actual >= 0 && actual != p && r < 0.6) objetivo = actual;
+            else if (r < 0.74) objetivo = companero;
+            else if (r < 0.84) objetivo = (p + 1 + 2 * azarBots.Next(2)) % 4;
             else objetivo = PartidaMus.MiraCartas;
 
             partida.Mirar(p, objetivo);
-            proximoCambioMirada[p] = Time.time + 1.2f + (float)azarBots.NextDouble() * 2.5f;
+            float dura = objetivo == PartidaMus.MiraCartas ? 1.5f + (float)azarBots.NextDouble() * 2f : 1.2f + (float)azarBots.NextDouble() * 2.5f;
+            proximoCambioMirada[p] = Time.time + dura;
             cambio = true;
         }
 

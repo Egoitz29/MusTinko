@@ -10,6 +10,7 @@ using UnityEngine.UI;
 //   F8  -> empezar / salir de la demo
 //   H   -> ocultar o mostrar los paneles (para un video mas limpio)
 //   C   -> ocultar o mostrar las cartas de todos
+//   V   -> cambiar entre vista de jugador (la de siempre) y camara de cine
 public partial class VistaMesaOnlineMus
 {
     [Header("Modo demo (videos)")]
@@ -21,6 +22,10 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float segundosFinPartidaDemo = 12f;
 
     [Header("Camara de la demo")]
+    [Tooltip("Si esta marcado, la demo se ve como la ve un jugador sentado (silla de LILA). Tecla V para cambiar.")]
+    [SerializeField] private bool vistaJugadorDemo = true;
+    [SerializeField] private float inclinacionCartasDemo = 50f;
+    [SerializeField] private float segundosMirarCartasDemo = 2.5f;
     [SerializeField] private float radioPlanoGeneral = 2.3f;
     [SerializeField] private float alturaPlanoGeneral = 1.35f;
     [SerializeField] private float velocidadGiroGeneral = 5f;
@@ -33,7 +38,8 @@ public partial class VistaMesaOnlineMus
     {
         General,
         Jugador,
-        Sena
+        Sena,
+        Cartas
     }
 
     private bool demoPendiente;
@@ -129,6 +135,9 @@ public partial class VistaMesaOnlineMus
         if (teclado != null && teclado.cKey.wasPressedThisFrame)
             cartasDemoVisibles = !cartasDemoVisibles;
 
+        if (teclado != null && teclado.vKey.wasPressedThisFrame)
+            vistaJugadorDemo = !vistaJugadorDemo;
+
         if (teclado != null && teclado.escapeKey.wasPressedThisFrame)
             SalirDeLaDemo();
 
@@ -145,7 +154,7 @@ public partial class VistaMesaOnlineMus
         ManoNuevaComoEspectador();
         partida.EmpezarDemoServidor();
         PonerRotulo("MODO DEMO: MUS TINKO",
-            "Juegan 4 bots. LILA y MENTA van juntos contra MOSTAZA y CORAL. Los companeros se sientan enfrente.");
+            "Juegan 4 bots. Lo ves desde la silla de LILA: sus cartas son las de abajo. LILA va con MENTA (enfrente) contra MOSTAZA y CORAL.");
     }
 
     private void AvanzarFinDeManoDemo()
@@ -203,6 +212,7 @@ public partial class VistaMesaOnlineMus
             reparto.EstablecerManoExterna(sitio, new[] { "", "", "", "" });
 
         manosEnMesa = false;
+        firmaManoSillaDemo = null;
         OcultarBocadillos();
 
         for (int i = 0; i < resultadosLance.Length; i++)
@@ -271,6 +281,12 @@ public partial class VistaMesaOnlineMus
         if (Time.time > finPlanoDemo)
             planoDemo = PlanoDemo.General;
 
+        if (vistaJugadorDemo)
+        {
+            CamaraDeJugadorDemo(cam);
+            return;
+        }
+
         Vector3 centro = CentroMesa();
         anguloGeneralDemo += Time.deltaTime * velocidadGiroGeneral;
         Quaternion giro = Quaternion.Euler(0f, anguloGeneralDemo, 0f);
@@ -312,6 +328,67 @@ public partial class VistaMesaOnlineMus
             rotCamDemo = Quaternion.Slerp(rotCamDemo, Quaternion.LookRotation(direccion, Vector3.up), k);
 
         cam.transform.SetPositionAndRotation(posCamDemo, rotCamDemo);
+    }
+
+    // Como un jugador sentado: no se mueve de la silla, solo gira la cabeza
+    // hacia quien habla y de vez en cuando mira sus cartas.
+    private void CamaraDeJugadorDemo(Camera cam)
+    {
+        if (enRevision)
+        {
+            // Al final de la mano manda la vista de la mesa de siempre.
+            posCamDemo = cam.transform.position;
+            rotCamDemo = cam.transform.rotation;
+            return;
+        }
+
+        Vector3 destino = posCamOriginal;
+        Quaternion objetivo = rotCamOriginal;
+
+        // Con las senas por mirada, la camara mira justo donde mira LILA (lo que ella ve).
+        int miradaSilla = partida.SenasConMirada && partida.Estado.EnCurso ? partida.MiradaDe(0) : -2;
+
+        if (miradaSilla == PartidaMus.MiraCartas)
+        {
+            objetivo = rotCamOriginal * Quaternion.Euler(inclinacionCartasDemo, 0f, 0f);
+        }
+        else if (miradaSilla >= 0 && Relativo(miradaSilla) != 0)
+        {
+            Vector3 direccion = CabezaModeloDemo(miradaSilla) - destino;
+
+            if (direccion.sqrMagnitude > 0.0001f)
+                objetivo = Quaternion.LookRotation(direccion, Vector3.up);
+        }
+        else if (planoDemo == PlanoDemo.Cartas)
+        {
+            objetivo = rotCamOriginal * Quaternion.Euler(inclinacionCartasDemo, 0f, 0f);
+        }
+        else if (planoDemo != PlanoDemo.General && Relativo(puestoPlanoDemo) != 0)
+        {
+            Vector3 cabeza = CabezaModeloDemo(puestoPlanoDemo);
+            Vector3 direccion = cabeza - destino;
+
+            if (direccion.sqrMagnitude > 0.0001f)
+                objetivo = Quaternion.LookRotation(direccion, Vector3.up);
+        }
+
+        float k = 1f - Mathf.Exp(-Time.deltaTime * suavidadCamara * 1.4f);
+        posCamDemo = Vector3.Lerp(posCamDemo, destino, k);
+        rotCamDemo = Quaternion.Slerp(rotCamDemo, objetivo, k);
+        cam.transform.SetPositionAndRotation(posCamDemo, rotCamDemo);
+    }
+
+    private void RotuloDemoMiraCartas(int puesto)
+    {
+        if (!DemoActiva || !partida.SenasConMirada)
+            return;
+
+        string detalle = Explicar("miracartas",
+            "Mientras mira sus cartas no ve a nadie: es un buen momento para que los otros pasen senas sin que les pillen.");
+
+        // Solo se avisa con rotulo la primera vez, para no llenar la pantalla.
+        if (detalle.Length > 0)
+            PonerRotulo(N(puesto) + " esta mirando sus cartas", detalle);
     }
 
     private void RestaurarCamaraDemo()
@@ -445,7 +522,8 @@ public partial class VistaMesaOnlineMus
 
         EnfocarDemo(PlanoDemo.Sena, puesto, pausaSenaDemo);
         int companero = (puesto + 2) % 4;
-        PonerRotulo("Mira como " + N(puesto) + " hace una SENA: " + SenalesMus.Nombre(tipo),
+        bool miSilla = vistaJugadorDemo && Relativo(puesto) == 0;
+        PonerRotulo((miSilla ? N(puesto) + " (tu silla) hace la SENA: " : "Mira como " + N(puesto) + " hace una SENA: ") + SenalesMus.Nombre(tipo),
             "Gesto: " + SenalesMus.Gesto(tipo) + ". Es para " + N(companero) +
             Explicar("sena", ". Solo vale si el companero le esta mirando; si un rival le mira, la pilla."));
     }
@@ -573,18 +651,50 @@ public partial class VistaMesaOnlineMus
         cajaRotuloDemo.SetActive(Time.time < finRotuloDemo + 0.6f && txtRotuloTitulo.text.Length > 0);
     }
 
+    private string firmaManoSillaDemo;
+
+    // La silla de la camara (LILA) ensena su mano abajo, como si fuera la tuya.
+    private void MostrarManoDeLaSillaDemo()
+    {
+        int puesto = 0;
+        int[] mano = partida.CartasDemo(puesto);
+
+        if (mano == null || mano[0] < 0)
+            return;
+
+        string firma = string.Join(",", mano);
+
+        if (firma == firmaManoSillaDemo)
+            return;
+
+        firmaManoSillaDemo = firma;
+        reparto.EstablecerManoExterna(Relativo(puesto), CartasMus.ATexto(mano));
+
+        if (panelCartas != null)
+            panelCartas.SetActive(true);
+
+        if (vistaJugadorDemo)
+            EnfocarDemo(PlanoDemo.Cartas, puesto, segundosMirarCartasDemo);
+    }
+
     private void ActualizarCartasDemo(bool visible)
     {
         panelCartasDemo.SetActive(visible);
 
         if (!visible)
+        {
+            if (DemoActiva && !enRevision && cola.Count == 0)
+                MostrarManoDeLaSillaDemo();
+
             return;
+        }
 
         // Se actualizan cuando la mesa ya ha ensenado lo ultimo (asi no se adelantan los descartes).
         if (cola.Count > 0)
             return;
 
         int turno = partida.Estado.EnCurso ? partida.Estado.JugadorActual : -1;
+        MostrarManoDeLaSillaDemo();
 
         for (int p = 0; p < 4; p++)
         {

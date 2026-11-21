@@ -72,6 +72,15 @@ public class GestosMus : MonoBehaviour
     private float inicioReaccion = -100f;
     private float duracionReaccion;
 
+    [Header("Mirar las cartas (mientras, no ve a nadie)")]
+    [SerializeField] private float agacharCartas = 24f;
+    [SerializeField] private float subirManosCartas = 0.0045f;
+    [SerializeField] private float velocidadPoseCartas = 4f;
+
+    // Mientras esta a true el personaje agacha la cabeza y sube las manos como si mirase su mano.
+    public bool MirandoCartas { get; set; }
+    private float pesoCartas;
+
     private Vector3? objetivoMirada;
     private float finMirada;
     private float giroActual;
@@ -281,9 +290,12 @@ public class GestosMus : MonoBehaviour
             a.Usado = false;
         }
 
+        pesoCartas = Mathf.MoveTowards(pesoCartas, MirandoCartas ? 1f : 0f, Time.deltaTime * velocidadPoseCartas);
+
         if (vida)
             Vida();
 
+        AplicarPoseCartas();
         AplicarReaccion();
         AplicarSena();
         Escribir();
@@ -315,6 +327,7 @@ public class GestosMus : MonoBehaviour
             mirarPupila = Mathf.Clamp((angulo - objetivoGiro) / 30f, -1f, 1f);
         }
 
+        objetivoGiro *= 1f - pesoCartas * 0.8f;
         giroActual = Mathf.Lerp(giroActual, objetivoGiro, 1f - Mathf.Exp(-Time.deltaTime * 5f));
         SumarGiro("CONTROL_CABEZA", ejeGirar, giroActual);
         SumarGiro("CONTROL_CABEZA", ejeLadear, ruidoLadeo);
@@ -335,6 +348,25 @@ public class GestosMus : MonoBehaviour
             FijarEscala("CONTROL_OJO_I", 2, 0.06f, Mathf.Clamp01(cierre));
             FijarEscala("CONTROL_OJO_D", 2, 0.06f, Mathf.Clamp01(cierre));
         }
+    }
+
+    private void AplicarPoseCartas()
+    {
+        if (pesoCartas <= 0.001f)
+            return;
+
+        float w = Mathf.SmoothStep(0f, 1f, pesoCartas);
+        // Un pequeno vaiven para que parezca que repasa las cartas.
+        float repasa = Mathf.Sin((Time.time + semilla) * 1.7f) * 0.25f;
+
+        SumarGiro("CONTROL_CABEZA", ejeAgachar, agacharCartas * w);
+        SumarGiro("CONTROL_CABEZA", ejeGirar, 4f * repasa * w);
+        SumarPosicion("CONTROL_MIRADA_I", new Vector3(0.0002f * repasa, 0f, -0.0009f * w));
+        SumarPosicion("CONTROL_MIRADA_D", new Vector3(0.0002f * repasa, 0f, -0.0009f * w));
+        FijarEscala("CONTROL_OJO_I", 2, 0.7f, w);
+        FijarEscala("CONTROL_OJO_D", 2, 0.7f, w);
+        SumarPosicion("Manopla_D", new Vector3(-0.0012f * w, -0.002f * w, subirManosCartas * w));
+        SumarPosicion("Manopla_I", new Vector3(0.0012f * w, -0.002f * w, subirManosCartas * w));
     }
 
     private void AplicarReaccion()

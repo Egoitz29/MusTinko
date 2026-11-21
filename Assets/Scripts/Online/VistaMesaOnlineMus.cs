@@ -1108,7 +1108,15 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
                 continue;
 
             int objetivo = partida.MiradaDe(p);
-            g.MirarA(objetivo >= 0 ? CabezaDePuesto(objetivo) : CentroMesa() + Vector3.up * 0.1f, 1f);
+            bool cartas = objetivo < 0 && partida.Estado.EnCurso && !enRevision;
+
+            if (cartas && !g.MirandoCartas)
+                RotuloDemoMiraCartas(p);
+
+            g.MirandoCartas = cartas;
+
+            if (objetivo >= 0)
+                g.MirarA(CabezaDePuesto(objetivo), 1f);
         }
     }
 
@@ -1136,6 +1144,8 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
         if (rivales.Length > 0)
             texto += "\n<color=#FF6B5E>Te vigilan: </color>" + rivales;
+        else if (partida.MiradaDe((local + 1) % 4) < 0 && partida.MiradaDe((local + 3) % 4) < 0)
+            texto += "\n<color=#FFD24D>Los rivales miran sus cartas: buen momento</color>";
 
         return texto;
     }
