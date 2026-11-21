@@ -22,6 +22,86 @@ public static class ColoresJugadoresMus
         return "<color=" + Hex[puesto] + "><b>" + Nombres[puesto] + "</b></color>";
     }
 
+    private static readonly Color Piel = new(1f, 0.85f, 0.72f);
+    private static readonly Color Crema = new(0.97f, 0.94f, 0.86f);
+    private static readonly Color Oro = new(0.95f, 0.76f, 0.28f);
+
+    private static readonly Color[] Pelo =
+    {
+        new(0.36f, 0.22f, 0.13f),
+        new(0.80f, 0.58f, 0.25f),
+        new(0.14f, 0.12f, 0.12f),
+        new(0.58f, 0.24f, 0.12f)
+    };
+
+    public static void AplicarAspecto(GameObject raiz, int puesto, float saturacionRopa, float brillo)
+    {
+        if (raiz == null || puesto < 0 || puesto > 3)
+            return;
+
+        Color ropa = Color.Lerp(Color.white, Colores[puesto], Mathf.Clamp01(saturacionRopa));
+        Color ropaOscura = ropa * 0.82f;
+        ropaOscura.a = 1f;
+        Color manoplas = Color.Lerp(ropa, Color.white, 0.55f);
+        Color pelo = Pelo[puesto];
+        MaterialPropertyBlock bloque = new();
+
+        foreach (Renderer r in raiz.GetComponentsInChildren<Renderer>(true))
+        {
+            if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer))
+                continue;
+
+            if (r.GetComponentInParent<BocadilloMus3D>() != null)
+                continue;
+
+            Color? color = ColorDePieza(Pieza(r.name), ropa, ropaOscura, manoplas, pelo);
+
+            if (!color.HasValue)
+                continue;
+
+            for (int i = 0; i < r.sharedMaterials.Length; i++)
+            {
+                r.GetPropertyBlock(bloque, i);
+                bloque.SetColor("_BaseColor", color.Value);
+                bloque.SetColor("_Color", color.Value);
+                bloque.SetFloat("_Smoothness", brillo);
+                bloque.SetFloat("_Glossiness", brillo);
+                r.SetPropertyBlock(bloque, i);
+            }
+        }
+    }
+
+    private static string Pieza(string nombre)
+    {
+        int primero = nombre.IndexOf('_');
+        int segundo = primero >= 0 ? nombre.IndexOf('_', primero + 1) : -1;
+        return segundo >= 0 ? nombre.Substring(segundo + 1) : nombre;
+    }
+
+    private static Color? ColorDePieza(string pieza, Color ropa, Color ropaOscura, Color manoplas, Color pelo)
+    {
+        if (pieza.StartsWith("Cabeza") || pieza.StartsWith("Oreja") || pieza == "Cuello" || pieza.StartsWith("Parpado"))
+            return Piel;
+        if (pieza.StartsWith("Nariz")) return new Color(1f, 0.76f, 0.66f);
+        if (pieza.StartsWith("Mejilla")) return new Color(1f, 0.58f, 0.58f);
+        if (pieza.StartsWith("BlancoOjo") || pieza.StartsWith("BrilloOjo")) return new Color(0.98f, 0.98f, 0.98f);
+        if (pieza.StartsWith("Pupila")) return new Color(0.1f, 0.08f, 0.08f);
+        if (pieza.StartsWith("CEJA") || pieza.StartsWith("Pelo") || pieza.StartsWith("Flequillo")) return pelo;
+        if (pieza.StartsWith("Sonrisa")) return new Color(0.5f, 0.14f, 0.14f);
+        if (pieza == "Boca_Mordisco_Labio") return new Color(0.82f, 0.32f, 0.32f);
+        if (pieza == "Boca_Mordisco_Dientes") return new Color(0.98f, 0.98f, 0.95f);
+        if (pieza == "Boca_Mordisco_Fondo") return new Color(0.25f, 0.06f, 0.06f);
+        if (pieza.StartsWith("Lengua")) return new Color(0.95f, 0.45f, 0.5f);
+        if (pieza.StartsWith("Poncho") || pieza == "Gorro_ParteAlta") return ropa;
+        if (pieza.StartsWith("Manga") || pieza == "Gorro_Borde") return ropaOscura;
+        if (pieza.StartsWith("Manopla") || pieza.StartsWith("Pulgar")) return manoplas;
+        if (pieza == "Gorro_Pompom" || pieza == "Cuello_Color") return Crema;
+        if (pieza.StartsWith("Boton") || pieza.StartsWith("Etiqueta")) return Oro;
+        if (pieza.StartsWith("Pierna")) return new Color(0.26f, 0.23f, 0.3f);
+        if (pieza.StartsWith("Zapato")) return new Color(0.32f, 0.19f, 0.11f);
+        return null;
+    }
+
     private static readonly string[] PartesSinColor = { "ojo", "eye", "pupil", "iris", "boca", "mouth", "diente", "teeth", "lengua", "tongue" };
 
     public static void Colorear(GameObject raiz, Color color, float intensidad)
