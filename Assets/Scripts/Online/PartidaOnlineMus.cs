@@ -185,7 +185,18 @@ public class PartidaOnlineMus : NetworkBehaviour
     private int idPartida;
     private int numeroMano;
 
-    private EstadoPublicoMus estado;
+    private EstadoPublicoMus estado = EstadoInicial();
+
+    // Sin esto ParejaGanadora vale 0 y parece que la partida ya ha terminado (y se esconde la sala).
+    private static EstadoPublicoMus EstadoInicial() => new EstadoPublicoMus
+    {
+        ParejaGanadora = -1,
+        JugadorActual = -1,
+        Cliente0 = SinCliente,
+        Cliente1 = SinCliente,
+        Cliente2 = SinCliente,
+        Cliente3 = SinCliente
+    };
     private readonly int[] cartasLocales = { -1, -1, -1, -1 };
     private readonly string[] bocadillos = new string[4];
     private int[] manosReveladas;
@@ -207,6 +218,8 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        estado = EstadoInicial();
+
         if (!IsServer)
             return;
 
@@ -218,6 +231,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         ModoDemo = false;
+        estado = EstadoInicial();
 
         if (IsServer && NetworkManager != null)
         {
