@@ -69,7 +69,7 @@ public partial class VistaMesaOnlineMus
         lienzoUI.sortingOrder = 50;
         CanvasScaler escala = go.GetComponent<CanvasScaler>();
         escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        escala.referenceResolution = new Vector2(1920, 1080);
+        escala.referenceResolution = Application.isMobilePlatform ? new Vector2(1920, 1080) : new Vector2(2560, 1440);
         escala.matchWidthOrHeight = 0.5f;
         raizUI = go.GetComponent<RectTransform>();
 
@@ -79,6 +79,7 @@ public partial class VistaMesaOnlineMus
         CrearPanelSenas();
         CrearHistorial();
         CrearPanelHost();
+        CrearSala();
         CrearTanteo();
         CrearMenu();
 
@@ -278,12 +279,12 @@ public partial class VistaMesaOnlineMus
             detallesCelda[i] = Texto(det.transform, "", 19, Crema);
         }
 
-        cajaBanner = Panel("Banner", raizUI, "panel_pergamino", new Vector2(0.5f, 1f), new Vector2(0, -172), new Vector2(780, 84));
-        txtBanner = Texto(cajaBanner.transform, "", 46, Tinta, true, TextAlignmentOptions.Center, false);
-        cajaAyuda = Panel("Ayuda", raizUI, "panel_madera_oscura", new Vector2(0.5f, 1f), new Vector2(0, -262), new Vector2(780, 52));
-        txtAyuda = Texto(cajaAyuda.transform, "", 24, Crema);
+        cajaBanner = Panel("Banner", raizUI, "panel_pergamino", new Vector2(0.5f, 1f), new Vector2(0, -170), new Vector2(680, 70));
+        txtBanner = Texto(cajaBanner.transform, "", 40, Tinta, true, TextAlignmentOptions.Center, false);
+        cajaAyuda = Panel("Ayuda", raizUI, "panel_madera_oscura", new Vector2(0.5f, 1f), new Vector2(0, -246), new Vector2(680, 46));
+        txtAyuda = Texto(cajaAyuda.transform, "", 21, Crema);
         GameObject sena = new("AvisoSena", typeof(RectTransform));
-        Rect(sena, raizUI, new Vector2(0.5f, 1f), new Vector2(0, -320), new Vector2(900, 50));
+        Rect(sena, raizUI, new Vector2(0.5f, 1f), new Vector2(0, -298), new Vector2(900, 44));
         txtAvisoSena = Texto(sena.transform, "", 28, new Color(0.88f, 0.78f, 1f));
     }
 
@@ -319,7 +320,7 @@ public partial class VistaMesaOnlineMus
         h.childControlWidth = h.childControlHeight = true;
         h.childForceExpandWidth = h.childForceExpandHeight = false;
 
-        Vector2 t = new(220, 100);
+        Vector2 t = new(200, 88);
         botonesAccion[TipoAccionMus.Mus] = Boton(barraAcciones.transform, "verde", "MUS", t, () => Pedir(AccionMus.Mus));
         botonesAccion[TipoAccionMus.NoHayMus] = Boton(barraAcciones.transform, "rojo", "NO HAY MUS", t, () => Pedir(AccionMus.NoHayMus));
         botonesAccion[TipoAccionMus.Descartar] = Boton(barraAcciones.transform, "azul", "DESCARTAR", t, Descartar);
@@ -333,10 +334,12 @@ public partial class VistaMesaOnlineMus
 
     private void CrearPanelSenas()
     {
-        panelSenasUI = Panel("Senas", raizUI, "panel_madera_oscura", new Vector2(0f, 0.5f), new Vector2(20, 0), new Vector2(320, 520));
+        panelSenasUI = Panel("Senas", raizUI, "panel_madera_oscura", new Vector2(0f, 0.5f), new Vector2(20, 0), new Vector2(270, 200));
+        panelSenasUI.GetComponent<RectTransform>().pivot = new Vector2(0f, 0.5f);
         VerticalLayoutGroup v = panelSenasUI.AddComponent<VerticalLayoutGroup>();
-        v.padding = new RectOffset(22, 22, 20, 20);
-        v.spacing = 10;
+        v.padding = new RectOffset(18, 18, 14, 18);
+        v.spacing = 8;
+        panelSenasUI.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         v.childAlignment = TextAnchor.UpperCenter;
         v.childControlWidth = v.childControlHeight = true;
         v.childForceExpandWidth = true;
@@ -344,31 +347,31 @@ public partial class VistaMesaOnlineMus
 
         GameObject titulo = new("Titulo", typeof(RectTransform), typeof(LayoutElement));
         titulo.transform.SetParent(panelSenasUI.transform, false);
-        titulo.GetComponent<LayoutElement>().preferredHeight = 44;
-        Texto(titulo.transform, "SENAS", 36, Oro, true);
+        titulo.GetComponent<LayoutElement>().preferredHeight = 36;
+        Texto(titulo.transform, "SENAS", 30, Oro, true);
 
         GameObject info = new("Info", typeof(RectTransform), typeof(LayoutElement));
         info.transform.SetParent(panelSenasUI.transform, false);
-        info.GetComponent<LayoutElement>().preferredHeight = 56;
-        txtSenasInfo = Texto(info.transform, "a tu companero", 20, Crema);
+        info.GetComponent<LayoutElement>().preferredHeight = 44;
+        txtSenasInfo = Texto(info.transform, "a tu companero", 18, Crema);
 
         foreach (TipoSenalMus tipo in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))
         {
             TipoSenalMus t = tipo;
-            botonesSenaUI[t] = Boton(panelSenasUI.transform, "morado", SenalesMus.Nombre(t), new Vector2(276, 58), () =>
+            botonesSenaUI[t] = Boton(panelSenasUI.transform, "morado", SenalesMus.Nombre(t), new Vector2(234, 50), () =>
             {
                 senasHechas.Add(t);
                 partida.SolicitarSenal(t);
-            }, 24);
+            }, 22);
         }
     }
 
     private void CrearHistorial()
     {
-        botonHistorialUI = Boton(raizUI, "gris", "HISTORIAL", new Vector2(220, 70), () => historialAbiertoUI = !historialAbiertoUI, 26);
-        Rect(botonHistorialUI.gameObject, raizUI, new Vector2(1f, 1f), new Vector2(-20, -20), new Vector2(220, 70));
+        botonHistorialUI = Boton(raizUI, "gris", "HISTORIAL", new Vector2(190, 60), () => historialAbiertoUI = !historialAbiertoUI, 24);
+        Rect(botonHistorialUI.gameObject, raizUI, new Vector2(1f, 1f), new Vector2(-20, -20), new Vector2(190, 60));
 
-        panelHistorialUI = Panel("Historial", raizUI, "panel_madera_oscura", new Vector2(1f, 1f), new Vector2(-20, -180), new Vector2(440, 560));
+        panelHistorialUI = Panel("Historial", raizUI, "panel_madera_oscura", new Vector2(1f, 1f), new Vector2(-20, -170), new Vector2(400, 460));
         GameObject vista = new("Vista", typeof(RectTransform), typeof(RectMask2D));
         RectTransform rv = vista.GetComponent<RectTransform>();
         rv.SetParent(panelHistorialUI.transform, false);
@@ -385,7 +388,7 @@ public partial class VistaMesaOnlineMus
         contenido.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         txtHistorialUI = contenido.AddComponent<TextMeshProUGUI>();
-        txtHistorialUI.fontSize = 22;
+        txtHistorialUI.fontSize = 20;
         txtHistorialUI.color = Crema;
         txtHistorialUI.richText = true;
         txtHistorialUI.alignment = TextAlignmentOptions.TopLeft;
@@ -400,14 +403,80 @@ public partial class VistaMesaOnlineMus
 
     private void CrearPanelHost()
     {
-        panelHostUI = Panel("Host", raizUI, "panel_madera_oscura", new Vector2(0f, 1f), new Vector2(20, -20), new Vector2(400, 170));
+        panelHostUI = Panel("Host", raizUI, "panel_madera_oscura", new Vector2(0f, 1f), new Vector2(20, -20), new Vector2(340, 140));
         GameObject info = new("Info", typeof(RectTransform));
-        Rect(info, panelHostUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -14), new Vector2(370, 70));
-        txtHostUI = Texto(info.transform, "", 22, Crema);
-        botonEmpezarUI = Boton(panelHostUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(340, 70), () => partida.EmpezarPartidaServidor(), 28);
-        Rect(botonEmpezarUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 16), new Vector2(340, 70));
-        botonPausaUI = Boton(panelHostUI.transform, "gris", "PAUSA", new Vector2(200, 60), () => partida.Pausado = !partida.Pausado, 26);
-        Rect(botonPausaUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 20), new Vector2(200, 60));
+        Rect(info, panelHostUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -10), new Vector2(316, 60));
+        txtHostUI = Texto(info.transform, "", 19, Crema);
+        botonEmpezarUI = Boton(panelHostUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(290, 60), () => partida.EmpezarPartidaServidor(), 26);
+        Rect(botonEmpezarUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(290, 60));
+        botonPausaUI = Boton(panelHostUI.transform, "gris", "PAUSA", new Vector2(180, 52), () => partida.Pausado = !partida.Pausado, 24);
+        Rect(botonPausaUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 16), new Vector2(180, 52));
+    }
+
+    private GameObject panelSalaUI;
+    private TextMeshProUGUI txtSalaUI;
+    private readonly Button[] botonesSitio = new Button[4];
+    private readonly Image[] imagenesSitio = new Image[4];
+    private readonly TextMeshProUGUI[] textosSitio = new TextMeshProUGUI[4];
+
+    private void CrearSala()
+    {
+        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(760, 560));
+        panelSalaUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+
+        GameObject titulo = new("Titulo", typeof(RectTransform));
+        Rect(titulo, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -20), new Vector2(700, 70));
+        Texto(titulo.transform, "ELIGE TU SITIO", 54, Oro, true);
+
+        GameObject mesa = new("Mesa", typeof(RectTransform), typeof(Image));
+        Rect(mesa, panelSalaUI.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(170, 170));
+        mesa.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+        Image imgMesa = mesa.GetComponent<Image>();
+        imgMesa.sprite = SpriteUI("panel_madera_oscura", 30);
+        imgMesa.type = Image.Type.Sliced;
+
+        Vector2[] posiciones = { new(0, -175), new(235, -10), new(0, 155), new(-235, -10) };
+
+        for (int p = 0; p < 4; p++)
+        {
+            int puesto = p;
+            Button b = Boton(panelSalaUI.transform, puesto % 2 == 0 ? "azul" : "rojo", ColoresJugadoresMus.Nombres[puesto], new Vector2(250, 92), () => partida.ElegirSitio(puesto), 24);
+            RectTransform rb = Rect(b.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0.5f), posiciones[p], new Vector2(250, 92));
+            rb.pivot = new Vector2(0.5f, 0.5f);
+            botonesSitio[p] = b;
+            imagenesSitio[p] = b.GetComponent<Image>();
+            textosSitio[p] = b.GetComponentInChildren<TextMeshProUGUI>();
+        }
+
+        GameObject pie = new("Pie", typeof(RectTransform));
+        Rect(pie, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(700, 50));
+        txtSalaUI = Texto(pie.transform, "", 20, Crema);
+    }
+
+    private void ActualizarSala(bool enMesa, bool empezada)
+    {
+        bool visible = enMesa && !empezada && !empezarAlConectar;
+        panelSalaUI.SetActive(visible);
+
+        if (!visible)
+            return;
+
+        ulong yo = NetworkManager.Singleton.LocalClientId;
+
+        for (int p = 0; p < 4; p++)
+        {
+            ulong c = partida.ClienteEnSitio(p);
+            bool mio = c == yo;
+            string estadoSitio = mio ? "TU" : c == PartidaOnlineMus.SinCliente ? "libre (bot)" : "jugador";
+            string pareja = p % 2 == 0 ? "pareja A" : "pareja B";
+            textosSitio[p].text = ColoresJugadoresMus.Nombres[p] + "  <size=60%>" + pareja + "</size>\n<size=75%>" + estadoSitio + "</size>";
+            imagenesSitio[p].sprite = SpriteUI(mio ? "boton_dorado" : p % 2 == 0 ? "boton_azul" : "boton_rojo", 22);
+            botonesSitio[p].interactable = mio || c == PartidaOnlineMus.SinCliente;
+        }
+
+        txtSalaUI.text = partida.IsServer
+            ? "Toca un sitio libre para cambiarte. Tu companero se sienta enfrente. Luego, EMPEZAR PARTIDA."
+            : "Toca un sitio libre para cambiarte. Esperando a que el host empiece...";
     }
 
     private void CrearTanteo()
@@ -641,6 +710,7 @@ public partial class VistaMesaOnlineMus
         bool revision = enRevision && empezada;
         grupoHud.SetActive(empezada && !revision);
         ActualizarHost(enMesa, empezada, revision);
+        ActualizarSala(enMesa, empezada);
 
         if (!empezada)
         {
