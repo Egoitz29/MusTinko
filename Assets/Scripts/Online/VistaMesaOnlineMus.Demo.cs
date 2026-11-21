@@ -598,7 +598,7 @@ public partial class VistaMesaOnlineMus
         panelCartasDemo.SetActive(false);
 
         Button salir = Boton(raizUI, "rojo", "SALIR DE LA DEMO", new Vector2(320, 70), SalirDeLaDemo, 24);
-        Rect(salir.gameObject, raizUI, new Vector2(1f, 1f), new Vector2(-180, -250), new Vector2(320, 70));
+        Rect(salir.gameObject, raizUI, new Vector2(0f, 1f), new Vector2(190, -50), new Vector2(320, 70));
         botonSalirDemo = salir.gameObject;
         botonSalirDemo.SetActive(false);
     }

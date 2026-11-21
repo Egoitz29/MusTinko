@@ -21,7 +21,7 @@ public partial class VistaMesaOnlineMus
 
     [Header("Tamano segun el personaje")]
     [Tooltip("Alto de la carta comparado con la distancia entre las dos manos del personaje.")]
-    [SerializeField] private float altoCartaRespectoManos = 0.95f;
+    [SerializeField] private float altoCartaManos = 0.38f;
     [Tooltip("Cuanto se adelantan las cartas por delante de las manos (respecto a la distancia entre manos).")]
     [SerializeField] private float adelanteRespectoManos = 0.3f;
     [Tooltip("Si el modelo no tiene manos, se multiplica el tamano por esto.")]
@@ -197,7 +197,7 @@ public partial class VistaMesaOnlineMus
             {
                 // Las cartas se miden con las manos: asi encajan con el tamano de cada modelo.
                 float entreManos = Mathf.Max(0.05f, Vector3.Distance(a.ManoD.position, a.ManoI.position));
-                escala = entreManos * altoCartaRespectoManos / tamanoCartaEnMano.y;
+                escala = entreManos * altoCartaManos / tamanoCartaEnMano.y;
                 ancla = (a.ManoD.position + a.ManoI.position) * 0.5f + haciaCentro * (entreManos * adelanteRespectoManos);
             }
             else
