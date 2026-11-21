@@ -596,6 +596,85 @@ public partial class VistaMesaOnlineMus
         Texto(c.transform, ellos, tamano, Tinta, false, TextAlignmentOptions.TopLeft, false);
     }
 
+    private readonly Button[] botonesSitioMenu = new Button[4];
+    private TextMeshProUGUI txtParejasMenuUI;
+    private const string ClaveSitio = "MusTinko_SitioPreferido";
+    private int sitioPreferido = -1;
+    private bool sitioPedido;
+
+    private int SitioPreferido
+    {
+        get
+        {
+            if (sitioPreferido < 0)
+            {
+                try { sitioPreferido = Mathf.Clamp(PlayerPrefs.GetInt(ClaveSitio, 0), 0, 3); }
+                catch { sitioPreferido = 0; }
+            }
+
+            return sitioPreferido;
+        }
+    }
+
+    private void ElegirSitioPreferido(int puesto)
+    {
+        sitioPreferido = puesto;
+
+        try
+        {
+            PlayerPrefs.SetInt(ClaveSitio, puesto);
+            PlayerPrefs.Save();
+        }
+        catch
+        {
+        }
+    }
+
+    private void ActualizarMenuSitios()
+    {
+        int elegido = SitioPreferido;
+
+        for (int p = 0; p < 4; p++)
+            botonesSitioMenu[p].GetComponent<Image>().sprite = SpriteUI(p == elegido ? "boton_dorado" : p % 2 == 0 ? "boton_azul" : "boton_rojo", 22);
+
+        int companero = (elegido + 2) % 4;
+        txtParejasMenuUI.text = "Juegas con " + ColoresJugadoresMus.Nombre(companero) + " contra " +
+                                ColoresJugadoresMus.Nombre((elegido + 1) % 4) + " y " + ColoresJugadoresMus.Nombre((elegido + 3) % 4);
+    }
+
+    private void PedirSitioAlEntrar(bool enMesa)
+    {
+        if (!enMesa)
+        {
+            sitioPedido = false;
+            return;
+        }
+
+        if (sitioPedido || partida.PartidaEnCurso)
+            return;
+
+        ulong yo = NetworkManager.Singleton.LocalClientId;
+        int elegido = SitioPreferido;
+
+        if (partida.ClienteEnSitio(elegido) == yo)
+        {
+            sitioPedido = true;
+            return;
+        }
+
+        bool hayAlguien = false;
+        for (int p = 0; p < 4; p++)
+            hayAlguien |= partida.ClienteEnSitio(p) == yo;
+
+        if (!hayAlguien)
+            return;
+
+        if (partida.ClienteEnSitio(elegido) == PartidaOnlineMus.SinCliente)
+            partida.ElegirSitio(elegido);
+        else
+            sitioPedido = true;
+    }
+
     private void CrearMenu()
     {
         panelMenuUI = new GameObject("Menu", typeof(RectTransform), typeof(Image));
@@ -604,13 +683,30 @@ public partial class VistaMesaOnlineMus
         Estirar(rt, 0);
         panelMenuUI.GetComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, 0.7f);
 
-        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 900));
+        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 1020));
+        caja.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
         Rect(titulo, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -30), new Vector2(700, 140));
         Texto(titulo.transform, "Mus TINKO", 120, Oro, true);
 
-        float y = -190;
+        GameObject etiqueta = new("EtiquetaSitio", typeof(RectTransform));
+        Rect(etiqueta, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -172), new Vector2(680, 36));
+        Texto(etiqueta.transform, "ELIGE TU SITIO", 28, Oro, true);
+
+        for (int p = 0; p < 4; p++)
+        {
+            int puesto = p;
+            Button b = Boton(caja.transform, puesto % 2 == 0 ? "azul" : "rojo", ColoresJugadoresMus.Nombres[puesto], new Vector2(160, 70), () => ElegirSitioPreferido(puesto), 24);
+            Rect(b.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(-255 + puesto * 170, -214), new Vector2(160, 70));
+            botonesSitioMenu[puesto] = b;
+        }
+
+        GameObject parejas = new("Parejas", typeof(RectTransform));
+        Rect(parejas, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -288), new Vector2(680, 30));
+        txtParejasMenuUI = Texto(parejas.transform, "", 18, Crema);
+
+        float y = -330;
         Button jugar = Boton(caja.transform, "dorado", "JUGAR CONTRA BOTS", new Vector2(600, 96), () =>
         {
             empezarAlConectar = true;
@@ -699,9 +795,12 @@ public partial class VistaMesaOnlineMus
                 estadoMenu += "\n<size=20>Tu IP en esta red: " + conexion.IpLocal + "</size>";
 
             txtEstadoMenuUI.text = estadoMenu;
+            ActualizarMenuSitios();
         }
 
-        if (empezarAlConectar && enMesa && partida.IsServer && !partida.PartidaEmpezada)
+        PedirSitioAlEntrar(enMesa);
+
+        if (empezarAlConectar && enMesa && partida.IsServer && !partida.PartidaEmpezada && sitioPedido)
         {
             empezarAlConectar = false;
             partida.EmpezarPartidaServidor();
