@@ -81,6 +81,7 @@ public partial class VistaMesaOnlineMus
         CrearHistorial();
         CrearPanelHost();
         CrearSala();
+        CrearChat();
         CrearTanteo();
         CrearMenu();
 
@@ -413,6 +414,140 @@ public partial class VistaMesaOnlineMus
         Rect(botonEmpezarUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(290, 60));
         botonPausaUI = Boton(panelHostUI.transform, "gris", "PAUSA", new Vector2(180, 52), () => partida.Pausado = !partida.Pausado, 24);
         Rect(botonPausaUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 16), new Vector2(180, 52));
+    }
+
+    private static readonly string[] FrasesRapidas = { "¡Buena!", "¡Qué suerte!", "¡Vamos!", "Bien jugado", "Uff...", "¡Ja, ja!" };
+
+    private Button botonChatUI;
+    private TextMeshProUGUI txtBotonChat, txtChatUI, txtAvisoChat;
+    private GameObject panelChatUI, avisoChatUI;
+    private ScrollRect scrollChatUI;
+    private TMP_InputField campoChatUI;
+    private bool chatAbierto;
+    private int versionChatMostrada = -1;
+    private int versionChatLeida;
+    private float finAvisoChat;
+
+    private void CrearChat()
+    {
+        botonChatUI = Boton(raizUI, "azul", "CHAT", new Vector2(170, 60), () =>
+        {
+            chatAbierto = !chatAbierto;
+            versionChatLeida = partida.VersionChat;
+        }, 24);
+        Rect(botonChatUI.gameObject, raizUI, new Vector2(1f, 0f), new Vector2(-20, 20), new Vector2(170, 60));
+        txtBotonChat = botonChatUI.GetComponentInChildren<TextMeshProUGUI>();
+
+        avisoChatUI = Panel("AvisoChat", raizUI, "panel_madera_oscura", new Vector2(1f, 0f), new Vector2(-20, 90), new Vector2(520, 60));
+        txtAvisoChat = Texto(avisoChatUI.transform, "", 20, Crema, false, TextAlignmentOptions.MidlineLeft);
+        txtAvisoChat.rectTransform.offsetMin = new Vector2(16, 6);
+
+        panelChatUI = Panel("Chat", raizUI, "panel_madera_oscura", new Vector2(1f, 0f), new Vector2(-20, 90), new Vector2(520, 340));
+
+        GameObject vista = new("Vista", typeof(RectTransform), typeof(RectMask2D));
+        RectTransform rv = vista.GetComponent<RectTransform>();
+        rv.SetParent(panelChatUI.transform, false);
+        rv.anchorMin = new Vector2(0, 0);
+        rv.anchorMax = new Vector2(1, 1);
+        rv.offsetMin = new Vector2(18, 140);
+        rv.offsetMax = new Vector2(-18, -16);
+
+        GameObject contenido = new("Contenido", typeof(RectTransform), typeof(ContentSizeFitter));
+        RectTransform rc = contenido.GetComponent<RectTransform>();
+        rc.SetParent(vista.transform, false);
+        rc.anchorMin = new Vector2(0, 1);
+        rc.anchorMax = new Vector2(1, 1);
+        rc.pivot = new Vector2(0.5f, 1);
+        rc.anchoredPosition = Vector2.zero;
+        rc.sizeDelta = Vector2.zero;
+        contenido.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        txtChatUI = contenido.AddComponent<TextMeshProUGUI>();
+        txtChatUI.fontSize = 20;
+        txtChatUI.color = Crema;
+        txtChatUI.richText = true;
+        txtChatUI.alignment = TextAlignmentOptions.TopLeft;
+        txtChatUI.raycastTarget = false;
+
+        scrollChatUI = panelChatUI.AddComponent<ScrollRect>();
+        scrollChatUI.viewport = rv;
+        scrollChatUI.content = rc;
+        scrollChatUI.horizontal = false;
+        scrollChatUI.movementType = ScrollRect.MovementType.Clamped;
+
+        for (int i = 0; i < FrasesRapidas.Length; i++)
+        {
+            string frase = FrasesRapidas[i];
+            Button b = Boton(panelChatUI.transform, "gris", frase, new Vector2(156, 40), () => partida.EnviarChat(frase), 18);
+            Rect(b.gameObject, panelChatUI.transform, new Vector2(0f, 0f), new Vector2(18 + (i % 3) * 164, 92 - (i / 3) * 44), new Vector2(156, 40));
+        }
+
+        campoChatUI = Campo(panelChatUI.transform, new Vector2(0, 0), new Vector2(360, 50), "Escribe un mensaje...", "");
+        Rect(campoChatUI.gameObject, panelChatUI.transform, new Vector2(0f, 0f), new Vector2(18, 12), new Vector2(360, 50));
+        campoChatUI.characterLimit = PartidaOnlineMus.LargoMaximoChat;
+        campoChatUI.onSubmit.AddListener(_ => EnviarMensajeChat());
+        Button enviar = Boton(panelChatUI.transform, "verde", "ENVIAR", new Vector2(120, 50), EnviarMensajeChat, 22);
+        Rect(enviar.gameObject, panelChatUI.transform, new Vector2(1f, 0f), new Vector2(-18, 12), new Vector2(120, 50));
+
+        panelChatUI.SetActive(false);
+        avisoChatUI.SetActive(false);
+    }
+
+    private void EnviarMensajeChat()
+    {
+        if (campoChatUI == null || string.IsNullOrWhiteSpace(campoChatUI.text))
+            return;
+
+        partida.EnviarChat(campoChatUI.text);
+        campoChatUI.text = "";
+        campoChatUI.ActivateInputField();
+    }
+
+    private static string LineaChat(PartidaOnlineMus.MensajeChat m)
+    {
+        string quien = m.Puesto >= 0 ? ColoresJugadoresMus.Nombre(m.Puesto) : "<b>Espectador</b>";
+        return quien + ": " + m.Texto;
+    }
+
+    private void ActualizarChat(bool enMesa)
+    {
+        botonChatUI.gameObject.SetActive(enMesa);
+
+        if (!enMesa)
+        {
+            panelChatUI.SetActive(false);
+            avisoChatUI.SetActive(false);
+            return;
+        }
+
+        int version = partida.VersionChat;
+
+        if (chatAbierto)
+            versionChatLeida = version;
+
+        int sinLeer = version - versionChatLeida;
+        txtBotonChat.text = sinLeer > 0 && !chatAbierto ? "CHAT (" + sinLeer + ")" : chatAbierto ? "CERRAR" : "CHAT";
+        panelChatUI.SetActive(chatAbierto);
+
+        if (version != versionChatMostrada)
+        {
+            versionChatMostrada = version;
+            List<string> lineas = new();
+
+            foreach (PartidaOnlineMus.MensajeChat m in partida.Chat)
+                lineas.Add(LineaChat(m));
+
+            txtChatUI.text = string.Join("\n", lineas);
+            Canvas.ForceUpdateCanvases();
+            scrollChatUI.verticalNormalizedPosition = 0f;
+
+            if (partida.Chat.Count > 0 && !chatAbierto)
+            {
+                txtAvisoChat.text = LineaChat(partida.Chat[partida.Chat.Count - 1]);
+                finAvisoChat = Time.time + 4f;
+            }
+        }
+
+        avisoChatUI.SetActive(!chatAbierto && Time.time < finAvisoChat);
     }
 
     private GameObject panelSalaUI;
@@ -809,6 +944,7 @@ public partial class VistaMesaOnlineMus
         }
 
         bool revision = enRevision && empezada;
+        ActualizarChat(enMesa);
         grupoHud.SetActive(empezada && !revision);
         ActualizarHost(enMesa, empezada, revision);
         ActualizarSala(enMesa, empezada);

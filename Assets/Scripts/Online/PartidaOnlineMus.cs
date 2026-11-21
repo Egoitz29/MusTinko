@@ -632,6 +632,74 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     public void EnviarMirada(int objetivo) => MiradaRpc(objetivo);
 
+    public const int LargoMaximoChat = 120;
+
+    public struct MensajeChat
+    {
+        public int Puesto;
+        public string Texto;
+        public float Hora;
+    }
+
+    private readonly List<MensajeChat> chat = new();
+    private readonly Dictionary<ulong, float> ultimoMensajeChat = new();
+
+    public IReadOnlyList<MensajeChat> Chat => chat;
+    public int VersionChat { get; private set; }
+    public event Action<MensajeChat> MensajeChatRecibido;
+
+    public void EnviarChat(string texto)
+    {
+        texto = LimpiarChat(texto);
+
+        if (texto.Length > 0)
+            ChatRpc(texto);
+    }
+
+    private static string LimpiarChat(string texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return "";
+
+        texto = texto.Trim().Replace("<", "(").Replace(">", ")").Replace("\n", " ").Replace("\r", " ");
+        return texto.Length > LargoMaximoChat ? texto.Substring(0, LargoMaximoChat) : texto;
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ChatRpc(string texto, RpcParams parametros = default)
+    {
+        ulong quien = parametros.Receive.SenderClientId;
+
+        if (ultimoMensajeChat.TryGetValue(quien, out float ultimo) && Time.time - ultimo < 0.8f)
+            return;
+
+        texto = LimpiarChat(texto);
+
+        if (texto.Length == 0)
+            return;
+
+        ultimoMensajeChat[quien] = Time.time;
+        int puesto = partida != null ? PuestoDeCliente(quien) : -1;
+
+        if (puesto < 0)
+            puesto = Array.IndexOf(sitiosSala, quien);
+
+        ChatDifundirRpc(puesto, texto);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void ChatDifundirRpc(int puesto, string texto)
+    {
+        MensajeChat m = new() { Puesto = puesto, Texto = texto, Hora = Time.time };
+        chat.Add(m);
+
+        while (chat.Count > 60)
+            chat.RemoveAt(0);
+
+        VersionChat++;
+        MensajeChatRecibido?.Invoke(m);
+    }
+
     [Rpc(SendTo.Server)]
     private void MiradaRpc(int objetivo, RpcParams parametros = default)
     {
