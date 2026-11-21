@@ -34,6 +34,7 @@ public partial class VistaMesaOnlineMus
     private readonly Dictionary<TipoAccionMus, Button> botonesAccion = new();
 
     private GameObject panelSenasUI;
+    private float ultimaSena = -10f;
     private TextMeshProUGUI txtSenasInfo;
     private readonly Dictionary<TipoSenalMus, Button> botonesSenaUI = new();
 
@@ -352,7 +353,7 @@ public partial class VistaMesaOnlineMus
 
         GameObject info = new("Info", typeof(RectTransform), typeof(LayoutElement));
         info.transform.SetParent(panelSenasUI.transform, false);
-        info.GetComponent<LayoutElement>().preferredHeight = 44;
+        info.GetComponent<LayoutElement>().preferredHeight = 58;
         txtSenasInfo = Texto(info.transform, "a tu companero", 18, Crema);
 
         foreach (TipoSenalMus tipo in (TipoSenalMus[])Enum.GetValues(typeof(TipoSenalMus)))
@@ -361,6 +362,7 @@ public partial class VistaMesaOnlineMus
             botonesSenaUI[t] = Boton(panelSenasUI.transform, "morado", SenalesMus.Nombre(t), new Vector2(234, 50), () =>
             {
                 senasHechas.Add(t);
+                ultimaSena = Time.time;
                 partida.SolicitarSenal(t);
             }, 22);
         }
@@ -951,12 +953,14 @@ public partial class VistaMesaOnlineMus
         {
             bool puede = !e.MusCorrido && PartidaMus.CumpleSenal(cartasLocalesMostradas, r, par.Key);
             par.Value.gameObject.SetActive(puede);
-            par.Value.interactable = !senasHechas.Contains(par.Key);
+            par.Value.interactable = partida.SenasConMirada ? Time.time - ultimaSena > 1.5f : !senasHechas.Contains(par.Key);
             posibles += puede ? 1 : 0;
         }
 
+        string mirada = QuienMeMira();
         txtSenasInfo.text = e.MusCorrido ? "En el mus corrido no se hacen senas"
-            : posibles == 0 ? "Ninguna con estas cartas" : "a tu companero";
+            : posibles == 0 ? "Ninguna con estas cartas" + (mirada.Length > 0 ? "\n" + mirada : "")
+            : mirada.Length > 0 ? mirada : "a tu companero";
     }
 
     private void ActualizarHistorialUI(bool revision)

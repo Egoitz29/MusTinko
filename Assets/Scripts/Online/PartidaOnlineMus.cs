@@ -373,6 +373,9 @@ public class PartidaOnlineMus : NetworkBehaviour
         partida = new PartidaMus(Environment.TickCount, limiteTantos, maxRondasMus);
         partida.EventoRegistrado += EventoServidor;
         partida.SenalRealizada += SenalServidor;
+        partida.SenalVista += SenalVistaServidor;
+        partida.SenasRequierenMirada = senasConMirada;
+        senasPendientesBots.Clear();
         manoConSenalesBots = -1;
         idPartida++;
         registro?.EmpezarPartida(idPartida);
@@ -448,7 +451,16 @@ public class PartidaOnlineMus : NetworkBehaviour
             for (int p = 0; p < 4; p++)
                 if (bots[p] != null)
                     foreach (TipoSenalMus senal in bots[p].ElegirSenales(partida.Observar(p), azarBots))
-                        partida.HacerSenal(p, senal);
+                        if (senasConMirada)
+                            senasPendientesBots.Add(new SenaPendiente { Bot = p, Tipo = senal, Limite = Time.time + 9f });
+                        else
+                            partida.HacerSenal(p, senal);
+        }
+
+        if (senasConMirada)
+        {
+            ActualizarMiradasBots();
+            ProcesarSenasPendientesBots();
         }
 
         int actual = partida.JugadorActual;
@@ -524,6 +536,8 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         if (puesto < 0 || bots[puesto] != null || !partida.HacerSenal(puesto, (TipoSenalMus)tipo))
             Debug.LogWarning("[MUS ONLINE] Sena rechazada para el emisor " + parametros.Receive.SenderClientId);
+        else
+            InformarResultadoSena(puesto, (TipoSenalMus)tipo);
     }
 
     private void EjecutarAccion(int puesto, AccionMus accion, ObservacionMus obs, List<AccionMus> legales, string autor)
@@ -572,6 +586,175 @@ public class PartidaOnlineMus : NetworkBehaviour
     private void SenalServidor(int jugador, TipoSenalMus tipo)
     {
         SenalVisibleRpc(jugador, (int)tipo);
+    }
+
+    private void SenalVistaServidor(int receptor, int emisor, TipoSenalMus tipo, bool pillada)
+    {
+        if (clientes[receptor] != SinCliente && bots[receptor] == null)
+            SenalVistaRpc(emisor, (int)tipo, pillada, RpcTarget.Single(clientes[receptor], RpcTargetUse.Temp));
+
+        if (pillada && clientes[emisor] != SinCliente && bots[emisor] == null)
+            TeHanPilladoRpc(receptor, (int)tipo, RpcTarget.Single(clientes[emisor], RpcTargetUse.Temp));
+    }
+
+    private void InformarResultadoSena(int emisor, TipoSenalMus tipo)
+    {
+        if (clientes[emisor] == SinCliente || bots[emisor] != null)
+            return;
+
+        bool vista = partida.Mirando((emisor + 2) % 4) == emisor || !partida.SenasRequierenMirada;
+        ResultadoSenaRpc((int)tipo, vista, RpcTarget.Single(clientes[emisor], RpcTargetUse.Temp));
+    }
+
+    [Header("Senas con mirada")]
+    [Tooltip("Las senas solo las ve quien mira al que la hace; un rival que mira, la pilla.")]
+    [SerializeField] private bool senasConMirada = true;
+
+    private struct SenaPendiente
+    {
+        public int Bot;
+        public TipoSenalMus Tipo;
+        public float Limite;
+    }
+
+    private readonly List<SenaPendiente> senasPendientesBots = new();
+    private readonly float[] proximoCambioMirada = new float[4];
+    private readonly int[] miradasEnviadas = { -2, -2, -2, -2 };
+
+    public event Action<int, TipoSenalMus, bool> SenalPercibida;
+    public event Action<int, TipoSenalMus> TeHanPillado;
+    public event Action<TipoSenalMus, bool> ResultadoSena;
+    public event Action MiradasCambiadas;
+
+    private readonly int[] miradasVistas = { -1, -1, -1, -1 };
+    public int MiradaDe(int puesto) => puesto >= 0 && puesto < 4 ? miradasVistas[puesto] : -1;
+    public bool SenasConMirada => senasConMirada;
+
+    public void EnviarMirada(int objetivo) => MiradaRpc(objetivo);
+
+    [Rpc(SendTo.Server)]
+    private void MiradaRpc(int objetivo, RpcParams parametros = default)
+    {
+        if (partida == null)
+            return;
+
+        int puesto = PuestoDeCliente(parametros.Receive.SenderClientId);
+
+        if (puesto < 0 || bots[puesto] != null)
+            return;
+
+        partida.Mirar(puesto, objetivo);
+        DifundirMiradas();
+    }
+
+    private void ActualizarMiradasBots()
+    {
+        bool cambio = false;
+
+        for (int p = 0; p < 4; p++)
+        {
+            if (bots[p] == null || Time.time < proximoCambioMirada[p])
+                continue;
+
+            int companero = (p + 2) % 4;
+            bool companeroQuiereSenar = false;
+
+            foreach (SenaPendiente sp in senasPendientesBots)
+                companeroQuiereSenar |= sp.Bot == companero;
+
+            int actual = partida.JugadorActual;
+            double r = azarBots.NextDouble();
+            int objetivo;
+
+            if (companeroQuiereSenar && r < 0.6) objetivo = companero;
+            else if (actual >= 0 && actual != p && r < 0.65) objetivo = actual;
+            else if (r < 0.8) objetivo = companero;
+            else if (r < 0.9) objetivo = (p + 1 + 2 * azarBots.Next(2)) % 4;
+            else objetivo = PartidaMus.MiraCartas;
+
+            partida.Mirar(p, objetivo);
+            proximoCambioMirada[p] = Time.time + 1.2f + (float)azarBots.NextDouble() * 2.5f;
+            cambio = true;
+        }
+
+        if (cambio)
+            DifundirMiradas();
+    }
+
+    private void ProcesarSenasPendientesBots()
+    {
+        for (int i = senasPendientesBots.Count - 1; i >= 0; i--)
+        {
+            SenaPendiente sp = senasPendientesBots[i];
+            int companero = (sp.Bot + 2) % 4;
+            bool companeroMira = partida.Mirando(companero) == sp.Bot;
+            bool rivalMira = partida.Mirando((sp.Bot + 1) % 4) == sp.Bot || partida.Mirando((sp.Bot + 3) % 4) == sp.Bot;
+            bool seAcaba = Time.time >= sp.Limite;
+
+            if (!(companeroMira && !rivalMira) && !(seAcaba && companeroMira))
+            {
+                if (seAcaba)
+                    senasPendientesBots.RemoveAt(i);
+                continue;
+            }
+
+            senasPendientesBots.RemoveAt(i);
+
+            if (partida.PuedeHacerSenal(sp.Bot, sp.Tipo))
+                partida.HacerSenal(sp.Bot, sp.Tipo);
+        }
+    }
+
+    private void DifundirMiradas()
+    {
+        bool igual = true;
+
+        for (int p = 0; p < 4; p++)
+            igual &= miradasEnviadas[p] == partida.Mirando(p);
+
+        if (igual)
+            return;
+
+        for (int p = 0; p < 4; p++)
+            miradasEnviadas[p] = partida.Mirando(p);
+
+        MiradasRpc(miradasEnviadas[0], miradasEnviadas[1], miradasEnviadas[2], miradasEnviadas[3]);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void MiradasRpc(int m0, int m1, int m2, int m3)
+    {
+        miradasVistas[0] = m0;
+        miradasVistas[1] = m1;
+        miradasVistas[2] = m2;
+        miradasVistas[3] = m3;
+        MiradasCambiadas?.Invoke();
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void SenalVistaRpc(int emisor, int tipo, bool pillada, RpcParams parametros)
+    {
+        TipoSenalMus t = (TipoSenalMus)tipo;
+        string linea = pillada
+            ? "<color=#FFB347>>> Has pillado a " + ColoresJugadoresMus.Nombre(emisor) + "<color=#FFB347>: " + SenalesMus.Nombre(t) + "</color></color>"
+            : "<color=#C9A0FF>>> " + ColoresJugadoresMus.Nombre(emisor) + "<color=#C9A0FF> (tu companero) te hace la sena " + SenalesMus.Nombre(t) + "</color></color>";
+        AnadirLinea(linea);
+        SenalPercibida?.Invoke(emisor, t, pillada);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void TeHanPilladoRpc(int rival, int tipo, RpcParams parametros)
+    {
+        AnadirLinea("<color=#FF6B5E>>> Te ha pillado " + ColoresJugadoresMus.Nombre(rival) + "<color=#FF6B5E> la sena " + SenalesMus.Nombre((TipoSenalMus)tipo) + "</color></color>");
+        TeHanPillado?.Invoke(rival, (TipoSenalMus)tipo);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void ResultadoSenaRpc(int tipo, bool vista, RpcParams parametros)
+    {
+        AnadirLinea("<color=#C9A0FF>>> Haces la sena " + SenalesMus.Nombre((TipoSenalMus)tipo) + ": " +
+                    (vista ? "tu companero la ha visto" : "tu companero no te miraba") + "</color>");
+        ResultadoSena?.Invoke((TipoSenalMus)tipo, vista);
     }
 
     private void RevelarManos()
@@ -711,7 +894,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     [Rpc(SendTo.ClientsAndHost)]
     private void SenalVisibleRpc(int jugador, int tipo)
     {
-        if (!HistorialAlRitmoDeLaMesa)
+        if (!senasConMirada && !HistorialAlRitmoDeLaMesa)
             AnadirSenalAlHistorial(jugador, (TipoSenalMus)tipo);
 
         SenalRecibida?.Invoke(jugador, (TipoSenalMus)tipo);
@@ -719,6 +902,9 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     public void AnadirSenalAlHistorial(int jugador, TipoSenalMus tipo)
     {
+        if (senasConMirada)
+            return;
+
         bool esDeMiPareja = PuestoLocal >= 0 && (jugador == PuestoLocal || jugador == (PuestoLocal + 2) % 4);
 
         if (esDeMiPareja)

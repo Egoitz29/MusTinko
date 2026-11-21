@@ -63,6 +63,29 @@ public class PartidaMus
 
     public event Action<EventoMus> EventoRegistrado;
     public event Action<int, TipoSenalMus> SenalRealizada;
+    public event Action<int, int, TipoSenalMus, bool> SenalVista;
+
+    public bool SenasRequierenMirada { get; set; }
+    public const int MiraCartas = -1;
+
+    private readonly int[] mirando = { MiraCartas, MiraCartas, MiraCartas, MiraCartas };
+    private readonly List<KeyValuePair<int, TipoSenalMus>>[] senalesPilladas =
+    {
+        new List<KeyValuePair<int, TipoSenalMus>>(), new List<KeyValuePair<int, TipoSenalMus>>(),
+        new List<KeyValuePair<int, TipoSenalMus>>(), new List<KeyValuePair<int, TipoSenalMus>>()
+    };
+
+    public int Mirando(int jugador) => jugador >= 0 && jugador < Jugadores ? mirando[jugador] : MiraCartas;
+
+    public void Mirar(int jugador, int objetivo)
+    {
+        if (jugador < 0 || jugador >= Jugadores)
+            return;
+
+        mirando[jugador] = objetivo >= 0 && objetivo < Jugadores && objetivo != jugador ? objetivo : MiraCartas;
+    }
+
+    public bool LeMira(int observador, int observado) => !SenasRequierenMirada || mirando[observador] == observado;
 
     public PartidaMus(int semilla, int limite = 40, int maxRondasMus = 0)
     {
@@ -144,6 +167,7 @@ public class PartidaMus
         for (int j = 0; j < Jugadores; j++)
         {
             senalesRecibidas[j].Clear();
+            senalesPilladas[j].Clear();
             cartasDescartadas[j] = 0;
         }
 
@@ -653,13 +677,33 @@ public class PartidaMus
         if (!PuedeHacerSenal(jugador, tipo))
             return false;
 
-        List<TipoSenalMus> recibidas = senalesRecibidas[(jugador + 2) % Jugadores];
-
-        if (recibidas.Contains(tipo))
-            return false;
-
-        recibidas.Add(tipo);
+        int companero = (jugador + 2) % Jugadores;
         SenalRealizada?.Invoke(jugador, tipo);
+
+        if (LeMira(companero, jugador))
+        {
+            if (!senalesRecibidas[companero].Contains(tipo))
+                senalesRecibidas[companero].Add(tipo);
+
+            SenalVista?.Invoke(companero, jugador, tipo, false);
+        }
+
+        if (!SenasRequierenMirada)
+            return true;
+
+        for (int rival = (jugador + 1) % 2; rival < Jugadores; rival += 2)
+        {
+            if (mirando[rival] != jugador)
+                continue;
+
+            KeyValuePair<int, TipoSenalMus> pillada = new(jugador, tipo);
+
+            if (!senalesPilladas[rival].Contains(pillada))
+                senalesPilladas[rival].Add(pillada);
+
+            SenalVista?.Invoke(rival, jugador, tipo, true);
+        }
+
         return true;
     }
 
@@ -693,6 +737,7 @@ public class PartidaMus
 
         obs.HistorialMano.AddRange(historial);
         obs.SenalesRecibidas.AddRange(senalesRecibidas[jugador]);
+        obs.SenalesPilladas.AddRange(senalesPilladas[jugador]);
         return obs;
     }
 

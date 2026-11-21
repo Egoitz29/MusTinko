@@ -216,6 +216,7 @@ public class ObservacionMus
     public int[] CartasDescartadas = new int[4];
     public readonly List<EventoMus> HistorialMano = new();
     public readonly List<TipoSenalMus> SenalesRecibidas = new();
+    public readonly List<KeyValuePair<int, TipoSenalMus>> SenalesPilladas = new();
 
     public int PosicionRespectoMano => (Jugador - Mano + 4) % 4;
     public bool EsPostre => PosicionRespectoMano == 3;

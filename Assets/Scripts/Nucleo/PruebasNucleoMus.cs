@@ -152,6 +152,21 @@ public static class PruebasNucleoMus
         Comprobar(log, PartidaMus.CumpleSenal(ciego, CartasMus.Evaluar(ciego), TipoSenalMus.Ciego), "4-5-6-SOTA sin pares ni juego permite la sena de ciego");
         Comprobar(log, sn.Observar(1).SenalesRecibidas.Count == 0 && sn.Observar(3).SenalesRecibidas.Count == 0, "Los rivales no reciben la sena");
 
+        PartidaMus mi = ManoFija(
+            new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },
+            new[] { C("AS", "OROS"), C("AS", "COPAS"), C("5", "OROS"), C("6", "OROS") },
+            new[] { C("SOTA", "OROS"), C("7", "OROS"), C("5", "COPAS"), C("6", "COPAS") },
+            new[] { C("4", "COPAS"), C("7", "COPAS"), C("SOTA", "COPAS"), C("CABALLO", "COPAS") });
+        mi.SenasRequierenMirada = true;
+        mi.Mirar(2, PartidaMus.MiraCartas);
+        mi.Mirar(1, 0);
+        mi.HacerSenal(0, TipoSenalMus.DosReyes);
+        Comprobar(log, mi.Observar(2).SenalesRecibidas.Count == 0, "Con la mirada: si el companero no te mira, no recibe la sena");
+        Comprobar(log, mi.Observar(1).SenalesPilladas.Count == 1 && mi.Observar(3).SenalesPilladas.Count == 0, "El rival que te mira te pilla; el que no mira, no");
+        mi.Mirar(2, 0);
+        mi.HacerSenal(0, TipoSenalMus.DosReyes);
+        Comprobar(log, mi.Observar(2).SenalesRecibidas.Contains(TipoSenalMus.DosReyes), "Si repites la sena cuando tu companero te mira, le llega");
+
         log("== Partidas completas aleatorias ==");
         SimuladorMus sim = new();
         int abortadas = 0, invalidas = 0, malCerradas = 0;

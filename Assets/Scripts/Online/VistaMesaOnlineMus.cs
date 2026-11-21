@@ -73,6 +73,8 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     [Header("Vida de los personajes (respirar, parpadear, mirar, reaccionar)")]
     [SerializeField] private bool darVida = true;
     [SerializeField] private float alturaCabezas = 1.1f;
+    [Tooltip("Angulo maximo entre tu camara y la cara de alguien para contar que le estas mirando.")]
+    [SerializeField] private float anguloMirada = 25f;
 
     [Header("Marcador y avisos en pantalla")]
     [SerializeField] private bool mostrarHud = true;
@@ -399,6 +401,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         partida.SenalRecibida += AlSenal;
         partida.ManoPrivadaActualizada += AlRecibirMano;
         partida.ManosReveladas += AlRevelar;
+        partida.SenalPercibida += AlPercibirSena;
+        partida.TeHanPillado += AlTePillan;
+        partida.ResultadoSena += AlResultadoSena;
     }
 
     private void OnDisable()
@@ -410,6 +415,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         partida.SenalRecibida -= AlSenal;
         partida.ManoPrivadaActualizada -= AlRecibirMano;
         partida.ManosReveladas -= AlRevelar;
+        partida.SenalPercibida -= AlPercibirSena;
+        partida.TeHanPillado -= AlTePillan;
+        partida.ResultadoSena -= AlResultadoSena;
     }
 
     private void AdaptarMesaLocal()
@@ -580,7 +588,10 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
         partida.EsperandoAnimaciones = cola.Count > 0;
 
-        if (darVida)
+        ActualizarMiMirada();
+        AplicarMiradasDeLosDemas();
+
+        if (darVida && !partida.SenasConMirada)
         {
             PrepararGestos();
             int turno = partida.Estado.EnCurso ? partida.Estado.JugadorActual : -1;
@@ -1012,6 +1023,119 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         }
     }
 
+    private void AvisarSena(string texto, float segundos)
+    {
+        avisoSena = texto;
+        finAvisoSena = Time.time + segundos;
+    }
+
+    private void AlPercibirSena(int emisor, TipoSenalMus tipo, bool pillada)
+    {
+        AvisarSena(pillada
+            ? "<color=#FFB347>Has pillado a </color>" + ColoresJugadoresMus.Nombre(emisor) + "<color=#FFB347>: <b>" + SenalesMus.Nombre(tipo) + "</b></color>"
+            : ColoresJugadoresMus.Nombre(emisor) + " te hace una sena: <b>" + SenalesMus.Nombre(tipo) + "</b>  <size=80%>(" + SenalesMus.Gesto(tipo) + ")</size>", 4f);
+    }
+
+    private void AlTePillan(int rival, TipoSenalMus tipo)
+    {
+        AvisarSena("<color=#FF6B5E>Te ha pillado </color>" + ColoresJugadoresMus.Nombre(rival) + "<color=#FF6B5E>: ya sabe tu " + SenalesMus.Nombre(tipo) + "</color>", 4f);
+    }
+
+    private void AlResultadoSena(TipoSenalMus tipo, bool vista)
+    {
+        if (avisoSena != null && Time.time < finAvisoSena && avisoSena.Contains("pillado"))
+            return;
+
+        AvisarSena(vista ? "Tu companero ha visto tu sena" : "<color=#FFB347>Tu companero no te miraba: no la ha visto</color>", 3f);
+    }
+
+    private int miMiradaEnviada = -2;
+
+    private void ActualizarMiMirada()
+    {
+        if (!partida.SenasConMirada || partida.PuestoLocal < 0 || enRevision)
+            return;
+
+        Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+
+        if (cam == null)
+            return;
+
+        int mejor = PartidaMus.MiraCartas;
+        float mejorAngulo = anguloMirada;
+
+        for (int sitio = 1; sitio < 4; sitio++)
+        {
+            GameObject modelo = ModeloEnSitio(sitio);
+
+            if (modelo == null)
+                continue;
+
+            Vector3 cabeza = modelo.transform.position + Vector3.up * alturaCabezas;
+            float angulo = Vector3.Angle(cam.transform.forward, cabeza - cam.transform.position);
+
+            if (angulo < mejorAngulo)
+            {
+                mejorAngulo = angulo;
+                mejor = (partida.PuestoLocal + sitio) % 4;
+            }
+        }
+
+        if (mejor == miMiradaEnviada)
+            return;
+
+        miMiradaEnviada = mejor;
+        partida.EnviarMirada(mejor);
+    }
+
+    private void AplicarMiradasDeLosDemas()
+    {
+        if (!darVida || !partida.SenasConMirada)
+            return;
+
+        for (int p = 0; p < 4; p++)
+        {
+            if (p == partida.PuestoLocal)
+                continue;
+
+            GestosMus g = GestosDePuesto(p);
+
+            if (g == null)
+                continue;
+
+            int objetivo = partida.MiradaDe(p);
+            g.MirarA(objetivo >= 0 ? CabezaDePuesto(objetivo) : CentroMesa() + Vector3.up * 0.1f, 1f);
+        }
+    }
+
+    public string QuienMeMira()
+    {
+        int local = partida.PuestoLocal;
+
+        if (!partida.SenasConMirada || local < 0)
+            return "";
+
+        int companero = (local + 2) % 4;
+        string rivales = "";
+
+        for (int p = 0; p < 4; p++)
+        {
+            if (p == local || p == companero || partida.MiradaDe(p) != local)
+                continue;
+
+            rivales += (rivales.Length > 0 ? ", " : "") + ColoresJugadoresMus.Nombre(p);
+        }
+
+        string texto = partida.MiradaDe(companero) == local
+            ? "<color=#7CD67C>Tu companero te mira</color>"
+            : "<color=#BBBBBB>Tu companero no te mira</color>";
+
+        if (rivales.Length > 0)
+            texto += "\n<color=#FF6B5E>Te vigilan: </color>" + rivales;
+
+        return texto;
+    }
+
     private void ProcesarSenal(int puesto, TipoSenalMus tipo)
     {
         partida.AnadirSenalAlHistorial(puesto, tipo);
@@ -1030,6 +1154,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         {
             senales[sitio].EjecutarSenal((ControlSenalesMus.TipoSenal)(int)tipo);
         }
+
+        if (partida.SenasConMirada)
+            return;
 
         if (local >= 0 && puesto == (local + 2) % 4)
         {
