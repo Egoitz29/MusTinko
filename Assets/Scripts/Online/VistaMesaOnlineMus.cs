@@ -61,10 +61,18 @@ public class VistaMesaOnlineMus : MonoBehaviour
     [SerializeField] private bool colorearPersonajes = true;
     [Tooltip("0 = sin color, 1 = color puro. Valores bajos dejan los personajes claros como antes.")]
     [UnityEngine.Range(0f, 1f)][SerializeField] private float intensidadColorSuave = 0.4f;
+    [Tooltip("Pinta cada pieza (piel, pelo, ropa del color del jugador, zapatos...).")]
+    [SerializeField] private bool aspectoPorPiezas = true;
+    [UnityEngine.Range(0f, 1f)][SerializeField] private float saturacionRopa = 0.85f;
+    [UnityEngine.Range(0f, 1f)][SerializeField] private float brilloMaterial = 0.2f;
 
     [Header("Gestos (senas) mas claros, con GestosMus")]
     [SerializeField] private bool usarGestosClaros = true;
     [SerializeField] private bool mostrarBotonesSenas = true;
+
+    [Header("Vida de los personajes (respirar, parpadear, mirar, reaccionar)")]
+    [SerializeField] private bool darVida = true;
+    [SerializeField] private float alturaCabezas = 1.1f;
 
     [Header("Marcador y avisos en pantalla")]
     [SerializeField] private bool mostrarHud = true;
@@ -90,6 +98,7 @@ public class VistaMesaOnlineMus : MonoBehaviour
     private string modoUltimoLance;
     private FaseMus faseMostrada = FaseMus.Mus;
     private bool corridoVisual;
+    private int ultimoTurnoMirado = -1;
     private readonly GestosMus[] gestos = new GestosMus[4];
     private readonly HashSet<TipoSenalMus> senasHechas = new();
     private string avisoSena;
@@ -176,7 +185,10 @@ public class VistaMesaOnlineMus : MonoBehaviour
         {
             GameObject posicion = ModeloEnSitio(sitio);
             int puesto = (local + sitio) % 4;
-            ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColorSuave);
+            if (aspectoPorPiezas)
+                ColoresJugadoresMus.AplicarAspecto(posicion, puesto, saturacionRopa, brilloMaterial);
+            else
+                ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColorSuave);
         }
     }
 
@@ -562,6 +574,18 @@ public class VistaMesaOnlineMus : MonoBehaviour
 
         partida.EsperandoAnimaciones = cola.Count > 0;
 
+        if (darVida)
+        {
+            PrepararGestos();
+            int turno = partida.Estado.EnCurso ? partida.Estado.JugadorActual : -1;
+
+            if (cola.Count == 0 && turno != ultimoTurnoMirado)
+            {
+                ultimoTurnoMirado = turno;
+                TodosMiranA(turno, 3f);
+            }
+        }
+
         if (!partida.IsSpawned)
         {
             MostrarBotones(false);
@@ -748,12 +772,103 @@ public class VistaMesaOnlineMus : MonoBehaviour
         int pareja = partida.PuestoLocal >= 0 ? partida.PuestoLocal % 2 : 0;
         tabla = TablaTanteoMus.Construir(partida.UltimoDesglose, todas, pareja, NombresPuesto);
         manosVistas = todas;
+        ReaccionarAlTanteo();
         ActivarVistaRevision();
+    }
+
+    private GestosMus GestosDePuesto(int puesto)
+    {
+        PrepararGestos();
+        int sitio = Relativo(puesto);
+        return sitio >= 0 && sitio < 4 ? gestos[sitio] : null;
+    }
+
+    private Vector3 CabezaDePuesto(int puesto)
+    {
+        int sitio = Relativo(puesto);
+
+        if (sitio == 0)
+        {
+            Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+            if (cam != null) return cam.transform.position;
+        }
+
+        GameObject modelo = ModeloEnSitio(sitio);
+        return modelo != null ? modelo.transform.position + Vector3.up * alturaCabezas : Vector3.up * alturaCabezas;
+    }
+
+    private void TodosMiranA(int puesto, float segundos)
+    {
+        if (!darVida || puesto < 0)
+            return;
+
+        Vector3 objetivo = CabezaDePuesto(puesto);
+
+        for (int p = 0; p < 4; p++)
+        {
+            if (p == puesto)
+                continue;
+
+            GestosMus g = GestosDePuesto(p);
+            if (g != null) g.MirarA(objetivo, segundos);
+        }
+    }
+
+    private void ReaccionarA(EventoMus e)
+    {
+        if (!darVida || e.Jugador < 0)
+            return;
+
+        GestosMus g = GestosDePuesto(e.Jugador);
+
+        if (e.Tipo == TipoEventoMus.Declaracion)
+        {
+            if (e.Dato == 1 && g != null) g.Reaccionar(ReaccionMus.Asentir);
+            return;
+        }
+
+        if (e.Tipo != TipoEventoMus.Accion)
+            return;
+
+        TodosMiranA(e.Jugador, 2.5f);
+
+        if (g == null)
+            return;
+
+        switch (e.Accion.Tipo)
+        {
+            case TipoAccionMus.Mus:
+            case TipoAccionMus.Quiero: g.Reaccionar(ReaccionMus.Asentir); break;
+            case TipoAccionMus.NoHayMus:
+            case TipoAccionMus.NoQuiero: g.Reaccionar(ReaccionMus.Negar); break;
+            case TipoAccionMus.Descartar: g.Reaccionar(ReaccionMus.MirarCartas); break;
+            case TipoAccionMus.Pasar: g.Reaccionar(ReaccionMus.Encoger); break;
+            case TipoAccionMus.Envidar:
+            case TipoAccionMus.Reenvidar: g.Reaccionar(ReaccionMus.Animarse); break;
+            case TipoAccionMus.Ordago: g.Reaccionar(ReaccionMus.Ordago); break;
+        }
+    }
+
+    private void ReaccionarAlTanteo()
+    {
+        if (!darVida || tabla == null || tabla.TotalNosotros == tabla.TotalEllos)
+            return;
+
+        int local = Mathf.Max(0, partida.PuestoLocal);
+        bool ganamos = tabla.TotalNosotros > tabla.TotalEllos;
+
+        for (int p = 0; p < 4; p++)
+        {
+            GestosMus g = GestosDePuesto(p);
+            bool nuestro = p % 2 == local % 2;
+            if (g != null) g.Reaccionar(nuestro == ganamos ? ReaccionMus.Celebrar : ReaccionMus.Triste);
+        }
     }
 
     private void ProcesarEvento(EventoMus e)
     {
         partida.AnadirAlHistorial(e);
+        ReaccionarA(e);
         faseMostrada = e.Tipo == TipoEventoMus.FinMano ? FaseMus.FinMano : e.Fase;
 
         if (e.Tipo == TipoEventoMus.LanceCerrado)
