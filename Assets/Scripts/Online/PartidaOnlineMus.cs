@@ -300,6 +300,9 @@ public class PartidaOnlineMus : NetworkBehaviour
     {
         ParametrosBotMus parametros = ParametrosBotMus.Equilibrado();
 
+        if (parametrosBotEntrenado == null)
+            parametrosBotEntrenado = Resources.Load<TextAsset>("BotEntrenadoMus");
+
         if (parametrosBotEntrenado != null)
         {
             try

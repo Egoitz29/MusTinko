@@ -191,40 +191,66 @@ public class ComparacionBotsMus
 
 public class EntrenadorBotsMus
 {
-    public int PartidasPorEvaluacion = 400;
+    public int PartidasPorEvaluacion = 1000;
     public float Sigma = 0.08f;
-    public double TasaMinimaParaAceptar = 0.53;
+    public double TasaMinimaParaAceptar = 0.515;
+
+    public int CandidatosPorGeneracion = 6;
+    public int PartidasConfirmacion = 4000;
 
     public ParametrosBotMus Entrenar(ParametrosBotMus inicial, int generaciones, int semilla, Action<string> log)
     {
         Random azar = new(semilla);
         ParametrosBotMus mejor = inicial.Copiar();
         int aceptadas = 0;
+        float sigma = Sigma;
 
         for (int g = 1; g <= generaciones; g++)
         {
-            float[] v = mejor.AVector();
-
-            for (int i = 0; i < v.Length; i++)
-                v[i] += (float)(Normal(azar) * Sigma);
-
-            ParametrosBotMus candidato = ParametrosBotMus.DesdeVector(v, mejor.UsaSenales);
             ParametrosBotMus actual = mejor;
+            ParametrosBotMus mejorCandidato = null;
+            double mejorTasa = 0;
 
-            ComparacionBotsMus c = ComparacionBotsMus.Comparar(
-                () => new BotReglasMus("Candidato", candidato),
+            for (int k = 0; k < CandidatosPorGeneracion; k++)
+            {
+                float[] v = actual.AVector();
+
+                for (int i = 0; i < v.Length; i++)
+                    v[i] += (float)(Normal(azar) * sigma);
+
+                ParametrosBotMus candidato = ParametrosBotMus.DesdeVector(v, actual.UsaSenales);
+                ComparacionBotsMus prueba = ComparacionBotsMus.Comparar(
+                    () => new BotReglasMus("Candidato", candidato),
+                    () => new BotReglasMus("Actual", actual),
+                    PartidasPorEvaluacion, semilla + g * 100003 + k * 7919);
+
+                if (prueba.TasaA > mejorTasa)
+                {
+                    mejorTasa = prueba.TasaA;
+                    mejorCandidato = candidato;
+                }
+            }
+
+            ComparacionBotsMus confirmacion = ComparacionBotsMus.Comparar(
+                () => new BotReglasMus("Candidato", mejorCandidato),
                 () => new BotReglasMus("Actual", actual),
-                PartidasPorEvaluacion, semilla + g * 100003);
+                PartidasConfirmacion, semilla + g * 100003 + 555555);
 
-            bool acepta = c.TasaA >= TasaMinimaParaAceptar;
+            bool acepta = confirmacion.TasaA >= TasaMinimaParaAceptar;
 
             if (acepta)
             {
-                mejor = candidato;
+                mejor = mejorCandidato;
                 aceptadas++;
+                sigma = Math.Min(0.25f, sigma * 1.15f);
+            }
+            else
+            {
+                sigma = Math.Max(0.02f, sigma * 0.93f);
             }
 
-            log?.Invoke("Generacion " + g + ": " + c + (acepta ? " -> ACEPTADO" : " -> descartado"));
+            log?.Invoke("Generacion " + g + " (paso " + sigma.ToString("0.000", CultureInfo.InvariantCulture) + "): " + confirmacion +
+                        (acepta ? " -> ACEPTADO" : " -> descartado"));
         }
 
         log?.Invoke("Mejoras aceptadas: " + aceptadas + "/" + generaciones);

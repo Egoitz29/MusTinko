@@ -14,7 +14,7 @@ public static class Program
         {
             case "pruebas": return PruebasNucleoMus.Ejecutar(Console.WriteLine) == 0 ? 0 : 1;
             case "comparar": Comparar(n > 0 ? n : 2000); return 0;
-            case "entrenar": Entrenar(n > 0 ? n : 30, args.Length > 2 ? int.Parse(args[2]) : 400); return 0;
+            case "entrenar": Entrenar(n > 0 ? n : 30, args.Length > 2 ? int.Parse(args[2]) : 1000); return 0;
             case "tabla": Tabla(n); return 0;
             case "registrar": Registrar(n > 0 ? n : 200, args.Length > 2 ? args[2] : "salida/experiencias.jsonl"); return 0;
             default:
