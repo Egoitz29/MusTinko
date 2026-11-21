@@ -1014,7 +1014,7 @@ public partial class VistaMesaOnlineMus
         Estirar(rt, 0);
         panelMenuUI.GetComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, 0.7f);
 
-        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 900));
+        GameObject caja = Panel("Caja", panelMenuUI.transform, "panel_madera", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 990));
         caja.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
@@ -1037,7 +1037,11 @@ public partial class VistaMesaOnlineMus
         }, 34);
         Rect(jugar.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 96));
 
-        y -= 110;
+        y -= 96;
+        Button demo = Boton(caja.transform, "naranja", "MODO DEMO (PARA GRABAR)", new Vector2(560, 70), EmpezarDemoDesdeMenu, 26);
+        Rect(demo.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 70));
+
+        y -= 96;
         Button crear = Boton(caja.transform, "azul", "CREAR PARTIDA (MISMA WIFI)", new Vector2(560, 84), () =>
         {
             GuardarNombre(campoNombreUI.text);
@@ -1136,6 +1140,7 @@ public partial class VistaMesaOnlineMus
         grupoHud.SetActive(empezada && !revision);
         ActualizarHost(enMesa, empezada, revision);
         ActualizarSala(enMesa, empezada);
+        AjustarInterfazDemo(enMesa, empezada, revision);
 
         if (!empezada)
         {

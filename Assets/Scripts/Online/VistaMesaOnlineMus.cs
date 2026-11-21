@@ -254,7 +254,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         }
     }
 
-    private float Pausa(EventoMus e)
+    private float Pausa(EventoMus e) => PausaBase(e) * (DemoActiva ? ritmoVisualDemo : 1f);
+
+    private float PausaBase(EventoMus e)
     {
         switch (e.Tipo)
         {
@@ -267,7 +269,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
     private void AlEvento(EventoMus e) => Encolar(() => ProcesarEvento(e), Pausa(e));
 
-    private void AlSenal(int puesto, TipoSenalMus tipo) => Encolar(() => ProcesarSenal(puesto, tipo), 0.4f);
+    private void AlSenal(int puesto, TipoSenalMus tipo) => Encolar(() => ProcesarSenal(puesto, tipo), DemoActiva ? pausaSenaDemo : 0.4f);
 
     private void AlRecibirMano()
     {
@@ -579,6 +581,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private void Update()
     {
         ProcesarCola();
+        ActualizarDemo();
 
         if (lienzoUI != null)
             ActualizarInterfaz();
@@ -884,6 +887,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
     private void ProcesarEvento(EventoMus e)
     {
+        RotuloDemoEvento(e);
         partida.AnadirAlHistorial(e);
         ReaccionarA(e);
         faseMostrada = e.Tipo == TipoEventoMus.FinMano ? FaseMus.FinMano : e.Fase;
@@ -1009,7 +1013,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private string Pareja(int pareja)
     {
         int local = partida.PuestoLocal;
-        return local < 0 ? (pareja == 0 ? "0-2" : "1-3") : (pareja == local % 2 ? "NOSOTROS" : "ELLOS");
+        return local < 0 ? (pareja == 0 ? "LILA-MENTA" : "MOSTAZA-CORAL") : (pareja == local % 2 ? "NOSOTROS" : "ELLOS");
     }
 
     private string TextoCierre(EventoMus e)
@@ -1138,6 +1142,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
     private void ProcesarSenal(int puesto, TipoSenalMus tipo)
     {
+        RotuloDemoSena(puesto, tipo);
         partida.AnadirSenalAlHistorial(puesto, tipo);
 
         int sitio = Relativo(puesto);

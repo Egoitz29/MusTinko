@@ -217,6 +217,8 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        ModoDemo = false;
+
         if (IsServer && NetworkManager != null)
         {
             NetworkManager.OnClientConnectedCallback -= ClienteConectado;
@@ -394,10 +396,39 @@ public class PartidaOnlineMus : NetworkBehaviour
             clientes[p] = SinCliente;
             bots[p] = CrearBot(p);
             Debug.LogWarning("[MUS ONLINE] Jugador " + p + " desconectado. Lo sustituye un bot.");
-            momentoAccionBot = Time.time + esperaBot;
+            momentoAccionBot = Time.time + EsperaBot;
         }
 
         Difundir();
+    }
+
+    [Header("Modo demo (4 bots solos, para grabar videos)")]
+    [Tooltip("Cuanto mas lentos van los bots en la demo (1 = normal).")]
+    [SerializeField] private float ritmoBotsDemo = 1.6f;
+
+    public bool ModoDemo { get; private set; }
+    private float EsperaBot => ModoDemo ? esperaBot * ritmoBotsDemo : esperaBot;
+
+    // Solo el host en modo demo puede ver todas las manos (para ensenar a jugar).
+    public int[] CartasDemo(int puesto)
+    {
+        if (!IsServer || !ModoDemo || partida == null || puesto < 0 || puesto > 3)
+            return null;
+
+        return partida.CartasDe(puesto);
+    }
+
+    public void EmpezarDemoServidor()
+    {
+        if (!IsServer)
+            return;
+
+        ModoDemo = true;
+
+        for (int p = 0; p < 4; p++)
+            sitiosSala[p] = SinCliente;
+
+        Empezar(false);
     }
 
     public void EmpezarPartidaServidor()
@@ -405,11 +436,18 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (!IsServer)
             return;
 
+        ModoDemo = false;
+        Empezar(true);
+    }
+
+    private void Empezar(bool sentarHumanos)
+    {
         PrepararSala();
 
-        foreach (ulong id in NetworkManager.ConnectedClientsIds)
-            if (Array.IndexOf(sitiosSala, id) < 0)
-                SentarEnLibre(id, id == NetworkManager.ServerClientId);
+        if (sentarHumanos)
+            foreach (ulong id in NetworkManager.ConnectedClientsIds)
+                if (Array.IndexOf(sitiosSala, id) < 0)
+                    SentarEnLibre(id, id == NetworkManager.ServerClientId);
 
         DifundirSala();
 
@@ -436,7 +474,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         registro?.EmpezarPartida(idPartida);
         partida.IniciarPartida();
         numeroMano++;
-        momentoAccionBot = Time.time + esperaBot;
+        momentoAccionBot = Time.time + EsperaBot;
 
         Debug.Log("[MUS ONLINE] Partida iniciada. Humanos: " + (4 - ContarBots()) + ", bots: " + ContarBots());
         Difundir();
@@ -482,7 +520,7 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         if (pausado)
         {
-            momentoAccionBot = Time.time + esperaBot;
+            momentoAccionBot = Time.time + EsperaBot;
             momentoSiguienteMano = Time.time + esperaFinMano;
             return;
         }
@@ -520,6 +558,10 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         int actual = partida.JugadorActual;
 
+        // En la demo los bots esperan a que la mesa termine de ensenar lo anterior.
+        if (ModoDemo && EsperandoAnimaciones)
+            momentoAccionBot = Mathf.Max(momentoAccionBot, Time.time + 0.5f);
+
         if (actual < 0 || bots[actual] == null || Time.time < momentoAccionBot)
             return;
 
@@ -545,7 +587,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         partida.SiguienteMano();
         numeroMano++;
         manosReveladas = null;
-        momentoAccionBot = Time.time + esperaBot;
+        momentoAccionBot = Time.time + EsperaBot;
         Difundir();
     }
 
@@ -606,7 +648,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         }
 
         registro?.RegistrarDecision(obs, autor, legales, accion, manoAntes);
-        momentoAccionBot = Time.time + esperaBot;
+        momentoAccionBot = Time.time + EsperaBot;
 
         if (partida.Fase == FaseMus.FinMano || partida.PartidaTerminada)
         {
