@@ -250,14 +250,56 @@ public class PartidaOnlineMus : NetworkBehaviour
             if (sitiosSala[p] != SinCliente && !EstaConectado(sitiosSala[p]))
                 sitiosSala[p] = SinCliente;
 
-        if (Array.IndexOf(sitiosSala, Unity.Netcode.NetworkManager.ServerClientId) < 0)
-            SentarEnLibre(Unity.Netcode.NetworkManager.ServerClientId, true);
+        DifundirSala();
+    }
+
+    private readonly Dictionary<ulong, string> nombresClientes = new();
+    private readonly string[] nombresSalaVistos = { "", "", "", "" };
+    public string SinSitioVisto { get; private set; } = "";
+    public const int LargoMaximoNombre = 16;
+
+    public string NombreEnSitio(int puesto) => puesto >= 0 && puesto < 4 ? nombresSalaVistos[puesto] : "";
+
+    public void EnviarNombre(string nombre) => NombreRpc(nombre ?? "");
+
+    public static string LimpiarNombre(string nombre)
+    {
+        nombre = (nombre ?? "").Trim().Replace("<", "").Replace(">", "").Replace("\n", " ");
+        return nombre.Length > LargoMaximoNombre ? nombre.Substring(0, LargoMaximoNombre) : nombre;
+    }
+
+    private string NombreDe(ulong id)
+    {
+        if (nombresClientes.TryGetValue(id, out string n) && n.Length > 0)
+            return n;
+
+        return id == Unity.Netcode.NetworkManager.ServerClientId ? "Host" : "Jugador " + id;
+    }
+
+    [Rpc(SendTo.Server)]
+    private void NombreRpc(string nombre, RpcParams parametros = default)
+    {
+        nombresClientes[parametros.Receive.SenderClientId] = LimpiarNombre(nombre);
+        DifundirSala();
+    }
+
+    private void DifundirSala()
+    {
+        if (!IsServer)
+            return;
+
+        string[] n = new string[4];
+
+        for (int p = 0; p < 4; p++)
+            n[p] = sitiosSala[p] == SinCliente ? "" : NombreDe(sitiosSala[p]);
+
+        List<string> sinSitio = new();
 
         foreach (ulong id in NetworkManager.ConnectedClientsIds)
             if (Array.IndexOf(sitiosSala, id) < 0)
-                SentarEnLibre(id, false);
+                sinSitio.Add(NombreDe(id));
 
-        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio));
     }
 
     private bool EstaConectado(ulong id)
@@ -303,12 +345,17 @@ public class PartidaOnlineMus : NetworkBehaviour
                 sitiosSala[p] = SinCliente;
 
         sitiosSala[puesto] = quien;
-        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+        DifundirSala();
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3)
+    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio)
     {
+        nombresSalaVistos[0] = n0;
+        nombresSalaVistos[1] = n1;
+        nombresSalaVistos[2] = n2;
+        nombresSalaVistos[3] = n3;
+        SinSitioVisto = sinSitio;
         sitiosSalaVistos[0] = c0;
         sitiosSalaVistos[1] = c1;
         sitiosSalaVistos[2] = c2;
@@ -322,17 +369,19 @@ public class PartidaOnlineMus : NetworkBehaviour
         else
             PrepararSala();
 
-        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+        DifundirSala();
     }
 
     private void ClienteDesconectado(ulong id)
     {
+        nombresClientes.Remove(id);
+
         for (int p = 0; p < 4; p++)
             if (sitiosSala[p] == id && !PartidaEnCurso)
                 sitiosSala[p] = SinCliente;
 
         if (!PartidaEnCurso)
-            SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3]);
+            DifundirSala();
 
         if (partida == null)
             return;
@@ -357,6 +406,12 @@ public class PartidaOnlineMus : NetworkBehaviour
             return;
 
         PrepararSala();
+
+        foreach (ulong id in NetworkManager.ConnectedClientsIds)
+            if (Array.IndexOf(sitiosSala, id) < 0)
+                SentarEnLibre(id, id == NetworkManager.ServerClientId);
+
+        DifundirSala();
 
         for (int p = 0; p < 4; p++)
             clientes[p] = sitiosSala[p];
@@ -637,6 +692,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     public struct MensajeChat
     {
         public int Puesto;
+        public string Nombre;
         public string Texto;
         public float Hora;
     }
@@ -684,13 +740,13 @@ public class PartidaOnlineMus : NetworkBehaviour
         if (puesto < 0)
             puesto = Array.IndexOf(sitiosSala, quien);
 
-        ChatDifundirRpc(puesto, texto);
+        ChatDifundirRpc(puesto, NombreDe(quien), texto);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void ChatDifundirRpc(int puesto, string texto)
+    private void ChatDifundirRpc(int puesto, string nombre, string texto)
     {
-        MensajeChat m = new() { Puesto = puesto, Texto = texto, Hora = Time.time };
+        MensajeChat m = new() { Puesto = puesto, Nombre = nombre, Texto = texto, Hora = Time.time };
         chat.Add(m);
 
         while (chat.Count > 60)
