@@ -582,6 +582,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     {
         ProcesarCola();
         ActualizarDemo();
+        ActualizarCartasEnMano();
 
         if (lienzoUI != null)
             ActualizarInterfaz();
