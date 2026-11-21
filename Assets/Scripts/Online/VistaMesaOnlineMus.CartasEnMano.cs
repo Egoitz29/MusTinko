@@ -19,6 +19,14 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float inclinacionCartasMirando = 18f;
     [SerializeField] private float subidaCartasMirando = 0.12f;
 
+    [Header("Tamano segun el personaje")]
+    [Tooltip("Alto de la carta comparado con la distancia entre las dos manos del personaje.")]
+    [SerializeField] private float altoCartaRespectoManos = 0.95f;
+    [Tooltip("Cuanto se adelantan las cartas por delante de las manos (respecto a la distancia entre manos).")]
+    [SerializeField] private float adelanteRespectoManos = 0.3f;
+    [Tooltip("Si el modelo no tiene manos, se multiplica el tamano por esto.")]
+    [SerializeField] private float escalaSinManos = 2.5f;
+
     private sealed class AbanicoMano
     {
         public GameObject Raiz;
@@ -183,13 +191,23 @@ public partial class VistaMesaOnlineMus
             haciaCentro.Normalize();
 
             Vector3 ancla;
+            float escala;
 
             if (a.ManoD != null && a.ManoI != null)
-                ancla = (a.ManoD.position + a.ManoI.position) * 0.5f;
+            {
+                // Las cartas se miden con las manos: asi encajan con el tamano de cada modelo.
+                float entreManos = Mathf.Max(0.05f, Vector3.Distance(a.ManoD.position, a.ManoI.position));
+                escala = entreManos * altoCartaRespectoManos / tamanoCartaEnMano.y;
+                ancla = (a.ManoD.position + a.ManoI.position) * 0.5f + haciaCentro * (entreManos * adelanteRespectoManos);
+            }
             else
+            {
+                escala = escalaSinManos;
                 ancla = a.Modelo.transform.position + Vector3.up * alturaCartasEnMano + haciaCentro * adelanteCartasEnMano;
+            }
 
-            ancla += Vector3.up * (subidaCartasMirando * w);
+            ancla += Vector3.up * (subidaCartasMirando * escala * w);
+            a.Raiz.transform.localScale = Vector3.one * escala;
 
             // El reverso mira hacia la mesa; inclinado hacia atras para que se vea desde las otras sillas.
             float inclinacion = Mathf.Lerp(inclinacionCartasBajadas, inclinacionCartasMirando, w);
