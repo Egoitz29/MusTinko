@@ -324,6 +324,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             if (recentrar) controlCamaraJugador.RecentrarVista();
         }
 
+        if (recentrar)
+            RecentrarMirada();
+
         if (panelCartas != null) panelCartas.SetActive(true);
 
         foreach (GameObject objeto in textosOcultosEnRevision)
@@ -604,6 +607,13 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             ActualizarInterfaz();
 
         ActualizarPersonajes();
+        ActualizarTamanoOjos();
+
+        bool enJuegoVision = partida.IsSpawned && partida.Estado.EnCurso;
+        ActualizarVisionPeriferica(enJuegoVision);
+
+        if (raizUI != null)
+            ActualizarOjitos(enJuegoVision);
 
         if (colorearPersonajes && (partida.PuestoLocal != puestoColoreado || partida.VersionSala != versionSalaColoreada ||
                                    trajeProbador != probadorColoreado || necesitaColorear))

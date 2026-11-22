@@ -229,6 +229,8 @@ public partial class VistaMesaOnlineMus
 
     // ---------- Camara automatica ----------
 
+    private bool miradaLibreEnUso;
+
     private void LateUpdate()
     {
         if (DemoActiva)
@@ -237,6 +239,16 @@ public partial class VistaMesaOnlineMus
             CamaraProbador();
         else if (camaraProbadorActiva)
             RestaurarCamaraProbador();
+
+        // Mirada libre (arrastrar / tocar para mirar) cuando no manda otra camara.
+        bool libre = MiradaLibreActiva;
+
+        if (libre)
+            DirigirMiradaLibre();
+        else if (miradaLibreEnUso)
+            SoltarMiradaLibre();
+
+        miradaLibreEnUso = libre;
     }
 
     private void EnfocarDemo(PlanoDemo plano, int puesto, float segundos)

@@ -79,6 +79,12 @@ public class GestosMus : MonoBehaviour
 
     // Mientras esta a true el personaje agacha la cabeza y sube las manos como si mirase su mano.
     public bool MirandoCartas { get; set; }
+
+    // Tamano de los ojos (1 = el del modelo). Los parpados se encogen con ellos hacia el centro del ojo,
+    // y el parpadeo, el guino y las senas se hacen en proporcion.
+    public float EscalaOjos { get; set; } = 1f;
+    private readonly Vector3[] haciaOjo = new Vector3[2];
+    private bool haciaOjoCalculado;
     private float pesoCartas;
 
     private Vector3? objetivoMirada;
@@ -248,6 +254,10 @@ public class GestosMus : MonoBehaviour
         Acumulado a = A(clave);
         if (a == null || peso <= 0f) return;
 
+        // En los ojos, los tamanos (parpadeo, sorpresa...) van en proporcion al tamano elegido.
+        if (clave.StartsWith("CONTROL_OJO"))
+            valor *= EscalaOjos;
+
         if (peso >= a.PesoObjetivo[eje])
         {
             Vector3 v = a.EscalaObjetivo;
@@ -291,6 +301,8 @@ public class GestosMus : MonoBehaviour
         }
 
         pesoCartas = Mathf.MoveTowards(pesoCartas, MirandoCartas ? 1f : 0f, Time.deltaTime * velocidadPoseCartas);
+
+        AplicarTamanoOjos();
 
         if (vida)
             Vida();
@@ -347,6 +359,35 @@ public class GestosMus : MonoBehaviour
             float cierre = tp < 0.07f ? tp / 0.07f : 1f - (tp - 0.07f) / 0.11f;
             FijarEscala("CONTROL_OJO_I", 2, 0.06f, Mathf.Clamp01(cierre));
             FijarEscala("CONTROL_OJO_D", 2, 0.06f, Mathf.Clamp01(cierre));
+        }
+    }
+
+    private void AplicarTamanoOjos()
+    {
+        if (Mathf.Approximately(EscalaOjos, 1f))
+            return;
+
+        string[] lados = { "_I", "_D" };
+
+        if (!haciaOjoCalculado)
+        {
+            haciaOjoCalculado = true;
+
+            for (int i = 0; i < 2; i++)
+            {
+                Transform ojo = P("CONTROL_OJO" + lados[i]);
+                Transform parpado = P("CONTROL_PARPADO" + lados[i]);
+
+                if (ojo != null && parpado != null && ojo.parent == parpado.parent)
+                    haciaOjo[i] = ojo.localPosition - parpado.localPosition;
+            }
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            MultiplicarEscala("CONTROL_OJO" + lados[i], Vector3.one * EscalaOjos);
+            MultiplicarEscala("CONTROL_PARPADO" + lados[i], Vector3.one * EscalaOjos);
+            SumarPosicion("CONTROL_PARPADO" + lados[i], haciaOjo[i] * (1f - EscalaOjos));
         }
     }
 
