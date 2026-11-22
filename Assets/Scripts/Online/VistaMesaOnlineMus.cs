@@ -612,6 +612,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             ActualizarInterfaz();
 
         ActualizarPersonajes();
+        ActualizarManoPropia();
         ActualizarTamanoOjos();
 
         bool enJuegoVision = partida.IsSpawned && partida.Estado.EnCurso;
