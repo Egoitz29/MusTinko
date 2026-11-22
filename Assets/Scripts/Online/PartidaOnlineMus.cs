@@ -418,6 +418,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta, int a0, int a1, int a2, int a3, int personajes)
     {
         ColoresJugadoresMus.PonerPersonajes(personajes / 1000 % 10, personajes / 100 % 10, personajes / 10 % 10, personajes % 10);
+        ColoresJugadoresMus.PonerApodos(c0 == SinCliente ? "" : n0, c1 == SinCliente ? "" : n1, c2 == SinCliente ? "" : n2, c3 == SinCliente ? "" : n3);
         ApuestaSalaVista = apuesta;
         aspectosVistos[0] = a0;
         aspectosVistos[1] = a1;

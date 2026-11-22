@@ -31,8 +31,8 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float segundosParaZoom = 0.7f;
 
     [Header("Vision periferica (borroso alrededor)")]
-    [Tooltip("Desenfoca lo que no miras. Gasta algo mas en movil: si va lento, desmarcalo.")]
-    [SerializeField] private bool visionPeriferica = true;
+    [Tooltip("Desenfoca lo que no miras. De momento apagado (no convencio); se puede probar marcandolo.")]
+    [SerializeField] private bool usarVisionPeriferica = false;
     [SerializeField] private bool desenfoqueEnMovil = true;
     [UnityEngine.Range(1f, 16f)][SerializeField] private float aperturaDesenfoque = 2.2f;
     [UnityEngine.Range(20f, 150f)][SerializeField] private float focalDesenfoque = 70f;
@@ -48,7 +48,7 @@ public partial class VistaMesaOnlineMus
     private bool arrastrandoMirada, posibleToque;
     private Vector2 inicioToque, ultimoPuntero;
     private float momentoToque;
-    private int sitioMirado = -1;           // a quien tienes en el centro (-1 nadie, 4 las cartas)
+    private int sitioMirado = -1;           // a quien tienes en el centro (silla 0-3, -1 nadie, 4 las cartas)
     private float desdeCuandoMiras;
     private readonly List<RaycastResult> resultadosUIMirada = new();
 
@@ -100,7 +100,7 @@ public partial class VistaMesaOnlineMus
             desdeCuandoMiras = Time.time;
         }
 
-        bool fija = !arrastrandoMirada && sitioMirado >= 1 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
+        bool fija = !arrastrandoMirada && sitioMirado >= 0 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
         float fovObjetivo = fija ? fovBase * zoomMiradaFija : fovBase;
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, fovObjetivo, 1f - Mathf.Exp(-Time.deltaTime * 3f));
     }
@@ -124,9 +124,10 @@ public partial class VistaMesaOnlineMus
 
         if (teclado != null)
         {
-            if (teclado.digit1Key.wasPressedThisFrame) MirarSitio(cam, 3);
-            if (teclado.digit2Key.wasPressedThisFrame) MirarSitio(cam, 2);
-            if (teclado.digit3Key.wasPressedThisFrame) MirarSitio(cam, 1);
+            // Izquierda, enfrente y derecha de TU silla.
+            if (teclado.digit1Key.wasPressedThisFrame) MirarSitio(cam, (SillaCamara + 3) % 4);
+            if (teclado.digit2Key.wasPressedThisFrame) MirarSitio(cam, (SillaCamara + 2) % 4);
+            if (teclado.digit3Key.wasPressedThisFrame) MirarSitio(cam, (SillaCamara + 1) % 4);
             if (teclado.digit4Key.wasPressedThisFrame) MirarCartasMirada();
         }
 
@@ -203,9 +204,9 @@ public partial class VistaMesaOnlineMus
         int mejor = -1;
         float mejorDistancia = Screen.height * 0.16f;
 
-        for (int sitio = 1; sitio < 4; sitio++)
+        for (int sitio = 0; sitio < 4; sitio++)
         {
-            GameObject m = ModeloEnSitio(sitio);
+            GameObject m = sitio == SillaCamara ? null : ModeloEnSitio(sitio);
 
             if (m == null)
                 continue;
@@ -241,9 +242,9 @@ public partial class VistaMesaOnlineMus
         int mejor = -1;
         float mejorAngulo = gradosIman;
 
-        for (int sitio = 1; sitio < 4; sitio++)
+        for (int sitio = 0; sitio < 4; sitio++)
         {
-            GameObject m = ModeloEnSitio(sitio);
+            GameObject m = sitio == SillaCamara ? null : ModeloEnSitio(sitio);
 
             if (m == null)
                 continue;
@@ -300,9 +301,9 @@ public partial class VistaMesaOnlineMus
         int mejor = -1;
         float mejorAngulo = anguloMirada;
 
-        for (int sitio = 1; sitio < 4; sitio++)
+        for (int sitio = 0; sitio < 4; sitio++)
         {
-            GameObject m = ModeloEnSitio(sitio);
+            GameObject m = sitio == SillaCamara ? null : ModeloEnSitio(sitio);
 
             if (m == null)
                 continue;
@@ -324,7 +325,7 @@ public partial class VistaMesaOnlineMus
     private void ActualizarVisionPeriferica(bool enJuego)
     {
         Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
-        bool activa = visionPeriferica && (desenfoqueEnMovil || !Application.isMobilePlatform) &&
+        bool activa = usarVisionPeriferica && (desenfoqueEnMovil || !Application.isMobilePlatform) &&
                       enJuego && !enRevision && !taquillaAbierta && !DemoActiva && miradaLibre && cam != null;
 
         if (volumenVision == null)
@@ -344,7 +345,7 @@ public partial class VistaMesaOnlineMus
         // Se enfoca a quien miras; si no miras a nadie, al centro de la mesa; si miras tus cartas, de cerca.
         float distancia;
 
-        if (sitioMirado >= 1 && sitioMirado <= 3 && ModeloEnSitio(sitioMirado) != null)
+        if (sitioMirado >= 0 && sitioMirado <= 3 && ModeloEnSitio(sitioMirado) != null)
             distancia = Vector3.Distance(cam.transform.position, CabezaDe(ModeloEnSitio(sitioMirado)));
         else if (sitioMirado == 4)
             distancia = 0.6f;
@@ -393,8 +394,11 @@ public partial class VistaMesaOnlineMus
         int local = partida.PuestoLocal;
         bool mostrar = enJuego && !enRevision && partida.SenasConMirada && local >= 0 && cam != null;
 
-        for (int sitio = 1; sitio < 4; sitio++)
+        for (int sitio = 0; sitio < 4; sitio++)
         {
+            if (sitio == SillaCamara)
+                continue;
+
             if (ojitos[sitio] == null)
             {
                 if (!mostrar)
@@ -409,7 +413,7 @@ public partial class VistaMesaOnlineMus
             }
 
             Image ojo = ojitos[sitio];
-            int puesto = PuestoDeSitio(sitio);
+            int puesto = sitio;
             GameObject m = ModeloEnSitio(sitio);
             bool teMira = mostrar && m != null && partida.MiradaDe(puesto) == local;
 

@@ -20,7 +20,7 @@ public partial class VistaMesaOnlineMus
     private Quaternion[] giroOriginal;    // giro de la raiz de cada modelo al empezar
     private Vector3[] miradaLocal;        // hacia donde mira cada modelo (hacia la mesa), respecto a su raiz
     private Vector3[] caderaLocal;        // cadera respecto a la raiz de cada modelo
-    private float[] anclaAltura;          // tamano (pies-cabeza) del que se sentaba en cada silla
+    private float alturaObjetivo;         // todos del mismo tamano (ahora se ven desde todos los lados)
     private float[] alturaOriginal;       // tamano de cada modelo al empezar
     private Vector3[] escalaOriginal;     // escala de la raiz de cada modelo al empezar
     private readonly Dictionary<GameObject, Transform> cuerpos = new();
@@ -124,36 +124,183 @@ public partial class VistaMesaOnlineMus
         }
 
         ColocarPersonajes();
+        ColocarCamaraSiCambiaDeSilla();
         PonerComplementosEnLaMesa();
-        EsconderComplementosEnPrimeraPersona();
+        EsconderMiSilla();
     }
 
-    // Si la camara esta dentro de la cabeza de un personaje (tu silla), no se ven sus complementos
-    // (si no, verias las gafas o el bigote por dentro).
-    private void EsconderComplementosEnPrimeraPersona()
+    // ---------- Sillas fijas: la camara va a la tuya ----------
+
+    // Las sillas son sitios fijos de la mesa: la 0 abajo (donde estaba la camara), 1 derecha, 2 enfrente, 3 izquierda.
+    // Cada jugador se sienta en la suya y la camara se pone detras de TU silla.
+    private int SillaCamara
     {
+        get
+        {
+            int p = MiPuesto();
+            return p >= 0 ? p : 0;
+        }
+    }
+
+    // Vista en primera persona (desde tu silla): tu personaje y tu silla no se ven.
+    private bool PrimeraPersona => !taquillaAbierta && !enRevision && !(DemoActiva && !vistaJugadorDemo);
+
+    private readonly GameObject[] sillas = new GameObject[4];
+    private Vector3 camaraPosSilla0;
+    private Quaternion camaraGiroSilla0;
+    private int sillaCamaraColocada = -1;
+    private GameObject modeloOculto, sillaOculta;
+    private readonly List<Renderer> rendersOcultos = new();
+
+    private void PrepararSillas(Vector3 centro)
+    {
+        // Las tres sillas de tu escena se asignan al sitio que tienen mas cerca.
+        foreach (string nombre in new[] { "Silla_AsientoDerecha", "Silla_AsientoFrente", "Silla_AsientoIzquierda" })
+        {
+            GameObject silla = GameObject.Find(nombre);
+
+            if (silla == null)
+                continue;
+
+            int mejor = -1;
+            float mejorDistancia = float.MaxValue;
+
+            for (int s = 1; s < 4; s++)
+            {
+                float d = (Plano3(silla.transform.position) - Plano3(anclaPosicion[s])).sqrMagnitude;
+
+                if (d < mejorDistancia)
+                {
+                    mejorDistancia = d;
+                    mejor = s;
+                }
+            }
+
+            if (mejor >= 0)
+                sillas[mejor] = silla;
+        }
+
+        // Tu sitio no tenia silla (eras la camara): se pone una igual que la de enfrente, al otro lado de la mesa.
+        GameObject modelo = sillas[2];
+
+        if (sillas[0] == null && modelo != null)
+        {
+            Vector3 p = modelo.transform.position;
+            Vector3 espejo = new(2f * centro.x - p.x, p.y, 2f * centro.z - p.z);
+            GameObject copia = Instantiate(modelo, modelo.transform.parent);
+            copia.name = "Silla_AsientoAbajo";
+            copia.transform.SetPositionAndRotation(espejo, Quaternion.AngleAxis(180f, Vector3.up) * modelo.transform.rotation);
+            sillas[0] = copia;
+        }
+    }
+
+    private static Vector3 Plano3(Vector3 v) => new(v.x, 0f, v.z);
+
+    private void ColocarCamaraSiCambiaDeSilla()
+    {
+        if (modeloDePersonaje == null || anclaMirada == null)
+            return;
+
+        int silla = SillaCamara;
+
+        if (silla == sillaCamaraColocada)
+            return;
+
+        sillaCamaraColocada = silla;
         Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
 
         if (cam == null)
             return;
 
-        foreach (KeyValuePair<GameObject, List<Renderer>> par in rendersComplementos)
+        // La misma vista de siempre, girada alrededor de la mesa hasta quedar detras de tu silla.
+        float angulo = Vector3.SignedAngle(anclaMirada[0], anclaMirada[silla], Vector3.up);
+        Quaternion giro = Quaternion.AngleAxis(angulo, Vector3.up);
+        Vector3 centro = CentroMesa();
+        Vector3 pos = centro + giro * (camaraPosSilla0 - centro);
+        Quaternion rot = giro * camaraGiroSilla0;
+
+        // Si ahora mismo manda otra camara (revision, probador, demo), se cambia el sitio al que vuelve.
+        if (camaraMovida)
         {
-            if (par.Key == null)
+            posicionCamaraGuardada = pos;
+            rotacionCamaraGuardada = rot;
+        }
+        else if (camaraProbadorActiva)
+        {
+            posAntesProbador = pos;
+            rotAntesProbador = rot;
+        }
+        else if (DemoActiva && camaraDemoIniciada)
+        {
+            posCamOriginal = pos;
+            rotCamOriginal = rot;
+        }
+        else
+        {
+            cam.transform.SetPositionAndRotation(pos, rot);
+        }
+
+        // La mirada libre y la camara de 4 vistas parten de la nueva silla.
+        if (!miradaIniciada)
+            fovBase = cam.fieldOfView;
+        else
+            cam.fieldOfView = fovBase;
+
+        Vector3 e = rot.eulerAngles;
+        yawBase = yawActual = yawObjetivo = e.y;
+        pitchBase = pitchActual = pitchObjetivo = Mathf.DeltaAngle(0f, e.x);
+        miradaIniciada = true;
+
+        if (controlCamaraJugador != null)
+            controlCamaraJugador.PonerVistaBase(rot);
+    }
+
+    // En primera persona se esconden tu personaje y tu silla (si no, los tendrias delante de la camara).
+    private void EsconderMiSilla()
+    {
+        bool ocultar = PrimeraPersona && modelosPorSitio != null;
+        GameObject modelo = ocultar ? ModeloEnSitio(SillaCamara) : null;
+        GameObject silla = ocultar ? sillas[SillaCamara] : null;
+
+        if (modelo != modeloOculto || silla != sillaOculta)
+        {
+            // Se vuelve a ensenar lo que se habia escondido (menos el gorro que tapa un sombrero).
+            List<Renderer> tapados = modeloOculto != null && piezasEscondidas.TryGetValue(modeloOculto, out List<Renderer> l) ? l : null;
+
+            foreach (Renderer r in rendersOcultos)
+                if (r != null && (tapados == null || !tapados.Contains(r)))
+                    r.enabled = true;
+
+            rendersOcultos.Clear();
+            modeloOculto = modelo;
+            sillaOculta = silla;
+        }
+
+        // Cada frame, por si han aparecido piezas nuevas (complementos, cartas...).
+        Ocultar(modeloOculto);
+        Ocultar(sillaOculta);
+    }
+
+    private void Ocultar(GameObject objeto)
+    {
+        if (objeto == null)
+            return;
+
+        foreach (Renderer r in objeto.GetComponentsInChildren<Renderer>(true))
+        {
+            if (!r.enabled)
                 continue;
 
-            float alto = Mathf.Max(0.2f, CabezaDe(par.Key).y - CuerpoDe(par.Key).y);
-            bool dentro = (cam.transform.position - CabezaDe(par.Key)).sqrMagnitude < alto * alto * 0.36f;
-
-            foreach (Renderer r in par.Value)
-                if (r != null && r.enabled == dentro)
-                    r.enabled = !dentro;
+            r.enabled = false;
+            rendersOcultos.Add(r);
         }
     }
 
+    private bool sillasPreparadas = true;
+
     private void ColocarPersonajes()
     {
-        if (!cambiarPersonajesDeSilla)
+        if (!sillasPreparadas)
             return;
 
         // Se espera a que las animaciones ya hayan colocado a todos (la pose del primer frame no vale).
@@ -168,7 +315,6 @@ public partial class VistaMesaOnlineMus
             giroOriginal = new Quaternion[4];
             miradaLocal = new Vector3[4];
             caderaLocal = new Vector3[4];
-            anclaAltura = new float[4];
             alturaOriginal = new float[4];
             escalaOriginal = new Vector3[4];
 
@@ -180,19 +326,49 @@ public partial class VistaMesaOnlineMus
                 if (ModeloEnSitio(sitio) == null)
                 {
                     modeloDePersonaje = null;
-                    cambiarPersonajesDeSilla = false;
+                    sillasPreparadas = false;
                     Debug.LogWarning("[PERSONAJES] Falta algun modelo en la mesa: no se cambian de silla.");
                     return;
                 }
             }
 
-            // Cada silla: donde estaba la cadera de su modelo y hacia donde queda la mesa desde ahi.
-            for (int sitio = 0; sitio < 4; sitio++)
+            // Sillas 1, 2 y 3: donde estaba la cadera de su modelo y hacia donde queda la mesa desde ahi.
+            float sumaAlturas = 0f;
+
+            for (int sitio = 1; sitio < 4; sitio++)
             {
                 GameObject ocupante = ModeloEnSitio(sitio);
                 anclaPosicion[sitio] = CaderaDe(ocupante);
                 anclaMirada[sitio] = Plano(centro - anclaPosicion[sitio]);
-                anclaAltura[sitio] = Vector3.Distance(CuerpoDe(ocupante), CabezaDe(ocupante));
+
+                if (sitio != 2)
+                    sumaAlturas += Vector3.Distance(CuerpoDe(ocupante), CabezaDe(ocupante));
+            }
+
+            // Silla 0 (la tuya): en tu escena el modelo estaba escondido detras de la camara;
+            // se pone como la de enfrente, al otro lado de la mesa.
+            Vector3 frente = anclaPosicion[2];
+            anclaPosicion[0] = new Vector3(2f * centro.x - frente.x, frente.y, 2f * centro.z - frente.z);
+            anclaMirada[0] = Plano(centro - anclaPosicion[0]);
+
+            // Todos del tamano de los de los lados (MENTA estaba mas pequeno y ahora se ve desde todas partes).
+            alturaObjetivo = sumaAlturas / 2f;
+
+            // Las caderas, a la altura de las de los lados (son sillas iguales y todos tienen ya el mismo tamano).
+            float alturaCadera = (anclaPosicion[1].y + anclaPosicion[3].y) / 2f;
+            anclaPosicion[0].y = alturaCadera;
+            anclaPosicion[2].y = alturaCadera;
+
+            PrepararSillas(centro);
+
+            // La camara de tu escena es la de la silla 0; para las demas se gira alrededor de la mesa.
+            Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+
+            if (cam != null)
+            {
+                camaraPosSilla0 = camaraMovida ? posicionCamaraGuardada : cam.transform.position;
+                camaraGiroSilla0 = miradaIniciada ? Quaternion.Euler(pitchBase, yawBase, 0f)
+                    : camaraMovida ? rotacionCamaraGuardada : cam.transform.rotation;
             }
 
             // Cada modelo: hacia donde mira (en tu escena todos miran a la mesa) y su cadera, respecto a su raiz.
@@ -213,7 +389,11 @@ public partial class VistaMesaOnlineMus
             }
         }
 
-        string clave = partida.PuestoLocal + "|" + ColoresJugadoresMus.Version;
+        // Si esta desmarcado, los modelos se quedan como en tu escena (la camara si va a tu silla).
+        if (!cambiarPersonajesDeSilla)
+            return;
+
+        string clave = ColoresJugadoresMus.Version.ToString();
 
         if (clave == claveColocacion)
             return;
@@ -222,7 +402,7 @@ public partial class VistaMesaOnlineMus
 
         for (int sitio = 0; sitio < 4; sitio++)
         {
-            int k = ColoresJugadoresMus.PersonajeDe(PuestoDeSitio(sitio));
+            int k = ColoresJugadoresMus.PersonajeDe(sitio);
             GameObject m = modeloDePersonaje[k];
 
             if (m == null)
@@ -234,9 +414,8 @@ public partial class VistaMesaOnlineMus
             float angulo = Vector3.SignedAngle(mirabaAntes, anclaMirada[sitio], Vector3.up);
             Quaternion giroRaiz = Quaternion.AngleAxis(angulo, Vector3.up) * giroOriginal[k];
 
-            // Toma el tamano del que se sentaba en esa silla (en tu escena MENTA es mas pequeno que los demas;
-            // si no, al cambiar de silla unos se ven mucho mas grandes que otros).
-            float factor = anclaAltura[sitio] > 0.01f ? anclaAltura[sitio] / alturaOriginal[k] : 1f;
+            // Todos del mismo tamano.
+            float factor = alturaObjetivo > 0.01f ? alturaObjetivo / alturaOriginal[k] : 1f;
             m.transform.localScale = escalaOriginal[k] * factor;
             m.transform.SetPositionAndRotation(anclaPosicion[sitio] - giroRaiz * (caderaLocal[k] * factor), giroRaiz);
             modelosPorSitio[sitio] = m;

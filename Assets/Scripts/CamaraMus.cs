@@ -226,6 +226,19 @@ public class CamaraMus : MonoBehaviour
     public void MirarDerecha() { CambiarVista(Vista.Derecha); }
     public void MirarCartas() { CambiarVista(Vista.Cartas); }
 
+    // Cambia la vista "de frente" (al cambiarte de silla en la mesa online, la camara se pone en la tuya).
+    public void PonerVistaBase(Quaternion rotacion)
+    {
+        Vector3 e = rotacion.eulerAngles;
+        horizontalInicial = e.y;
+        verticalInicial = Mathf.DeltaAngle(0f, e.x);
+        vistaActual = Vista.Frente;
+        enTransicion = false;
+        tiempoTransicion = 0f;
+        rotacionOrigen = rotacion;
+        rotacionDestino = rotacion;
+    }
+
     // Se conserva para los demas scripts que ya usen este metodo.
     public void RecentrarVista()
     {

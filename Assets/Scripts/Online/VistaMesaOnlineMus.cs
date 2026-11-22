@@ -196,7 +196,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         for (int sitio = 0; sitio < 4; sitio++)
         {
             GameObject posicion = ModeloEnSitio(sitio);
-            int puesto = (local + sitio) % 4;
+            int puesto = sitio;
             int traje = TaquillaMus.TrajeDe(AspectoDePuesto(puesto));
 
             // Tu personaje lleva siempre lo que tienes puesto (y en el probador, lo que te estas probando).
@@ -363,7 +363,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
             Vector3 centro = CentroMesa();
             // Encima de la mesa, un poco hacia tu silla, mirando hacia abajo (las cartas se leen derechas).
-            Vector3 atras = anclaPosicion != null ? DireccionSilla(0) : Vector3.back;
+            Vector3 atras = anclaPosicion != null ? DireccionSilla(SillaCamara) : Vector3.back;
             Vector3 posicion = centro + Vector3.up * alturaVistaMesa + atras * retrocesoVistaMesa;
             camaraJugador.transform.SetPositionAndRotation(posicion, Quaternion.LookRotation(centro - posicion, -atras));
         }
@@ -588,7 +588,12 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         return mascara;
     }
 
-    private int Relativo(int puesto)
+    // Las sillas son fijas: cada jugador esta en la silla de su puesto (la 0 abajo, 1 derecha, 2 enfrente, 3 izquierda)
+    // y la camara se pone en la tuya. Por eso el sitio en la mesa es el mismo numero que el puesto.
+    private int Relativo(int puesto) => puesto;
+
+    // Para el reparto de cartas antiguo (RepartoPrueba), donde el hueco 0 es siempre tu mano.
+    private int RelativoAMi(int puesto)
     {
         int local = partida.PuestoLocal;
         return local < 0 ? puesto : (puesto - local + 4) % 4;
@@ -810,7 +815,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             for (int c = 0; c < 4; c++)
                 textos[c] = CartasMus.Texto(todas[puesto * 4 + c]);
 
-            reparto.EstablecerManoExterna(Relativo(puesto), textos);
+            reparto.EstablecerManoExterna(RelativoAMi(puesto), textos);
         }
 
         MostrarManosEnMesa(todas);
@@ -835,7 +840,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     {
         int sitio = Relativo(puesto);
 
-        if (sitio == 0)
+        if (sitio == SillaCamara && PrimeraPersona)
         {
             Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
             if (cam != null) return cam.transform.position;
@@ -1096,9 +1101,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         int mejor = PartidaMus.MiraCartas;
         float mejorAngulo = anguloMirada;
 
-        for (int sitio = 1; sitio < 4; sitio++)
+        for (int sitio = 0; sitio < 4; sitio++)
         {
-            GameObject modelo = ModeloEnSitio(sitio);
+            GameObject modelo = sitio == SillaCamara ? null : ModeloEnSitio(sitio);
 
             if (modelo == null)
                 continue;
@@ -1109,7 +1114,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             if (angulo < mejorAngulo)
             {
                 mejorAngulo = angulo;
-                mejor = (partida.PuestoLocal + sitio) % 4;
+                mejor = sitio;
             }
         }
 

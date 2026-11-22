@@ -192,7 +192,7 @@ public partial class VistaMesaOnlineMus
             Vector2 pos;
             bool colaIzquierda = true;
 
-            if (sitio == 0)
+            if (sitio == SillaCamara && PrimeraPersona)
             {
                 pos = new Vector2(0f, -mitad.y + 150f);
             }
@@ -773,6 +773,7 @@ public partial class VistaMesaOnlineMus
         d.Etiquetas[puesto].text = ColoresJugadoresMus.Nombre(puesto) + "\n<size=65%>" + rol + "</size>";
     }
 
+    private static readonly string[] NombresSillas = { "silla de abajo", "silla derecha", "silla de arriba", "silla izquierda" };
     private Button botonEmpezarSala;
     private TextMeshProUGUI txtSinSitioUI;
 
@@ -825,8 +826,8 @@ public partial class VistaMesaOnlineMus
             bool libre = c == PartidaOnlineMus.SinCliente;
             string nombre = libre ? "LIBRE" : partida.NombreEnSitio(p);
             string relacion = miSitio < 0 ? (p % 2 == 0 ? "pareja A" : "pareja B") : mio ? "TU" : p == (miSitio + 2) % 4 ? "companero" : "rival";
-            // Con quien se sienta va su personaje; si la silla esta libre, la ocupara un bot con el que sobre.
-            string texto = "<size=62%>" + ColoresJugadoresMus.Nombre(p) + (libre ? " (bot)" : "") + " · " + relacion + "</size>";
+            // Las sillas son sitios fijos de la mesa: se nombran por donde estan (en el dibujo, vista desde arriba).
+            string texto = "<size=62%>" + NombresSillas[p] + " · " + relacion + "</size>";
             PintarSitio(diagramaSala, p, texto, mio, libre);
             diagramaSala.Etiquetas[p].text = (libre ? "<color=#BBBBBB>LIBRE</color>" : TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(p), "")) + "\n" + texto;
         }
@@ -996,7 +997,7 @@ public partial class VistaMesaOnlineMus
         Color c = ColoresJugadoresMus.ColorDe(puesto) * 0.62f;
         string hex = "#" + ColorUtility.ToHtmlStringRGB(c);
         string apodo = partida.ClienteEnSitio(puesto) != PartidaOnlineMus.SinCliente ? partida.NombreEnSitio(puesto) : "bot";
-        return "<b><color=" + hex + ">" + ColoresJugadoresMus.NombresPorPuesto[puesto] + "</color></b>  <size=72%>" +
+        return "<b><color=" + hex + ">" + ColoresJugadoresMus.Nombres[ColoresJugadoresMus.PersonajeDe(puesto)] + "</color></b>  <size=72%>" +
                (puesto == local && partida.PuestoLocal >= 0 ? "(tu) " : "") + apodo + "</size>";
     }
 

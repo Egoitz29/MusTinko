@@ -18,7 +18,24 @@ public static class ColoresJugadoresMus
     // Que personaje (0 LILA, 1 MOSTAZA, 2 MENTA, 3 CORAL) hay en cada silla.
     // Cada jugador lleva SU personaje a la silla donde se sienta; los bots se quedan los que sobran.
     private static readonly int[] personajeDePuesto = { 0, 1, 2, 3 };
+    // Nombre que se ve de cada silla: el apodo si es una persona, el del personaje si es un bot.
     public static readonly string[] NombresPorPuesto = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
+    private static readonly string[] apodos = { "", "", "", "" };
+
+    public static void PonerApodos(string a0, string a1, string a2, string a3)
+    {
+        apodos[0] = a0 ?? "";
+        apodos[1] = a1 ?? "";
+        apodos[2] = a2 ?? "";
+        apodos[3] = a3 ?? "";
+        RecalcularNombres();
+    }
+
+    private static void RecalcularNombres()
+    {
+        for (int i = 0; i < 4; i++)
+            NombresPorPuesto[i] = apodos[i].Length > 0 ? apodos[i] : Nombres[personajeDePuesto[i]];
+    }
     public static int Version { get; private set; }
 
     public static int PersonajeDe(int puesto) => puesto >= 0 && puesto < 4 ? personajeDePuesto[puesto] : 0;
@@ -40,11 +57,9 @@ public static class ColoresJugadoresMus
             return;
 
         for (int i = 0; i < 4; i++)
-        {
             personajeDePuesto[i] = nuevos[i];
-            NombresPorPuesto[i] = Nombres[nuevos[i]];
-        }
 
+        RecalcularNombres();
         Version++;
     }
 
@@ -83,8 +98,7 @@ public static class ColoresJugadoresMus
         if (puesto < 0 || puesto > 3)
             return "-";
 
-        int k = PersonajeDe(puesto);
-        return "<color=" + Hex[k] + "><b>" + Nombres[k] + "</b></color>";
+        return "<color=" + Hex[PersonajeDe(puesto)] + "><b>" + NombresPorPuesto[puesto] + "</b></color>";
     }
 
     private static readonly Color Piel = new(1f, 0.85f, 0.72f);

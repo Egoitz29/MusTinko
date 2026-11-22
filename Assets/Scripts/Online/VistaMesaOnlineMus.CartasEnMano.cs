@@ -206,7 +206,8 @@ public partial class VistaMesaOnlineMus
             bool camaraCerca = cam != null && (cam.transform.position - cabeza).sqrMagnitude < 0.7f * 0.7f;
             // En el probador ves tus cartas en la mano de tu personaje (con el reverso que lleves).
             bool probador = taquillaAbierta && a.Modelo == MiModelo();
-            bool visible = probador || (hayMano && !(sitio == 0 && camaraCerca));
+            // Tu silla no se ve en primera persona (las tuyas ya las ves abajo).
+            bool visible = probador || (hayMano && !(sitio == SillaCamara && PrimeraPersona) && !camaraCerca);
 
             if (a.Raiz.activeSelf != visible)
                 a.Raiz.SetActive(visible);
@@ -272,6 +273,6 @@ public partial class VistaMesaOnlineMus
     private int PuestoDeSitio(int sitio)
     {
         int local = partida.PuestoLocal;
-        return local < 0 ? sitio : (local + sitio) % 4;
+        return sitio;
     }
 }

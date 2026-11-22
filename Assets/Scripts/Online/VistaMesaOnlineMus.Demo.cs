@@ -684,7 +684,7 @@ public partial class VistaMesaOnlineMus
             return;
 
         firmaManoSillaDemo = firma;
-        reparto.EstablecerManoExterna(Relativo(puesto), CartasMus.ATexto(mano));
+        reparto.EstablecerManoExterna(RelativoAMi(puesto), CartasMus.ATexto(mano));
 
         if (panelCartas != null)
             panelCartas.SetActive(true);

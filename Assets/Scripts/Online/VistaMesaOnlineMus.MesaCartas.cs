@@ -47,7 +47,7 @@ public partial class VistaMesaOnlineMus
             raizCartasMesa = new GameObject("CartasEnLaMesa").transform;
 
         Vector3 centro = CentroMesa();
-        Vector3 arriba = -DireccionSilla(0);   // de tu silla hacia el otro lado: asi se leen derechas
+        Vector3 arriba = -DireccionSilla(SillaCamara);   // de tu silla hacia el otro lado: asi se leen derechas
         float ancho = altoCartaMesa * Cartas3DMus.Proporcion;
         float grosor = altoCartaMesa * 0.008f;
         System.Random azar = new(todas[0] * 31 + todas[5]);
