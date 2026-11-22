@@ -76,6 +76,8 @@ public partial class VistaMesaOnlineMus
         OcultarBotonesDeLaEscena();
         CrearHud();
         CrearAcciones();
+        CrearSelectorEnvite();
+        CrearRelojes();
         CrearPanelSenas();
         CrearHistorial();
         CrearPanelHost();
@@ -480,8 +482,9 @@ public partial class VistaMesaOnlineMus
         botonesAccion[TipoAccionMus.NoHayMus] = Boton(barraAcciones.transform, "rojo", "NO HAY MUS", t, () => Pedir(AccionMus.NoHayMus));
         botonesAccion[TipoAccionMus.Descartar] = Boton(barraAcciones.transform, "azul", "DESCARTAR", t, Descartar);
         botonesAccion[TipoAccionMus.Pasar] = Boton(barraAcciones.transform, "gris", "PASO", t, () => Pedir(AccionMus.Pasar));
-        botonesAccion[TipoAccionMus.Envidar] = Boton(barraAcciones.transform, "naranja", "ENVIDO", t, () => Pedir(AccionMus.Envidar(partida.Estado.TantosEnvite)));
-        botonesAccion[TipoAccionMus.Reenvidar] = Boton(barraAcciones.transform, "naranja", "2 MAS", t, () => Pedir(AccionMus.Reenvidar(partida.Estado.TantosEnvite)));
+        // Envites libres: abren un selector para elegir cuantos tantos.
+        botonesAccion[TipoAccionMus.Envidar] = Boton(barraAcciones.transform, "naranja", "ENVIDO...", t, () => AbrirSelectorEnvite(false));
+        botonesAccion[TipoAccionMus.Reenvidar] = Boton(barraAcciones.transform, "naranja", "SUBIR...", t, () => AbrirSelectorEnvite(true));
         botonesAccion[TipoAccionMus.Quiero] = Boton(barraAcciones.transform, "verde", "QUIERO", t, () => Pedir(AccionMus.Quiero));
         botonesAccion[TipoAccionMus.NoQuiero] = Boton(barraAcciones.transform, "rojo", "NO QUIERO", t, () => Pedir(AccionMus.NoQuiero));
         botonesAccion[TipoAccionMus.Ordago] = Boton(barraAcciones.transform, "dorado", "ORDAGO", t, () => Pedir(AccionMus.Ordago));
@@ -1235,6 +1238,9 @@ public partial class VistaMesaOnlineMus
             txtAvisoSena.text = "";
             barraAcciones.SetActive(false);
             panelSenasUI.SetActive(false);
+
+            if (relojPropio != null) relojPropio.SetActive(false);
+            if (panelEnviteUI != null) panelEnviteUI.SetActive(false);
             panelHistorialUI.SetActive(false);
             botonHistorialUI.gameObject.SetActive(false);
             panelTanteoUI.SetActive(false);
@@ -1244,6 +1250,7 @@ public partial class VistaMesaOnlineMus
 
         ActualizarHud(revision);
         ActualizarAcciones(revision);
+        ActualizarRelojes(empezada, revision);
         ActualizarSenasUI(revision);
         ActualizarHistorialUI(revision);
         ActualizarTanteoUI(revision);
@@ -1353,8 +1360,7 @@ public partial class VistaMesaOnlineMus
             alguno |= visible;
         }
 
-        if (botonesAccion.TryGetValue(TipoAccionMus.Reenvidar, out Button mas))
-            mas.GetComponentInChildren<TextMeshProUGUI>().text = e.TantosEnvite + " MAS";
+        ActualizarSelectorEnvite(miTurno);
 
         if (botonesAccion.TryGetValue(TipoAccionMus.Descartar, out Button descartar))
             descartar.interactable = MascaraSeleccion() != 0;

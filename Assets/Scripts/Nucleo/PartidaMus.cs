@@ -255,6 +255,29 @@ public class PartidaMus
         }
     }
 
+    // Envites libres: se puede envidar de 2 hasta el limite y subir 2 o mas sin pasarse del limite.
+    public int MaximoEnvidar => Math.Max(2, Limite - 1);
+    public int MaximoReenvidar => Math.Max(0, Limite - 1 - turnos.Motor.TantosApostados);
+
+    // Como AccionesLegales, pero aceptando cualquier cantidad valida en ENVIDO y en SUBIR.
+    public bool EsLegal(int jugador, AccionMus accion)
+    {
+        List<AccionMus> legales = AccionesLegales(jugador);
+
+        if (legales.Contains(accion))
+            return true;
+
+        bool hay = legales.Exists(a => a.Tipo == accion.Tipo);
+
+        if (accion.Tipo == TipoAccionMus.Envidar)
+            return hay && accion.Valor >= 2 && accion.Valor <= MaximoEnvidar;
+
+        if (accion.Tipo == TipoAccionMus.Reenvidar)
+            return hay && accion.Valor >= 2 && accion.Valor <= MaximoReenvidar && PuedeReenvidar(accion.Valor);
+
+        return false;
+    }
+
     private bool PuedeReenvidar(int tantos)
     {
         return turnos.Motor.TantosApostados + tantos < Limite;

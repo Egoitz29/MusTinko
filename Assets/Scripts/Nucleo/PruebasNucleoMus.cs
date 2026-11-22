@@ -117,6 +117,21 @@ public static class PruebasNucleoMus
             new[] { C("AS", "OROS"), C("AS", "COPAS"), C("5", "OROS"), C("6", "OROS") },
             new[] { C("SOTA", "OROS"), C("7", "OROS"), C("5", "COPAS"), C("6", "COPAS") },
             new[] { C("4", "COPAS"), C("7", "COPAS"), C("SOTA", "COPAS"), C("CABALLO", "COPAS") });
+        Comprobar(log, q.EsLegal(0, AccionMus.Envidar(5)) && q.EsLegal(0, AccionMus.Envidar(10)) && !q.EsLegal(0, AccionMus.Envidar(1)) &&
+                       !q.EsLegal(0, AccionMus.Envidar(q.Limite)), "Envites libres: de 2 hasta el limite (ni 1 ni el limite entero)");
+        Comprobar(log, !q.EsLegal(1, AccionMus.Envidar(5)), "Envite libre: solo quien tiene el turno");
+        PartidaMus libre = ManoFija(
+            new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },
+            new[] { C("AS", "OROS"), C("AS", "COPAS"), C("5", "OROS"), C("6", "OROS") },
+            new[] { C("SOTA", "OROS"), C("7", "OROS"), C("5", "COPAS"), C("6", "COPAS") },
+            new[] { C("4", "COPAS"), C("7", "COPAS"), C("SOTA", "COPAS"), C("CABALLO", "COPAS") });
+        libre.Aplicar(0, AccionMus.Envidar(5));
+        Comprobar(log, libre.EsLegal(1, AccionMus.Reenvidar(7)) && !libre.EsLegal(1, AccionMus.Reenvidar(1)) &&
+                       !libre.EsLegal(1, AccionMus.Reenvidar(libre.Limite)), "Subir libre: 2 o mas sin pasarse del limite");
+        libre.Aplicar(1, AccionMus.Reenvidar(7));
+        libre.Aplicar(2, AccionMus.Quiero);
+        Comprobar(log, libre.Fase == FaseMus.Chica, "Envido 5 y 7 mas queridos: se cierra Grande");
+
         q.Aplicar(0, AccionMus.Envidar(2));
         q.Aplicar(1, AccionMus.Reenvidar(2));
         Comprobar(log, q.JugadorActual == 2, "Tras reenvidar el 1, responde el siguiente rival (2)");

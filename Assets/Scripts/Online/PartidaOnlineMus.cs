@@ -30,6 +30,8 @@ public struct EstadoPublicoMus : INetworkSerializable
     public ulong Cliente3;
     public int Apuesta;
     public int CodigoPartida;
+    public double FinTurno;        // hora del servidor en que se acaba el tiempo del que habla (0 = sin reloj)
+    public float DuracionTurno;    // segundos totales de ese turno (para dibujar cuanto queda)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
@@ -57,6 +59,8 @@ public struct EstadoPublicoMus : INetworkSerializable
         s.SerializeValue(ref Cliente3);
         s.SerializeValue(ref Apuesta);
         s.SerializeValue(ref CodigoPartida);
+        s.SerializeValue(ref FinTurno);
+        s.SerializeValue(ref DuracionTurno);
     }
 
     public ulong Cliente(int puesto)
@@ -597,8 +601,24 @@ public class PartidaOnlineMus : NetworkBehaviour
         {
             momentoAccionBot = Time.time + EsperaBot;
             momentoSiguienteMano = Time.time + esperaFinMano;
+
+            // En pausa el reloj del turno no corre.
+            if (finTurnoServidor > 0)
+            {
+                finTurnoServidor += Time.deltaTime;
+                relojMovido += Time.deltaTime;
+
+                if (relojMovido > 1f)
+                {
+                    relojMovido = 0f;
+                    Difundir();
+                }
+            }
+
             return;
         }
+
+        ComprobarTiempoAgotado();
 
         if (partida.Fase == FaseMus.FinMano)
         {
@@ -654,6 +674,103 @@ public class PartidaOnlineMus : NetworkBehaviour
         EjecutarAccion(actual, accion, obs, legales, bots[actual].Nombre);
     }
 
+    // ---------- Reloj de cada turno ----------
+
+    [Header("Tiempo para responder")]
+    [Tooltip("Segundos que tiene cada persona para decidir. Si se acaban, pasa sola (los bots no lo necesitan).")]
+    [SerializeField] private float segundosParaResponder = 25f;
+    [Tooltip("Segundos de mas por las animaciones (la mesa va un poco por detras del servidor).")]
+    [SerializeField] private float margenAnimaciones = 3f;
+    [Tooltip("Para probar: ensena tambien el reloj de los bots (lo que tardan en pensar).")]
+    [SerializeField] private bool mostrarRelojBots = false;
+
+    private int decisiones;
+    private int decisionConPlazo = -1;
+    private double finTurnoServidor;
+    private float duracionTurnoServidor;
+    private float relojMovido;
+
+    private double AhoraServidor => NetworkManager != null ? NetworkManager.ServerTime.Time : Time.timeAsDouble;
+
+    // Cada vez que hay una decision nueva se pone el reloj al que le toca.
+    private double PlazoDelTurno(out float duracion)
+    {
+        int actual = partida != null ? partida.JugadorActual : -1;
+        bool hayDecision = partida != null && !partida.PartidaTerminada && actual >= 0 && partida.Fase != FaseMus.FinMano;
+
+        if (!hayDecision)
+        {
+            finTurnoServidor = 0;
+            duracionTurnoServidor = 0;
+            decisionConPlazo = -1;
+        }
+        else if (decisionConPlazo != decisiones)
+        {
+            decisionConPlazo = decisiones;
+            bool esBot = bots[actual] != null;
+
+            if (!esBot && segundosParaResponder > 0f)
+            {
+                duracionTurnoServidor = segundosParaResponder + margenAnimaciones;
+                finTurnoServidor = AhoraServidor + duracionTurnoServidor;
+            }
+            else if (esBot && mostrarRelojBots)
+            {
+                duracionTurnoServidor = Mathf.Max(0.5f, EsperaBot);
+                finTurnoServidor = AhoraServidor + duracionTurnoServidor;
+            }
+            else
+            {
+                finTurnoServidor = 0;
+                duracionTurnoServidor = 0;
+            }
+        }
+
+        duracion = duracionTurnoServidor;
+        return finTurnoServidor;
+    }
+
+    // Si a una persona se le acaba el tiempo, "se le pasa": paso, no quiero, mus... lo mas prudente.
+    private void ComprobarTiempoAgotado()
+    {
+        if (partida == null || partida.PartidaTerminada || finTurnoServidor <= 0 || AhoraServidor < finTurnoServidor)
+            return;
+
+        int actual = partida.JugadorActual;
+
+        if (actual < 0 || bots[actual] != null)
+            return;
+
+        List<AccionMus> legales = partida.AccionesLegales(actual);
+
+        if (legales.Count == 0)
+            return;
+
+        AccionMus accion = default;
+        bool elegida = false;
+
+        foreach (TipoAccionMus tipo in new[] { TipoAccionMus.Pasar, TipoAccionMus.NoQuiero, TipoAccionMus.Mus })
+        {
+            foreach (AccionMus a in legales)
+                if (a.Tipo == tipo)
+                {
+                    accion = a;
+                    elegida = true;
+                    break;
+                }
+
+            if (elegida)
+                break;
+        }
+
+        if (!elegida)
+            accion = SimuladorMus.AccionSegura(legales);
+
+        finTurnoServidor = 0;
+        AnadirLinea("<color=#FF9B5E>" + ColoresJugadoresMus.Nombre(actual) + " no ha contestado a tiempo: " + accion + "</color>");
+        EjecutarAccion(actual, accion, partida.Observar(actual), legales, "TIEMPO_" + actual);
+    }
+
     private void SiguienteManoServidor()
     {
         if (partida == null || partida.Fase != FaseMus.FinMano)
@@ -661,6 +778,7 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         partida.SiguienteMano();
         numeroMano++;
+        decisiones++;
         manosReveladas = null;
         momentoAccionBot = Time.time + EsperaBot;
         Difundir();
@@ -689,7 +807,8 @@ public class PartidaOnlineMus : NetworkBehaviour
         AccionMus accion = new((TipoAccionMus)tipo, valor);
         List<AccionMus> legales = partida.AccionesLegales(puesto);
 
-        if (!legales.Contains(accion))
+        // Envites libres: cualquier cantidad valida, no solo la de la lista.
+        if (!partida.EsLegal(puesto, accion))
         {
             Debug.LogWarning("[MUS ONLINE] Accion rechazada: " + accion + " no es legal ahora.");
             return;
@@ -724,6 +843,7 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         registro?.RegistrarDecision(obs, autor, legales, accion, manoAntes);
         momentoAccionBot = Time.time + EsperaBot;
+        decisiones++;
 
         if (partida.Fase == FaseMus.FinMano || partida.PartidaTerminada)
         {
@@ -1055,6 +1175,8 @@ public class PartidaOnlineMus : NetworkBehaviour
             ParejaGanadora = partida.ParejaGanadora,
             PorOrdago = partida.VictoriaPorOrdago,
             MusCorrido = partida.MusCorridoPendiente,
+            FinTurno = PlazoDelTurno(out float duracion),
+            DuracionTurno = duracion,
             Apuesta = apuestaPartida,
             CodigoPartida = codigoPartida,
             TantosEnvite = partida.TantosEnvite,
