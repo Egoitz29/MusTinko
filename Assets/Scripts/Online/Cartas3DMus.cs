@@ -119,16 +119,22 @@ public static class Cartas3DMus
     // Reverso que lleva puesto el jugador en la taquilla.
     private static void ActualizarReverso()
     {
+        // Ojo: puede llamarse antes de crear los materiales (antes fallaba y el reverso salia en blanco para siempre).
+        if (!Materiales())
+            return;
+
         string ruta = TaquillaMus.RutaReverso;
 
         if (ruta == reversoCargado)
             return;
 
-        reversoCargado = ruta;
         Texture2D t = Resources.Load<Texture2D>(ruta);
 
-        if (t != null)
-            PonerTextura(matReverso, t);
+        if (t == null)
+            return;
+
+        reversoCargado = ruta;
+        PonerTextura(matReverso, t);
     }
 
     // Crea una carta de "alto" de altura. carta = texto de la carta ("1\nOROS"...) o null si no se sabe (cara lisa).

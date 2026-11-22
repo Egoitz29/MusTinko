@@ -11,6 +11,13 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private string rutaComplementos = "Modelos/Complementos_Tinko";
     [Tooltip("Si esta marcado, cada jugador lleva su personaje a su silla (los modelos se cambian de sitio).")]
     [SerializeField] private bool cambiarPersonajesDeSilla = true;
+    [Header("Tamano de los personajes y sitio de la camara")]
+    [Tooltip("Tamano de los personajes (1 = el de los de los lados en tu escena). Mas pequeno = la mesa se ve mas.")]
+    [UnityEngine.Range(0.6f, 1.2f)][SerializeField] private float escalaPersonajes = 0.88f;
+    [Tooltip("Cuanto se echa hacia atras la camara de tu silla (metros). 0 = donde la pusiste en la escena.")]
+    [SerializeField] private float alejarCamara = 0.35f;
+    [Tooltip("Cuanto sube la camara de tu silla (metros).")]
+    [SerializeField] private float subirCamara = 0.1f;
     [Tooltip("Distancia de la camara del probador (en alturas de cabeza).")]
     [SerializeField] private float distanciaProbador = 1.25f;
 
@@ -352,7 +359,7 @@ public partial class VistaMesaOnlineMus
             anclaMirada[0] = Plano(centro - anclaPosicion[0]);
 
             // Todos del tamano de los de los lados (MENTA estaba mas pequeno y ahora se ve desde todas partes).
-            alturaObjetivo = sumaAlturas / 2f;
+            alturaObjetivo = sumaAlturas / 2f * escalaPersonajes;
 
             // Las caderas, a la altura de las de los lados (son sillas iguales y todos tienen ya el mismo tamano).
             float alturaCadera = (anclaPosicion[1].y + anclaPosicion[3].y) / 2f;
@@ -367,6 +374,8 @@ public partial class VistaMesaOnlineMus
             if (cam != null)
             {
                 camaraPosSilla0 = camaraMovida ? posicionCamaraGuardada : cam.transform.position;
+                // Un poco mas atras y arriba: se ve mejor la mesa y los personajes no llenan la pantalla.
+                camaraPosSilla0 += Plano(camaraPosSilla0 - centro) * alejarCamara + Vector3.up * subirCamara;
                 camaraGiroSilla0 = miradaIniciada ? Quaternion.Euler(pitchBase, yawBase, 0f)
                     : camaraMovida ? rotacionCamaraGuardada : cam.transform.rotation;
             }

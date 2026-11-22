@@ -218,8 +218,19 @@ public partial class VistaMesaOnlineMus
             }
 
             float ancho = b.Raiz.sizeDelta.x;
+            float techo = mitad.y - margenSuperiorBocadillos - 80f;
+
+            // Si no cabe encima de la cabeza (chocaria con la barra de arriba), va al lado y no encima de la cara.
+            if (pos.y > techo + 30f && !(sitio == SillaCamara && PrimeraPersona))
+            {
+                bool aLaDerecha = pos.x >= 0f;
+                pos.x += (aLaDerecha ? 1f : -1f) * (ancho * 0.5f + 90f);
+                pos.y = Mathf.Min(pos.y - 60f, techo);
+                colaIzquierda = aLaDerecha;
+            }
+
             pos.x = Mathf.Clamp(pos.x, -mitad.x + ancho * 0.5f + 20f, mitad.x - ancho * 0.5f - 20f);
-            pos.y = Mathf.Clamp(pos.y, -mitad.y + 140f, mitad.y - margenSuperiorBocadillos - 80f);
+            pos.y = Mathf.Clamp(pos.y, -mitad.y + 140f, techo);
 
             if (b.Raiz.gameObject.activeSelf != visible)
                 b.Raiz.gameObject.SetActive(visible);

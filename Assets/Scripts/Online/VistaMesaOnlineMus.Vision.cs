@@ -27,7 +27,8 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float suavidadMirada = 10f;
 
     [Header("Vision: mirada fija (zoom)")]
-    [UnityEngine.Range(0.5f, 1f)][SerializeField] private float zoomMiradaFija = 0.8f;
+    [Tooltip("Solo cuando eliges a quien mirar (tocandole, arrastrando o con 1-2-3), no en la vista normal.")]
+    [UnityEngine.Range(0.5f, 1f)][SerializeField] private float zoomMiradaFija = 0.85f;
     [SerializeField] private float segundosParaZoom = 0.7f;
 
     [Header("Vision periferica (borroso alrededor)")]
@@ -50,6 +51,7 @@ public partial class VistaMesaOnlineMus
     private float momentoToque;
     private int sitioMirado = -1;           // a quien tienes en el centro (silla 0-3, -1 nadie, 4 las cartas)
     private float desdeCuandoMiras;
+    private bool miradaElegida;             // has elegido tu a quien mirar (si no, no hay zoom)
     private readonly List<RaycastResult> resultadosUIMirada = new();
 
     // Vision periferica
@@ -100,7 +102,7 @@ public partial class VistaMesaOnlineMus
             desdeCuandoMiras = Time.time;
         }
 
-        bool fija = !arrastrandoMirada && sitioMirado >= 0 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
+        bool fija = miradaElegida && !arrastrandoMirada && sitioMirado >= 0 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
         float fovObjetivo = fija ? fovBase * zoomMiradaFija : fovBase;
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, fovObjetivo, 1f - Mathf.Exp(-Time.deltaTime * 3f));
     }
@@ -155,6 +157,9 @@ public partial class VistaMesaOnlineMus
         {
             posibleToque = true;
             arrastrandoMirada = !SobreLaInterfaz(puntero);
+
+            if (arrastrandoMirada)
+                miradaElegida = false;
             inicioToque = ultimoPuntero = puntero;
             momentoToque = Time.time;
 
@@ -278,16 +283,19 @@ public partial class VistaMesaOnlineMus
         Vector3 e = q.eulerAngles;
         yawObjetivo = yawBase + Mathf.Clamp(Mathf.DeltaAngle(yawBase, e.y), -giroMaximoMirada, giroMaximoMirada);
         pitchObjetivo = Mathf.DeltaAngle(0f, e.x);
+        miradaElegida = true;
     }
 
     private void RecentrarMirada()
     {
         yawObjetivo = yawBase;
         pitchObjetivo = pitchBase;
+        miradaElegida = false;
     }
 
     private void MirarCartasMirada()
     {
+        miradaElegida = false;
         yawObjetivo = yawBase;
         pitchObjetivo = pitchBase + inclinacionCartasMirada;
     }
