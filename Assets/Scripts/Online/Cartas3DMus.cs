@@ -22,6 +22,30 @@ public static class Cartas3DMus
         public int[] canto;
     }
 
+    // Cuanto reflejan la luz el carton y el reverso (1 = normal). En tu taberna la luz es tenue y salian apagadas.
+    public static float Brillo { get; private set; } = 1.45f;
+
+    public static void PonerBrillo(float brillo)
+    {
+        Brillo = Mathf.Max(0.2f, brillo);
+
+        if (matAnverso == null)
+            return;
+
+        Color c = new(Brillo, Brillo, Brillo, 1f);
+        PonerColor(matAnverso, c);
+        PonerColor(matReverso, c);
+        PonerColor(matAnversoLiso, new Color(0.97f * Brillo, 0.95f * Brillo, 0.9f * Brillo, 1f));
+    }
+
+    private static void PonerColor(Material m, Color c)
+    {
+        m.color = c;
+
+        if (m.HasProperty("_BaseColor"))
+            m.SetColor("_BaseColor", c);
+    }
+
     private static Mesh malla;
     private static bool intentado;
     private static Material matAnverso, matAnversoLiso, matReverso, matCanto;
@@ -87,6 +111,7 @@ public static class Cartas3DMus
         matReverso = Nuevo(shader, Color.white, 0.4f);
         matCanto = Nuevo(shader, new Color(0.93f, 0.9f, 0.83f), 0.2f);
         bloque = new MaterialPropertyBlock();
+        PonerBrillo(Brillo);
 
         // El dibujo sale de la baraja (todas las cartas estan en una sola imagen).
         Sprite cualquiera = BarajaSpritesMus.Obtener(CartasMus.Texto(0));

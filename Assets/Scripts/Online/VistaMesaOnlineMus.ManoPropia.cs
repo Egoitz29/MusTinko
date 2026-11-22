@@ -13,6 +13,12 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private bool usarCartasNuevasEnMano = true;
     [Tooltip("Al mirar tus cartas, esconde lo que haya entre la camara y ellas.")]
     [SerializeField] private bool despejarVistaCartas = true;
+    [Tooltip("Cuanto reflejan la luz las cartas 3D (1 = normal). Mas alto = se ven mas vivas.")]
+    [UnityEngine.Range(0.8f, 2.2f)][SerializeField] private float brilloCartas = 1.45f;
+    [Tooltip("Luz suave encima de tus cartas cuando las miras (0 = sin luz).")]
+    [UnityEngine.Range(0f, 4f)][SerializeField] private float luzLectura = 1.6f;
+
+    private Light luzCartas;
 
     private bool manoPropiaPreparada;
     private float inclinacionVerCartas = 52f;
@@ -132,6 +138,42 @@ public partial class VistaMesaOnlineMus
         }
 
         DespejarVistaCartas(cam, mirandoCartas && despejarVistaCartas);
+
+        if (!Mathf.Approximately(Cartas3DMus.Brillo, brilloCartas))
+            Cartas3DMus.PonerBrillo(brilloCartas);
+
+        ActualizarLuzLectura(cam, mirandoCartas);
+    }
+
+    // Luz de lectura: como acercar las cartas a la lampara. Se enciende poco a poco al mirarlas.
+    private void ActualizarLuzLectura(Camera cam, bool mirandoCartas)
+    {
+        if (luzCartas == null)
+        {
+            if (!mirandoCartas || luzLectura <= 0f || manoJugador == null)
+                return;
+
+            GameObject go = new("LuzDeLectura");
+            luzCartas = go.AddComponent<Light>();
+            luzCartas.type = LightType.Point;
+            luzCartas.color = new Color(1f, 0.96f, 0.88f);
+            luzCartas.shadows = LightShadows.None;
+            luzCartas.intensity = 0f;
+        }
+
+        float objetivo = mirandoCartas && manoJugador != null ? luzLectura : 0f;
+        luzCartas.intensity = Mathf.MoveTowards(luzCartas.intensity, objetivo, Time.deltaTime * luzLectura * 4f);
+        luzCartas.enabled = luzCartas.intensity > 0.01f;
+
+        if (!luzCartas.enabled || cam == null || manoJugador == null)
+            return;
+
+        // Entre tus ojos y las cartas, un poco por encima: alumbra las cartas y poco mas.
+        Vector3 ojos = cam.transform.position;
+        Vector3 cartas = manoJugador.position;
+        float distancia = Vector3.Distance(ojos, cartas);
+        luzCartas.transform.position = Vector3.Lerp(ojos, cartas, 0.45f) + Vector3.up * (distancia * 0.25f);
+        luzCartas.range = distancia * 1.3f;
     }
 
     // Esconde lo que se ponga entre la camara y tus cartas mientras las miras.
