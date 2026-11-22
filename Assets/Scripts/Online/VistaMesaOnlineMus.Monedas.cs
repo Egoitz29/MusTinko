@@ -44,6 +44,9 @@ public partial class VistaMesaOnlineMus
                 MostrarAvisoMonedas("+" + MonederoMus.RegaloDiario + " monedas de regalo. ¡Vuelve manana!");
         }, 24);
         Rect(botonRegaloMenu.gameObject, caja.transform, new Vector2(0.5f, 0f), new Vector2(0, 18), new Vector2(330, 66));
+
+        Button taquilla = Boton(panelMenuUI.transform, "morado", "TAQUILLA", new Vector2(380, 84), AbrirTaquilla, 34);
+        Rect(taquilla.gameObject, panelMenuUI.transform, new Vector2(1f, 1f), new Vector2(-230, -300), new Vector2(380, 84));
     }
 
     private Image Icono(Transform padre, Vector2 ancla, Vector2 pos, float tam)

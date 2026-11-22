@@ -282,6 +282,24 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     public void EnviarNombre(string nombre) => NombreRpc(nombre ?? "");
 
+    // ---------- Aspecto (traje y color del nombre comprados en la taquilla) ----------
+
+    private readonly Dictionary<ulong, int> aspectosClientes = new();
+    private readonly int[] aspectosVistos = new int[4];
+    public int VersionSala { get; private set; }
+    public int AspectoEnSitio(int puesto) => puesto >= 0 && puesto < 4 && sitiosSalaVistos[puesto] != SinCliente ? aspectosVistos[puesto] : 0;
+
+    public void EnviarAspecto(int aspecto) => AspectoRpc(aspecto);
+
+    [Rpc(SendTo.Server)]
+    private void AspectoRpc(int aspecto, RpcParams parametros = default)
+    {
+        aspectosClientes[parametros.Receive.SenderClientId] = Mathf.Clamp(aspecto, 0, 9999);
+        DifundirSala();
+    }
+
+    private int AspectoDe(ulong id) => id != SinCliente && aspectosClientes.TryGetValue(id, out int a) ? a : 0;
+
     public static string LimpiarNombre(string nombre)
     {
         nombre = (nombre ?? "").Trim().Replace("<", "").Replace(">", "").Replace("\n", " ");
@@ -337,7 +355,8 @@ public class PartidaOnlineMus : NetworkBehaviour
             if (Array.IndexOf(sitiosSala, id) < 0)
                 sinSitio.Add(NombreDe(id));
 
-        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio), apuestaSala);
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio), apuestaSala,
+            AspectoDe(sitiosSala[0]), AspectoDe(sitiosSala[1]), AspectoDe(sitiosSala[2]), AspectoDe(sitiosSala[3]));
     }
 
     private bool EstaConectado(ulong id)
@@ -387,9 +406,14 @@ public class PartidaOnlineMus : NetworkBehaviour
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta)
+    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta, int a0, int a1, int a2, int a3)
     {
         ApuestaSalaVista = apuesta;
+        aspectosVistos[0] = a0;
+        aspectosVistos[1] = a1;
+        aspectosVistos[2] = a2;
+        aspectosVistos[3] = a3;
+        VersionSala++;
         nombresSalaVistos[0] = n0;
         nombresSalaVistos[1] = n1;
         nombresSalaVistos[2] = n2;
@@ -414,6 +438,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     private void ClienteDesconectado(ulong id)
     {
         nombresClientes.Remove(id);
+        aspectosClientes.Remove(id);
 
         for (int p = 0; p < 4; p++)
             if (sitiosSala[p] == id && !PartidaEnCurso)

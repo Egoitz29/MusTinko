@@ -95,6 +95,9 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private TablaTanteoMus.Tabla tabla;
     private int[] manosVistas;
     private int puestoColoreado = -2;
+    private int versionSalaColoreada = -1;
+    private int trajeProbador = -1;
+    private int probadorColoreado = -1;
     private int declaracionesJuego;
     private bool algunoTieneJuego;
     private string modoUltimoLance;
@@ -184,14 +187,22 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private void ColorearPersonajes()
     {
         puestoColoreado = partida.PuestoLocal;
+        versionSalaColoreada = partida.VersionSala;
+        probadorColoreado = trajeProbador;
         int local = Mathf.Max(0, puestoColoreado);
 
         for (int sitio = 0; sitio < 4; sitio++)
         {
             GameObject posicion = ModeloEnSitio(sitio);
             int puesto = (local + sitio) % 4;
+            int traje = TaquillaMus.TrajeDe(partida.AspectoEnSitio(puesto));
+
+            // Probador de la taquilla: el personaje de enfrente se pone el traje que estas mirando.
+            if (trajeProbador >= 0 && sitio == SitioProbador)
+                traje = trajeProbador;
+
             if (aspectoPorPiezas)
-                ColoresJugadoresMus.AplicarAspecto(posicion, puesto, saturacionRopa, brilloMaterial);
+                ColoresJugadoresMus.AplicarAspecto(posicion, puesto, saturacionRopa, brilloMaterial, traje);
             else
                 ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColorSuave);
         }
@@ -587,7 +598,8 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         if (lienzoUI != null)
             ActualizarInterfaz();
 
-        if (colorearPersonajes && partida.PuestoLocal != puestoColoreado)
+        if (colorearPersonajes && (partida.PuestoLocal != puestoColoreado || partida.VersionSala != versionSalaColoreada ||
+                                   trajeProbador != probadorColoreado))
             ColorearPersonajes();
 
         partida.EsperandoAnimaciones = cola.Count > 0;

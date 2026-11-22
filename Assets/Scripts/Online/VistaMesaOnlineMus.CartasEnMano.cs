@@ -8,6 +8,9 @@ public partial class VistaMesaOnlineMus
     [Header("Cartas en la mano (reverso)")]
     [SerializeField] private bool mostrarCartasEnMano = true;
     [SerializeField] private string rutaReverso = "Baraja/Reverso_Clasico";
+    [Tooltip("Usa el reverso que el jugador lleva puesto en la taquilla (si no, siempre rutaReverso).")]
+    [SerializeField] private bool usarReversoDeLaTaquilla = true;
+    private string reversoCargado;
     [SerializeField] private Vector2 tamanoCartaEnMano = new(0.11f, 0.17f);
     [Tooltip("Grados de apertura entre carta y carta del abanico.")]
     [SerializeField] private float aperturaAbanico = 11f;
@@ -54,6 +57,10 @@ public partial class VistaMesaOnlineMus
             return;
         }
 
+        if (usarReversoDeLaTaquilla)
+            rutaReverso = TaquillaMus.RutaReverso;
+
+        reversoCargado = rutaReverso;
         Texture2D reverso = Resources.Load<Texture2D>(rutaReverso);
         materialReverso = new Material(shader);
         materialReverso.color = Color.white;
@@ -152,6 +159,21 @@ public partial class VistaMesaOnlineMus
 
         if (!mostrarCartasEnMano)
             return;
+
+        // Si ha cambiado el reverso en la taquilla, se cambia la textura.
+        if (usarReversoDeLaTaquilla && TaquillaMus.RutaReverso != reversoCargado && materialReverso != null)
+        {
+            Texture2D nuevo = Resources.Load<Texture2D>(TaquillaMus.RutaReverso);
+            reversoCargado = TaquillaMus.RutaReverso;
+
+            if (nuevo != null)
+            {
+                materialReverso.mainTexture = nuevo;
+
+                if (materialReverso.HasProperty("_BaseMap"))
+                    materialReverso.SetTexture("_BaseMap", nuevo);
+            }
+        }
 
         bool hayMano = partida.IsSpawned && partida.Estado.EnCurso && !manosEnMesa && !enRevision;
         Camera cam = camaraJugador != null ? camaraJugador : Camera.main;

@@ -557,7 +557,8 @@ public partial class VistaMesaOnlineMus
         Rect(botonPausaUI.gameObject, panelHostUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 16), new Vector2(180, 52));
     }
 
-    private static readonly string[] FrasesRapidas = { "¡Buena!", "¡Qué suerte!", "¡Vamos!", "Bien jugado", "Uff...", "¡Ja, ja!" };
+    private readonly List<TextMeshProUGUI> textosFrasesRapidas = new();
+    private string[] frasesMostradas;
 
     private Button botonChatUI;
     private TextMeshProUGUI txtBotonChat, txtChatUI, txtAvisoChat;
@@ -615,10 +616,17 @@ public partial class VistaMesaOnlineMus
         scrollChatUI.horizontal = false;
         scrollChatUI.movementType = ScrollRect.MovementType.Clamped;
 
-        for (int i = 0; i < FrasesRapidas.Length; i++)
+        string[] frases = TaquillaMus.Frases;
+
+        for (int i = 0; i < frases.Length; i++)
         {
-            string frase = FrasesRapidas[i];
-            Button b = Boton(panelChatUI.transform, "gris", frase, new Vector2(156, 40), () => partida.EnviarChat(frase), 18);
+            int indice = i;
+            Button b = Boton(panelChatUI.transform, "gris", frases[i], new Vector2(156, 40), () =>
+            {
+                string[] actuales = TaquillaMus.Frases;
+                if (indice < actuales.Length) partida.EnviarChat(actuales[indice]);
+            }, 18);
+            textosFrasesRapidas.Add(b.GetComponentInChildren<TextMeshProUGUI>());
             Rect(b.gameObject, panelChatUI.transform, new Vector2(0f, 0f), new Vector2(18 + (i % 3) * 164, 92 - (i / 3) * 44), new Vector2(156, 40));
         }
 
@@ -643,11 +651,11 @@ public partial class VistaMesaOnlineMus
         campoChatUI.ActivateInputField();
     }
 
-    private static string LineaChat(PartidaOnlineMus.MensajeChat m)
+    private string LineaChat(PartidaOnlineMus.MensajeChat m)
     {
         string nombre = string.IsNullOrEmpty(m.Nombre) ? "?" : m.Nombre;
         string quien = m.Puesto >= 0
-            ? "<b><color=" + ColoresJugadoresMus.Hex[m.Puesto] + ">" + nombre + "</color></b>"
+            ? TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(m.Puesto), ColoresJugadoresMus.Hex[m.Puesto])
             : "<b>" + nombre + "</b>";
         return quien + ": " + m.Texto;
     }
@@ -655,6 +663,15 @@ public partial class VistaMesaOnlineMus
     private void ActualizarChat(bool enMesa)
     {
         botonChatUI.gameObject.SetActive(enMesa);
+
+        // Si ha cambiado el pack de frases en la taquilla, se cambian los botones.
+        if (frasesMostradas != TaquillaMus.Frases)
+        {
+            frasesMostradas = TaquillaMus.Frases;
+
+            for (int i = 0; i < textosFrasesRapidas.Count && i < frasesMostradas.Length; i++)
+                textosFrasesRapidas[i].text = frasesMostradas[i];
+        }
 
         if (!enMesa)
         {
@@ -778,13 +795,16 @@ public partial class VistaMesaOnlineMus
         Rect(sinSitio, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 112), new Vector2(840, 40));
         txtSinSitioUI = Texto(sinSitio.transform, "", 20, Crema);
 
+        Button taquillaSala = Boton(panelSalaUI.transform, "morado", "TAQUILLA", new Vector2(190, 60), AbrirTaquilla, 24);
+        Rect(taquillaSala.gameObject, panelSalaUI.transform, new Vector2(0f, 0f), new Vector2(130, 32), new Vector2(190, 60));
+
         botonEmpezarSala = Boton(panelSalaUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(380, 80), () => partida.EmpezarPartidaServidor(), 30);
         Rect(botonEmpezarSala.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 22), new Vector2(380, 80));
     }
 
     private void ActualizarSala(bool enMesa, bool empezada)
     {
-        bool visible = enMesa && !empezada;
+        bool visible = enMesa && !empezada && !taquillaAbierta;
         panelSalaUI.SetActive(visible);
 
         if (!visible)
@@ -806,7 +826,7 @@ public partial class VistaMesaOnlineMus
             string relacion = miSitio < 0 ? (p % 2 == 0 ? "pareja A" : "pareja B") : mio ? "TU" : p == (miSitio + 2) % 4 ? "companero" : "rival";
             string texto = "<size=60%>" + ColoresJugadoresMus.Nombre(p) + " · " + relacion + "</size>";
             PintarSitio(diagramaSala, p, texto, mio, libre);
-            diagramaSala.Etiquetas[p].text = (libre ? "<color=#BBBBBB>LIBRE</color>" : "<b>" + nombre + "</b>") + "\n" + texto;
+            diagramaSala.Etiquetas[p].text = (libre ? "<color=#BBBBBB>LIBRE</color>" : TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(p), "")) + "\n" + texto;
         }
 
         string conexionTexto = "";
@@ -955,6 +975,7 @@ public partial class VistaMesaOnlineMus
     private TMP_InputField campoNombreUI;
     private string nombreLocal;
     private bool nombreEnviado;
+    private int aspectoEnviado = -1;
 
     private string NombreLocal
     {
@@ -1002,10 +1023,21 @@ public partial class VistaMesaOnlineMus
         }
 
         if (nombreEnviado)
+        {
+            // Si cambias de traje o de color en la taquilla estando en la sala, los demas lo ven.
+            if (aspectoEnviado != TaquillaMus.AspectoPropio)
+            {
+                aspectoEnviado = TaquillaMus.AspectoPropio;
+                partida.EnviarAspecto(aspectoEnviado);
+            }
+
             return;
+        }
 
         nombreEnviado = true;
         partida.EnviarNombre(NombreLocal);
+        partida.EnviarAspecto(TaquillaMus.AspectoPropio);
+        aspectoEnviado = TaquillaMus.AspectoPropio;
     }
 
     private void CrearMenu()
@@ -1121,7 +1153,8 @@ public partial class VistaMesaOnlineMus
         bool enMesa = conectado && partida.IsSpawned;
         bool empezada = enMesa && partida.PartidaEmpezada;
 
-        panelMenuUI.SetActive(!conectado);
+        panelMenuUI.SetActive(!conectado && !taquillaAbierta);
+        ActualizarTaquilla();
 
         if (!conectado)
         {

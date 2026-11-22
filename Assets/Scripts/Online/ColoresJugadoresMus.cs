@@ -34,8 +34,9 @@ public static class ColoresJugadoresMus
         new(0.58f, 0.24f, 0.12f)
     };
 
-    public static void AplicarAspecto(GameObject raiz, int puesto, float saturacionRopa, float brillo)
+    public static void AplicarAspecto(GameObject raiz, int puesto, float saturacionRopa, float brillo, int traje = 0)
     {
+        TrajeMus t = TaquillaMus.Trajes[Mathf.Clamp(traje, 0, TaquillaMus.Trajes.Length - 1)];
         if (raiz == null || puesto < 0 || puesto > 3)
             return;
 
@@ -54,7 +55,8 @@ public static class ColoresJugadoresMus
             if (r.GetComponentInParent<BocadilloMus3D>() != null)
                 continue;
 
-            Color? color = ColorDePieza(Pieza(r.name), ropa, ropaOscura, manoplas, pelo);
+            string pieza = Pieza(r.name);
+            Color? color = ColorDeTraje(pieza, t) ?? ColorDePieza(pieza, ropa, ropaOscura, manoplas, pelo);
 
             if (!color.HasValue)
                 continue;
@@ -76,6 +78,20 @@ public static class ColoresJugadoresMus
         int primero = nombre.IndexOf('_');
         int segundo = primero >= 0 ? nombre.IndexOf('_', primero + 1) : -1;
         return segundo >= 0 ? nombre.Substring(segundo + 1) : nombre;
+    }
+
+    // Lo que cambia un traje de la taquilla (si no lo cambia, devuelve null y se usa lo de siempre).
+    private static Color? ColorDeTraje(string pieza, TrajeMus t)
+    {
+        if (pieza == "Gorro_ParteAlta") return t.Gorro;
+        if (pieza == "Gorro_Borde") return t.BordeGorro;
+        if (pieza == "Gorro_Pompom") return t.Pompom;
+        if (pieza.StartsWith("Manopla") || pieza.StartsWith("Pulgar")) return t.Manoplas;
+        if (pieza.StartsWith("Boton") || pieza.StartsWith("Etiqueta")) return t.Botones;
+        if (pieza.StartsWith("Pierna")) return t.Piernas;
+        if (pieza.StartsWith("Zapato")) return t.Zapatos;
+        if (pieza.StartsWith("CEJA") || pieza.StartsWith("Pelo") || pieza.StartsWith("Flequillo")) return t.Pelo;
+        return null;
     }
 
     private static Color? ColorDePieza(string pieza, Color ropa, Color ropaOscura, Color manoplas, Color pelo)
