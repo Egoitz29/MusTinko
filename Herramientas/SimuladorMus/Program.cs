@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 public static class Program
 {
@@ -17,8 +19,12 @@ public static class Program
             case "entrenar": Entrenar(n > 0 ? n : 30, args.Length > 2 ? int.Parse(args[2]) : 1000); return 0;
             case "tabla": Tabla(n); return 0;
             case "registrar": Registrar(n > 0 ? n : 200, args.Length > 2 ? args[2] : "salida/experiencias.jsonl"); return 0;
+            case "tablas": Tablas(n > 0 ? n : 40000); return 0;
+            case "probabilista": Probabilista(n > 0 ? n : 60, args.Length > 2 ? int.Parse(args[2]) : 800); return 0;
+            case "evaluarprob": EvaluarProbabilista(n > 0 ? n : 20000); return 0;
             default:
-                Console.WriteLine("Uso: pruebas | comparar [partidas] | entrenar [generaciones] [partidasPorGen] | registrar [partidas] [archivo]");
+                Console.WriteLine("Uso: pruebas | comparar [partidas] | entrenar [generaciones] [partidasPorGen] | registrar [partidas] [archivo]\n" +
+                                  "     tablas [muestrasPorCaso] | probabilista [generaciones] [partidasPorRival] | evaluarprob [partidas]");
                 return 1;
         }
     }
@@ -104,5 +110,118 @@ public static class Program
         }
 
         Console.WriteLine("Decisiones registradas: " + registro.LineasEscritas + " en " + archivo);
+    }
+
+    // ---------------------------------------------------------------- bot probabilista
+
+    private const string CarpetaBots = "../../Assets/Resources/Bots/";
+    private const string ArchivoTablas = CarpetaBots + "ProbabilidadesMus.txt";
+    private const string ArchivoProbabilista = CarpetaBots + "BotProbabilistaMus.txt";
+    private const string ArchivoReglasEntrenado = "../../Assets/Resources/BotEntrenadoMus.txt";
+
+    private static void Tablas(int muestras)
+    {
+        Stopwatch reloj = Stopwatch.StartNew();
+        TablasProbabilidadMus.Generar(muestras, 31337, Console.WriteLine);
+        Console.WriteLine("Tiempo: " + reloj.Elapsed.TotalSeconds.ToString("0.0") + " s");
+        Directory.CreateDirectory(CarpetaBots);
+        File.WriteAllText(ArchivoTablas, TablasProbabilidadMus.Guardar());
+        Console.WriteLine("Guardado en " + Path.GetFullPath(ArchivoTablas));
+        MostrarEjemplos();
+    }
+
+    private static void MostrarEjemplos()
+    {
+        // Algunas manos para ver que los numeros tienen sentido.
+        (string, int[])[] ejemplos =
+        {
+            ("Duples de reyes (R R R R)", new[] { 9, 19, 29, 39 }),
+            ("31 real (R R S As)", new[] { 9, 19, 7, 0 }),
+            ("Cuatro ases", new[] { 0, 10, 20, 30 }),
+            ("Medias de sotas (S S S 4)", new[] { 7, 17, 27, 3 }),
+            ("Nada (4 5 6 7)", new[] { 3, 4, 5, 6 })
+        };
+        string[] lances = { "grande", "chica", "pares", "pares+comp", "juego", "juego+comp", "punto" };
+
+        foreach ((string nombre, int[] cartas) in ejemplos)
+        {
+            Console.WriteLine(nombre + "  [" + string.Join(" ", cartas.Select(CartasMus.TextoCorto)) + "]");
+
+            for (int pos = 0; pos < 4; pos += 3)
+                Console.WriteLine("   " + (pos == 0 ? "mano  " : "postre") + ": " + string.Join("  ", Enumerable.Range(0, TablasProbabilidadMus.Lances)
+                    .Select(l => lances[l] + " " + (TablasProbabilidadMus.Probabilidad(cartas, pos, l) * 100).ToString("0") + "%")));
+        }
+    }
+
+    private static bool CargarTablas()
+    {
+        if (TablasProbabilidadMus.Cargadas)
+            return true;
+
+        if (File.Exists(ArchivoTablas) && TablasProbabilidadMus.Cargar(File.ReadAllText(ArchivoTablas)))
+            return true;
+
+        Console.WriteLine("No hay tablas guardadas: ejecuta primero  dotnet run -- tablas");
+        return false;
+    }
+
+    private static List<EntrenadorProbabilistaMus.Rival> RivalesFijos()
+    {
+        List<EntrenadorProbabilistaMus.Rival> r = new();
+
+        if (File.Exists(ArchivoReglasEntrenado))
+        {
+            ParametrosBotMus entrenado = EntrenadorBotsMus.Cargar(File.ReadAllText(ArchivoReglasEntrenado));
+            r.Add(new EntrenadorProbabilistaMus.Rival { Nombre = "Reglas entrenado (el de ahora)", Crear = () => new BotReglasMus("Entrenado", entrenado) });
+        }
+
+        r.Add(new EntrenadorProbabilistaMus.Rival { Nombre = "Equilibrado", Crear = () => new BotReglasMus("Equilibrado", ParametrosBotMus.Equilibrado()) });
+        r.Add(new EntrenadorProbabilistaMus.Rival { Nombre = "Agresivo", Crear = () => new BotReglasMus("Agresivo", ParametrosBotMus.Agresivo()) });
+        r.Add(new EntrenadorProbabilistaMus.Rival { Nombre = "Prudente", Crear = () => new BotReglasMus("Prudente", ParametrosBotMus.Prudente()) });
+        r.Add(new EntrenadorProbabilistaMus.Rival { Nombre = "Probabilista sin entrenar", Crear = () => new BotProbabilistaMus("Base", new ParametrosProbabilistaMus()) });
+        return r;
+    }
+
+    private static void Probabilista(int generaciones, int partidasPorRival)
+    {
+        if (!CargarTablas())
+            return;
+
+        EntrenadorProbabilistaMus entrenador = new() { PartidasPorRival = partidasPorRival };
+        ParametrosProbabilistaMus inicial = new();
+
+        if (File.Exists(ArchivoProbabilista))
+            inicial = ParametrosProbabilistaMus.Cargar(File.ReadAllText(ArchivoProbabilista)) ?? inicial;
+
+        Console.WriteLine("Parametros iniciales: " + inicial);
+        Stopwatch reloj = Stopwatch.StartNew();
+        ParametrosProbabilistaMus final = entrenador.Entrenar(inicial, RivalesFijos(), generaciones, 4242, Console.WriteLine);
+        Console.WriteLine("Partidas de entrenamiento: " + entrenador.PartidasJugadas.ToString("N0") + " en " + reloj.Elapsed.TotalMinutes.ToString("0.0") + " min");
+        Console.WriteLine("Parametros finales:   " + final);
+
+        Directory.CreateDirectory(CarpetaBots);
+        File.WriteAllText(ArchivoProbabilista, final.Guardar());
+        Console.WriteLine("Guardado en " + Path.GetFullPath(ArchivoProbabilista));
+        EvaluarProbabilista(20000);
+    }
+
+    private static void EvaluarProbabilista(int partidas)
+    {
+        if (!CargarTablas())
+            return;
+
+        ParametrosProbabilistaMus p = File.Exists(ArchivoProbabilista) ? ParametrosProbabilistaMus.Cargar(File.ReadAllText(ArchivoProbabilista)) : null;
+        p ??= new ParametrosProbabilistaMus();
+        List<EntrenadorProbabilistaMus.Rival> rivales = RivalesFijos();
+        string[] lineas = new string[rivales.Count];
+
+        Console.WriteLine();
+        Console.WriteLine("== Evaluacion con partidas nuevas (" + partidas + " por rival) ==");
+        Parallel.For(0, rivales.Count, i =>
+            lineas[i] = ComparacionBotsMus.Comparar(() => new BotProbabilistaMus("Probabilista", p), rivales[i].Crear, partidas, 13579 + i).ToString()
+                        .Replace(" vs " + rivales[i].Crear().Nombre, " vs " + rivales[i].Nombre));
+
+        foreach (string l in lineas)
+            Console.WriteLine(l);
     }
 }

@@ -6,6 +6,70 @@ public static class PruebasNucleoMus
 {
     private static int fallos;
 
+    private static void PruebasProbabilista(Action<string> log)
+    {
+        bool yaCargadas = TablasProbabilidadMus.Cargadas;
+        string guardadas = yaCargadas ? TablasProbabilidadMus.Guardar() : null;
+
+        // Tablas pequenas (pocas muestras) solo para la prueba.
+        TablasProbabilidadMus.Generar(300, 99, null);
+        string texto = TablasProbabilidadMus.Guardar();
+        int[] duplesReyes = { C("REY", "OROS"), C("REY", "COPAS"), C("3", "ESPADAS"), C("REY", "BASTOS") };
+        int[] nada = { C("4", "OROS"), C("5", "COPAS"), C("6", "ESPADAS"), C("7", "BASTOS") };
+        float grandeReyes = TablasProbabilidadMus.Probabilidad(duplesReyes, 0, TablasProbabilidadMus.Grande);
+        Comprobar(log, grandeReyes > 0.97f, "Con cuatro reyes (un 3 cuenta como rey) siendo mano se gana casi siempre a grande");
+        Comprobar(log, TablasProbabilidadMus.Probabilidad(nada, 0, TablasProbabilidadMus.Pares) == 0f &&
+                       TablasProbabilidadMus.Probabilidad(nada, 0, TablasProbabilidadMus.Punto) > 0.1f,
+            "Sin pares la probabilidad de pares es 0 y la de punto no");
+        Comprobar(log, TablasProbabilidadMus.Cargar(texto) &&
+                       Math.Abs(TablasProbabilidadMus.Probabilidad(duplesReyes, 0, TablasProbabilidadMus.Grande) - grandeReyes) < 0.0001f,
+            "Las tablas se guardan y se cargan igual");
+
+        int invalidas = 0, abortadas = 0, envitesGrandes = 0;
+        SimuladorMus sim = new();
+
+        for (int i = 0; i < 60; i++)
+        {
+            IBotMus[] bots =
+            {
+                new BotProbabilistaMus("P0", new ParametrosProbabilistaMus { Cantidad = 1f, MaximoCantidad = 1f }),
+                new BotReglasMus("R1", ParametrosBotMus.Equilibrado()),
+                new BotProbabilistaMus("P2", new ParametrosProbabilistaMus()),
+                new BotReglasMus("R3", ParametrosBotMus.Agresivo())
+            };
+            ResultadoPartidaMus r = sim.JugarPartida(bots, 500 + i);
+            invalidas += r.AccionesInvalidas;
+            if (r.Abortada) abortadas++;
+        }
+
+        // Que de verdad use envites de mas de 2 cuando va fuerte.
+        for (int i = 0; i < 400 && envitesGrandes == 0; i++)
+        {
+            PartidaMus pe = new(1000 + i);
+            pe.IniciarPartida();
+            Random az = new(i);
+            BotProbabilistaMus bot = new("P", new ParametrosProbabilistaMus { Cantidad = 1f, MaximoCantidad = 1f });
+
+            while (!pe.PartidaTerminada && pe.Fase != FaseMus.FinMano)
+            {
+                int j = pe.JugadorActual;
+                List<AccionMus> legales = pe.AccionesLegales(j);
+                AccionMus a = bot.Decidir(pe.Observar(j), legales, az);
+                if ((a.Tipo == TipoAccionMus.Envidar || a.Tipo == TipoAccionMus.Reenvidar) && a.Valor > 2 && pe.EsLegal(j, a)) envitesGrandes++;
+                if (!pe.Aplicar(j, a)) pe.Aplicar(j, SimuladorMus.AccionSegura(legales));
+            }
+        }
+
+        Comprobar(log, invalidas == 0 && abortadas == 0, "El bot probabilista solo hace jugadas legales (60 partidas, " + invalidas + " invalidas)");
+        Comprobar(log, envitesGrandes > 0, "El bot probabilista envida cantidades libres (mas de 2) con buena mano");
+
+        // Dejar las tablas como estaban (en Unity las usa la partida).
+        if (yaCargadas)
+            TablasProbabilidadMus.Cargar(guardadas);
+        else
+            TablasProbabilidadMus.Olvidar();
+    }
+
     private static void Comprobar(Action<string> log, bool condicion, string mensaje)
     {
         if (condicion)
@@ -251,6 +315,9 @@ public static class PruebasNucleoMus
             }
         }
         Comprobar(log, invariantes, "Sin cartas duplicadas y solo el jugador con turno tiene acciones");
+
+        log("== Bot probabilista ==");
+        PruebasProbabilista(log);
 
         log("");
         log(fallos == 0 ? "TODAS LAS PRUEBAS SUPERADAS" : fallos + " PRUEBAS FALLIDAS");

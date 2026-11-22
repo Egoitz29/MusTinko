@@ -163,6 +163,8 @@ public class PartidaOnlineMus : NetworkBehaviour
     [SerializeField] private float esperaFinMano = 8f;
     [SerializeField] private bool siguienteManoManual = true;
     [SerializeField] private TextAsset parametrosBotEntrenado;
+    [Tooltip("Bot nuevo: decide con las probabilidades de 132 millones de repartos y envida cantidades libres. Si se apaga, se usa el bot de reglas de antes.")]
+    [SerializeField] private bool usarBotProbabilista = true;
 
     [Header("Interfaz de prueba (desactivar en la mesa 3D)")]
     [SerializeField] private bool mostrarPanelPrueba = true;
@@ -561,6 +563,12 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private IBotMus CrearBot(int puesto)
     {
+        string nombre = "Bot " + NombresPuesto[puesto];
+
+        // Bot probabilista (entrenado con millones de partidas). Necesita las tablas de probabilidad.
+        if (usarBotProbabilista && PrepararBotProbabilista())
+            return new BotProbabilistaMus(nombre, parametrosProbabilista);
+
         ParametrosBotMus parametros = ParametrosBotMus.Equilibrado();
 
         if (parametrosBotEntrenado == null)
@@ -578,7 +586,39 @@ public class PartidaOnlineMus : NetworkBehaviour
             }
         }
 
-        return new BotReglasMus("Bot " + NombresPuesto[puesto], parametros);
+        return new BotReglasMus(nombre, parametros);
+    }
+
+    private static ParametrosProbabilistaMus parametrosProbabilista;
+    private static bool probabilistaIntentado;
+
+    private static bool PrepararBotProbabilista()
+    {
+        if (probabilistaIntentado)
+            return TablasProbabilidadMus.Cargadas;
+
+        probabilistaIntentado = true;
+
+        try
+        {
+            TextAsset tablas = Resources.Load<TextAsset>("Bots/ProbabilidadesMus");
+
+            if (tablas == null || !TablasProbabilidadMus.Cargar(tablas.text))
+            {
+                Debug.LogWarning("[MUS ONLINE] No hay tablas de probabilidad (Resources/Bots/ProbabilidadesMus): se usa el bot de reglas.");
+                return false;
+            }
+
+            TextAsset texto = Resources.Load<TextAsset>("Bots/BotProbabilistaMus");
+            parametrosProbabilista = (texto != null ? ParametrosProbabilistaMus.Cargar(texto.text) : null) ?? new ParametrosProbabilistaMus();
+            Debug.Log("[MUS ONLINE] Bot probabilista listo" + (texto != null ? " (entrenado): " : " (sin entrenar): ") + parametrosProbabilista);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[MUS ONLINE] No se pudo cargar el bot probabilista: " + e.Message);
+            return false;
+        }
     }
 
     private int ContarBots()
@@ -668,7 +708,8 @@ public class PartidaOnlineMus : NetworkBehaviour
         ObservacionMus obs = partida.Observar(actual);
         AccionMus accion = bots[actual].Decidir(obs, legales, azarBots);
 
-        if (!legales.Contains(accion))
+        // EsLegal acepta los envites libres (ENVIDO 5, 3 MAS...).
+        if (!partida.EsLegal(actual, accion))
             accion = SimuladorMus.AccionSegura(legales);
 
         EjecutarAccion(actual, accion, obs, legales, bots[actual].Nombre);

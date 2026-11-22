@@ -70,7 +70,8 @@ public class SimuladorMus
             ObservacionMus obs = partida.Observar(jugador);
             AccionMus accion = bots[jugador].Decidir(obs, legales, azar);
 
-            if (!legales.Contains(accion))
+            // EsLegal acepta tambien envites libres (Envidar 5, Reenvidar 10...).
+            if (!partida.EsLegal(jugador, accion))
             {
                 resultado.AccionesInvalidas++;
                 accion = AccionSegura(legales);

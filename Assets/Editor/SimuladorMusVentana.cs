@@ -86,6 +86,24 @@ public class SimuladorMusVentana : EditorWindow
     {
         Dictionary<string, Func<IBotMus>> catalogo = CatalogoBotsMus.Crear();
 
+        // Bot probabilista (tablas y parametros generados con Herramientas/SimuladorMus).
+        try
+        {
+            const string tablas = "Assets/Resources/Bots/ProbabilidadesMus.txt";
+            const string parametros = "Assets/Resources/Bots/BotProbabilistaMus.txt";
+
+            if (File.Exists(tablas) && (TablasProbabilidadMus.Cargadas || TablasProbabilidadMus.Cargar(File.ReadAllText(tablas))))
+            {
+                ParametrosProbabilistaMus pp = (File.Exists(parametros) ? ParametrosProbabilistaMus.Cargar(File.ReadAllText(parametros)) : null)
+                                               ?? new ParametrosProbabilistaMus();
+                catalogo["Probabilista"] = () => new BotProbabilistaMus("Probabilista", pp);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[SIMULADOR] No se pudo cargar el bot probabilista: " + e.Message);
+        }
+
         if (!File.Exists(RutaEntrenado))
             return catalogo;
 
