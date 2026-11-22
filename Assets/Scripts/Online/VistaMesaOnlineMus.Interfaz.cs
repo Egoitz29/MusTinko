@@ -206,7 +206,8 @@ public partial class VistaMesaOnlineMus
                     continue;
                 }
 
-                Vector3 punto = modelo.transform.position + Vector3.up * (alturaCabezas + alturaBocadillos);
+                // Encima de la cabeza de verdad (la raiz del modelo puede estar en otro sitio al cambiar de silla).
+                Vector3 punto = CabezaDe(modelo) + Vector3.up * alturaBocadillos;
                 Vector3 pantalla = cam.WorldToScreenPoint(punto);
 
                 if (pantalla.z <= 0f)

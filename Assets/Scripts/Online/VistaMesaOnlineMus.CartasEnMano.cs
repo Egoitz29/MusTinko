@@ -191,7 +191,7 @@ public partial class VistaMesaOnlineMus
 
             // La silla desde la que miras no necesita cartas 3D (ya las ves abajo),
             // salvo si la camara se ha ido lejos (camara de cine de la demo).
-            Vector3 cabeza = a.Modelo.transform.position + Vector3.up * alturaCabezas;
+            Vector3 cabeza = CabezaDe(a.Modelo);
             bool camaraCerca = cam != null && (cam.transform.position - cabeza).sqrMagnitude < 0.7f * 0.7f;
             // En el probador ves tus cartas en la mano de tu personaje (con el reverso que lleves).
             bool probador = taquillaAbierta && a.Modelo == MiModelo();
@@ -209,7 +209,7 @@ public partial class VistaMesaOnlineMus
             a.Peso = Mathf.MoveTowards(a.Peso, mirando ? 1f : 0f, Time.deltaTime * 4f);
             float w = Mathf.SmoothStep(0f, 1f, a.Peso);
 
-            Vector3 haciaCentro = centro - a.Modelo.transform.position;
+            Vector3 haciaCentro = centro - CuerpoDe(a.Modelo);
             haciaCentro.y = 0f;
 
             if (haciaCentro.sqrMagnitude < 0.0001f)
@@ -230,7 +230,7 @@ public partial class VistaMesaOnlineMus
             else
             {
                 escala = escalaSinManos;
-                ancla = a.Modelo.transform.position + Vector3.up * alturaCartasEnMano + haciaCentro * adelanteCartasEnMano;
+                ancla = CuerpoDe(a.Modelo) + Vector3.up * alturaCartasEnMano + haciaCentro * adelanteCartasEnMano;
             }
 
             // Al mirarlas suben un poco y se acercan a la cara, sin irse por encima de la cabeza.

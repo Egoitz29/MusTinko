@@ -257,7 +257,7 @@ public partial class VistaMesaOnlineMus
     private Vector3 CabezaModeloDemo(int puesto)
     {
         GameObject modelo = ModeloEnSitio(Relativo(puesto));
-        return modelo != null ? modelo.transform.position + Vector3.up * alturaCabezas : CentroMesa();
+        return modelo != null ? CabezaDe(modelo) : CentroMesa();
     }
 
     private void DirigirCamaraDemo()

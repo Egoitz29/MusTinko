@@ -13,8 +13,57 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float distanciaProbador = 1.25f;
 
     private GameObject[] modeloDePersonaje;
-    private Vector3[] anclaPosicion;
-    private Quaternion[] anclaRotacion;
+    private Vector3[] anclaPosicion;      // cadera del que estaba sentado en cada silla al empezar
+    private Quaternion[] anclaRotacion;   // giro del cuerpo (CONTROL_RAIZ) de ese mismo
+    private Quaternion[] giroCuerpo;      // giro del cuerpo respecto a la raiz de cada modelo
+    private Vector3[] caderaLocal;        // cadera respecto a la raiz de cada modelo
+    private readonly Dictionary<GameObject, Transform> cuerpos = new();
+    private readonly Dictionary<GameObject, Transform> cabezas = new();
+    private readonly Dictionary<GameObject, List<Renderer>> rendersComplementos = new();
+
+    // En tus modelos la raiz (LILA_Posicion...) no tiene giro: el giro y la escala estan en el modelo hijo,
+    // y cada uno es distinto. Por eso se trabaja siempre con el cuerpo (CONTROL_RAIZ) y la cabeza (CONTROL_CABEZA).
+    private Transform Buscar(GameObject modelo, string final, Dictionary<GameObject, Transform> cache)
+    {
+        if (modelo == null)
+            return null;
+
+        if (cache.TryGetValue(modelo, out Transform t) && t != null)
+            return t;
+
+        t = null;
+
+        foreach (Transform h in modelo.GetComponentsInChildren<Transform>(true))
+            if (h.name.EndsWith(final))
+            {
+                t = h;
+                break;
+            }
+
+        cache[modelo] = t;
+        return t;
+    }
+
+    private Vector3 CuerpoDe(GameObject modelo)
+    {
+        Transform t = Buscar(modelo, "_CONTROL_RAIZ", cuerpos);
+        return t != null ? t.position : modelo != null ? modelo.transform.position : Vector3.zero;
+    }
+
+    private Vector3 CabezaDe(GameObject modelo)
+    {
+        Transform t = Buscar(modelo, "_CONTROL_CABEZA", cabezas);
+        return t != null ? t.position : CuerpoDe(modelo) + Vector3.up * alturaCabezas;
+    }
+
+    // La cadera (donde se apoya en la silla): un tercio del camino de los pies a la cabeza.
+    private Vector3 CaderaDe(GameObject modelo) => Vector3.Lerp(CuerpoDe(modelo), CabezaDe(modelo), 0.32f);
+
+    private Quaternion GiroCuerpoDe(GameObject modelo)
+    {
+        Transform t = Buscar(modelo, "_CONTROL_RAIZ", cuerpos);
+        return t != null ? t.rotation : modelo.transform.rotation;
+    }
     private string claveColocacion;
     private string claveComplementos;
     private bool necesitaColorear;
@@ -70,6 +119,30 @@ public partial class VistaMesaOnlineMus
 
         ColocarPersonajes();
         PonerComplementosEnLaMesa();
+        EsconderComplementosEnPrimeraPersona();
+    }
+
+    // Si la camara esta dentro de la cabeza de un personaje (tu silla), no se ven sus complementos
+    // (si no, verias las gafas o el bigote por dentro).
+    private void EsconderComplementosEnPrimeraPersona()
+    {
+        Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+
+        if (cam == null)
+            return;
+
+        foreach (KeyValuePair<GameObject, List<Renderer>> par in rendersComplementos)
+        {
+            if (par.Key == null)
+                continue;
+
+            float alto = Mathf.Max(0.2f, CabezaDe(par.Key).y - CuerpoDe(par.Key).y);
+            bool dentro = (cam.transform.position - CabezaDe(par.Key)).sqrMagnitude < alto * alto * 0.36f;
+
+            foreach (Renderer r in par.Value)
+                if (r != null && r.enabled == dentro)
+                    r.enabled = !dentro;
+        }
     }
 
     private void ColocarPersonajes()
@@ -79,11 +152,23 @@ public partial class VistaMesaOnlineMus
             modeloDePersonaje = new GameObject[4];
             anclaPosicion = new Vector3[4];
             anclaRotacion = new Quaternion[4];
+            giroCuerpo = new Quaternion[4];
+            caderaLocal = new Vector3[4];
 
             for (int k = 0; k < 4; k++)
-                modeloDePersonaje[k] = GameObject.Find(SitiosMesaMus.NombresModelos[k]);
+            {
+                GameObject m = GameObject.Find(SitiosMesaMus.NombresModelos[k]);
+                modeloDePersonaje[k] = m;
 
-            // Las sillas son las posiciones donde estaban los modelos al empezar.
+                if (m == null)
+                    continue;
+
+                Transform raiz = m.transform;
+                giroCuerpo[k] = Quaternion.Inverse(raiz.rotation) * GiroCuerpoDe(m);
+                caderaLocal[k] = Quaternion.Inverse(raiz.rotation) * (CaderaDe(m) - raiz.position);
+            }
+
+            // Cada silla es donde estaba sentado su modelo al empezar (su cadera y hacia donde miraba).
             for (int sitio = 0; sitio < 4; sitio++)
             {
                 GameObject m = ModeloEnSitio(sitio);
@@ -94,8 +179,8 @@ public partial class VistaMesaOnlineMus
                     return;
                 }
 
-                anclaPosicion[sitio] = m.transform.position;
-                anclaRotacion[sitio] = m.transform.rotation;
+                anclaPosicion[sitio] = CaderaDe(m);
+                anclaRotacion[sitio] = GiroCuerpoDe(m);
             }
         }
 
@@ -114,7 +199,9 @@ public partial class VistaMesaOnlineMus
             if (m == null)
                 continue;
 
-            m.transform.SetPositionAndRotation(anclaPosicion[sitio], anclaRotacion[sitio]);
+            // Se gira la raiz para que el cuerpo mire como miraba el de esa silla, y se mueve para que la cadera caiga en su sitio.
+            Quaternion giroRaiz = anclaRotacion[sitio] * Quaternion.Inverse(giroCuerpo[k]);
+            m.transform.SetPositionAndRotation(anclaPosicion[sitio] - giroRaiz * caderaLocal[k], giroRaiz);
             modelosPorSitio[sitio] = m;
             gestos[sitio] = null;
         }
@@ -202,8 +289,10 @@ public partial class VistaMesaOnlineMus
 
         List<GameObject> puestos = new();
         List<Renderer> ocultas = new();
+        List<Renderer> renders = new();
         complementosPuestos[modelo] = puestos;
         piezasEscondidas[modelo] = ocultas;
+        rendersComplementos[modelo] = renders;
 
         if (plantillaComplementos == null || mascara == 0)
             return;
@@ -242,6 +331,7 @@ public partial class VistaMesaOnlineMus
                 copia.name = pieza.name;
                 copia.SetActive(true);
                 puestos.Add(copia);
+                renders.AddRange(copia.GetComponentsInChildren<Renderer>(true));
             }
 
             if (c.TapaCabeza)
@@ -289,17 +379,8 @@ public partial class VistaMesaOnlineMus
         if (controlCamaraJugador != null && controlCamaraJugador.enabled)
             controlCamaraJugador.enabled = false;
 
-        Transform cabeza = null;
-
-        foreach (Transform t in modelo.GetComponentsInChildren<Transform>(true))
-            if (t.name.EndsWith("_CONTROL_CABEZA"))
-            {
-                cabeza = t;
-                break;
-            }
-
-        Vector3 pie = modelo.transform.position;
-        Vector3 posCabeza = cabeza != null ? cabeza.position : pie + Vector3.up * alturaCabezas;
+        Vector3 pie = CuerpoDe(modelo);
+        Vector3 posCabeza = CabezaDe(modelo);
         float alto = Mathf.Max(0.3f, posCabeza.y - pie.y);
         Vector3 haciaCentro = CentroMesa() - pie;
         haciaCentro.y = 0f;

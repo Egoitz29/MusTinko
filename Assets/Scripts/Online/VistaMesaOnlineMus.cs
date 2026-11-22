@@ -831,7 +831,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         }
 
         GameObject modelo = ModeloEnSitio(sitio);
-        return modelo != null ? modelo.transform.position + Vector3.up * alturaCabezas : Vector3.up * alturaCabezas;
+        return modelo != null ? CabezaDe(modelo) : Vector3.up * alturaCabezas;
     }
 
     private void TodosMiranA(int puesto, float segundos)
@@ -1092,7 +1092,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             if (modelo == null)
                 continue;
 
-            Vector3 cabeza = modelo.transform.position + Vector3.up * alturaCabezas;
+            Vector3 cabeza = CabezaDe(modelo);
             float angulo = Vector3.Angle(cam.transform.forward, cabeza - cam.transform.position);
 
             if (angulo < mejorAngulo)

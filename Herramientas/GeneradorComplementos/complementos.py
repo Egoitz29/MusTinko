@@ -138,10 +138,11 @@ def bigote():
 
 
 def barba():
-    b = esfera("ACC_Barba_Pelo_Barba", C(0, -0.25, -0.6), (0.4, 0.27, 0.19), "Pelo")
-    perilla = esfera("ACC_Barba_Pelo_Perilla", C(0, -0.4, -0.7), (0.17, 0.13, 0.14), "Pelo")
-    p1 = esfera("ACC_Barba_Pelo_Patilla_D", C(0.47, -0.14, -0.3), (0.08, 0.13, 0.22), "Pelo")
-    p2 = esfera("ACC_Barba_Pelo_Patilla_I", C(-0.47, -0.14, -0.3), (0.08, 0.13, 0.22), "Pelo")
+    # Pegada a la barbilla y sin bajar al pecho (antes parecia un babero).
+    b = esfera("ACC_Barba_Pelo_Barba", C(0, -0.24, -0.5), (0.36, 0.24, 0.13), "Pelo")
+    perilla = esfera("ACC_Barba_Pelo_Perilla", C(0, -0.38, -0.58), (0.13, 0.1, 0.09), "Pelo")
+    p1 = esfera("ACC_Barba_Pelo_Patilla_D", C(0.47, -0.14, -0.28), (0.07, 0.11, 0.2), "Pelo")
+    p2 = esfera("ACC_Barba_Pelo_Patilla_I", C(-0.47, -0.14, -0.28), (0.07, 0.11, 0.2), "Pelo")
     return [(b, "CONTROL_CABEZA"), (perilla, "CONTROL_CABEZA"), (p1, "CONTROL_CABEZA"), (p2, "CONTROL_CABEZA")]
 
 
