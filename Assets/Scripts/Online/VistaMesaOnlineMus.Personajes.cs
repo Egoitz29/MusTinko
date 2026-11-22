@@ -9,13 +9,16 @@ public partial class VistaMesaOnlineMus
 {
     [Header("Personajes y complementos")]
     [SerializeField] private string rutaComplementos = "Modelos/Complementos_Tinko";
+    [Tooltip("Si esta marcado, cada jugador lleva su personaje a su silla (los modelos se cambian de sitio).")]
+    [SerializeField] private bool cambiarPersonajesDeSilla = true;
     [Tooltip("Distancia de la camara del probador (en alturas de cabeza).")]
     [SerializeField] private float distanciaProbador = 1.25f;
 
     private GameObject[] modeloDePersonaje;
     private Vector3[] anclaPosicion;      // cadera del que estaba sentado en cada silla al empezar
-    private Quaternion[] anclaRotacion;   // giro del cuerpo (CONTROL_RAIZ) de ese mismo
-    private Quaternion[] giroCuerpo;      // giro del cuerpo respecto a la raiz de cada modelo
+    private Vector3[] anclaMirada;        // desde esa cadera, hacia donde esta la mesa (en horizontal)
+    private Quaternion[] giroOriginal;    // giro de la raiz de cada modelo al empezar
+    private Vector3[] miradaLocal;        // hacia donde mira cada modelo (hacia la mesa), respecto a su raiz
     private Vector3[] caderaLocal;        // cadera respecto a la raiz de cada modelo
     private readonly Dictionary<GameObject, Transform> cuerpos = new();
     private readonly Dictionary<GameObject, Transform> cabezas = new();
@@ -59,10 +62,10 @@ public partial class VistaMesaOnlineMus
     // La cadera (donde se apoya en la silla): un tercio del camino de los pies a la cabeza.
     private Vector3 CaderaDe(GameObject modelo) => Vector3.Lerp(CuerpoDe(modelo), CabezaDe(modelo), 0.32f);
 
-    private Quaternion GiroCuerpoDe(GameObject modelo)
+    private static Vector3 Plano(Vector3 v)
     {
-        Transform t = Buscar(modelo, "_CONTROL_RAIZ", cuerpos);
-        return t != null ? t.rotation : modelo.transform.rotation;
+        v.y = 0f;
+        return v.sqrMagnitude > 0.000001f ? v.normalized : Vector3.forward;
     }
     private string claveColocacion;
     private string claveComplementos;
@@ -147,14 +150,48 @@ public partial class VistaMesaOnlineMus
 
     private void ColocarPersonajes()
     {
+        if (!cambiarPersonajesDeSilla)
+            return;
+
+        // Se espera a que las animaciones ya hayan colocado a todos (la pose del primer frame no vale).
+        if (modeloDePersonaje == null && Time.frameCount < 5)
+            return;
+
         if (modeloDePersonaje == null)
         {
             modeloDePersonaje = new GameObject[4];
             anclaPosicion = new Vector3[4];
-            anclaRotacion = new Quaternion[4];
-            giroCuerpo = new Quaternion[4];
+            anclaMirada = new Vector3[4];
+            giroOriginal = new Quaternion[4];
+            miradaLocal = new Vector3[4];
             caderaLocal = new Vector3[4];
 
+            // Centro de la mesa: el punto medio de las cuatro sillas.
+            Vector3 centro = Vector3.zero;
+
+            for (int sitio = 0; sitio < 4; sitio++)
+            {
+                GameObject m = ModeloEnSitio(sitio);
+
+                if (m == null)
+                {
+                    modeloDePersonaje = null;
+                    cambiarPersonajesDeSilla = false;
+                    Debug.LogWarning("[PERSONAJES] Falta algun modelo en la mesa: no se cambian de silla.");
+                    return;
+                }
+
+                centro += CaderaDe(m) / 4f;
+            }
+
+            // Cada silla: donde estaba la cadera de su modelo y hacia donde queda la mesa desde ahi.
+            for (int sitio = 0; sitio < 4; sitio++)
+            {
+                anclaPosicion[sitio] = CaderaDe(ModeloEnSitio(sitio));
+                anclaMirada[sitio] = Plano(centro - anclaPosicion[sitio]);
+            }
+
+            // Cada modelo: hacia donde mira (en tu escena todos miran a la mesa) y su cadera, respecto a su raiz.
             for (int k = 0; k < 4; k++)
             {
                 GameObject m = GameObject.Find(SitiosMesaMus.NombresModelos[k]);
@@ -164,23 +201,9 @@ public partial class VistaMesaOnlineMus
                     continue;
 
                 Transform raiz = m.transform;
-                giroCuerpo[k] = Quaternion.Inverse(raiz.rotation) * GiroCuerpoDe(m);
+                giroOriginal[k] = raiz.rotation;
+                miradaLocal[k] = Quaternion.Inverse(raiz.rotation) * Plano(centro - CaderaDe(m));
                 caderaLocal[k] = Quaternion.Inverse(raiz.rotation) * (CaderaDe(m) - raiz.position);
-            }
-
-            // Cada silla es donde estaba sentado su modelo al empezar (su cadera y hacia donde miraba).
-            for (int sitio = 0; sitio < 4; sitio++)
-            {
-                GameObject m = ModeloEnSitio(sitio);
-
-                if (m == null)
-                {
-                    modeloDePersonaje = null;
-                    return;
-                }
-
-                anclaPosicion[sitio] = CaderaDe(m);
-                anclaRotacion[sitio] = GiroCuerpoDe(m);
             }
         }
 
@@ -199,8 +222,11 @@ public partial class VistaMesaOnlineMus
             if (m == null)
                 continue;
 
-            // Se gira la raiz para que el cuerpo mire como miraba el de esa silla, y se mueve para que la cadera caiga en su sitio.
-            Quaternion giroRaiz = anclaRotacion[sitio] * Quaternion.Inverse(giroCuerpo[k]);
+            // Se gira solo en horizontal para que vuelva a mirar a la mesa desde esta silla,
+            // y se mueve para que su cadera quede donde estaba la del que se sentaba aqui.
+            Vector3 mirabaAntes = giroOriginal[k] * miradaLocal[k];
+            float angulo = Vector3.SignedAngle(mirabaAntes, anclaMirada[sitio], Vector3.up);
+            Quaternion giroRaiz = Quaternion.AngleAxis(angulo, Vector3.up) * giroOriginal[k];
             m.transform.SetPositionAndRotation(anclaPosicion[sitio] - giroRaiz * caderaLocal[k], giroRaiz);
             modelosPorSitio[sitio] = m;
             gestos[sitio] = null;
