@@ -20,6 +20,9 @@ public partial class VistaMesaOnlineMus
     private Quaternion[] giroOriginal;    // giro de la raiz de cada modelo al empezar
     private Vector3[] miradaLocal;        // hacia donde mira cada modelo (hacia la mesa), respecto a su raiz
     private Vector3[] caderaLocal;        // cadera respecto a la raiz de cada modelo
+    private float[] anclaAltura;          // tamano (pies-cabeza) del que se sentaba en cada silla
+    private float[] alturaOriginal;       // tamano de cada modelo al empezar
+    private Vector3[] escalaOriginal;     // escala de la raiz de cada modelo al empezar
     private readonly Dictionary<GameObject, Transform> cuerpos = new();
     private readonly Dictionary<GameObject, Transform> cabezas = new();
     private readonly Dictionary<GameObject, List<Renderer>> rendersComplementos = new();
@@ -165,6 +168,9 @@ public partial class VistaMesaOnlineMus
             giroOriginal = new Quaternion[4];
             miradaLocal = new Vector3[4];
             caderaLocal = new Vector3[4];
+            anclaAltura = new float[4];
+            alturaOriginal = new float[4];
+            escalaOriginal = new Vector3[4];
 
             // Centro de la mesa: el punto medio de las cuatro sillas.
             Vector3 centro = Vector3.zero;
@@ -187,8 +193,10 @@ public partial class VistaMesaOnlineMus
             // Cada silla: donde estaba la cadera de su modelo y hacia donde queda la mesa desde ahi.
             for (int sitio = 0; sitio < 4; sitio++)
             {
-                anclaPosicion[sitio] = CaderaDe(ModeloEnSitio(sitio));
+                GameObject ocupante = ModeloEnSitio(sitio);
+                anclaPosicion[sitio] = CaderaDe(ocupante);
                 anclaMirada[sitio] = Plano(centro - anclaPosicion[sitio]);
+                anclaAltura[sitio] = Vector3.Distance(CuerpoDe(ocupante), CabezaDe(ocupante));
             }
 
             // Cada modelo: hacia donde mira (en tu escena todos miran a la mesa) y su cadera, respecto a su raiz.
@@ -202,6 +210,8 @@ public partial class VistaMesaOnlineMus
 
                 Transform raiz = m.transform;
                 giroOriginal[k] = raiz.rotation;
+                escalaOriginal[k] = raiz.localScale;
+                alturaOriginal[k] = Mathf.Max(0.01f, Vector3.Distance(CuerpoDe(m), CabezaDe(m)));
                 miradaLocal[k] = Quaternion.Inverse(raiz.rotation) * Plano(centro - CaderaDe(m));
                 caderaLocal[k] = Quaternion.Inverse(raiz.rotation) * (CaderaDe(m) - raiz.position);
             }
@@ -227,7 +237,12 @@ public partial class VistaMesaOnlineMus
             Vector3 mirabaAntes = giroOriginal[k] * miradaLocal[k];
             float angulo = Vector3.SignedAngle(mirabaAntes, anclaMirada[sitio], Vector3.up);
             Quaternion giroRaiz = Quaternion.AngleAxis(angulo, Vector3.up) * giroOriginal[k];
-            m.transform.SetPositionAndRotation(anclaPosicion[sitio] - giroRaiz * caderaLocal[k], giroRaiz);
+
+            // Toma el tamano del que se sentaba en esa silla (en tu escena MENTA es mas pequeno que los demas;
+            // si no, al cambiar de silla unos se ven mucho mas grandes que otros).
+            float factor = anclaAltura[sitio] > 0.01f ? anclaAltura[sitio] / alturaOriginal[k] : 1f;
+            m.transform.localScale = escalaOriginal[k] * factor;
+            m.transform.SetPositionAndRotation(anclaPosicion[sitio] - giroRaiz * (caderaLocal[k] * factor), giroRaiz);
             modelosPorSitio[sitio] = m;
             gestos[sitio] = null;
         }
