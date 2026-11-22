@@ -655,7 +655,7 @@ public partial class VistaMesaOnlineMus
     {
         string nombre = string.IsNullOrEmpty(m.Nombre) ? "?" : m.Nombre;
         string quien = m.Puesto >= 0
-            ? TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(m.Puesto), ColoresJugadoresMus.Hex[m.Puesto])
+            ? TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(m.Puesto), ColoresJugadoresMus.HexDe(m.Puesto))
             : "<b>" + nombre + "</b>";
         return quien + ": " + m.Texto;
     }
@@ -753,11 +753,11 @@ public partial class VistaMesaOnlineMus
             d.Sillas[p] = img;
             d.Botones[p] = b;
 
-            float hueco = p % 2 == 0 ? silla * 0.5f + 34f : silla * 0.5f + 96f;
+            float hueco = p % 2 == 0 ? silla * 0.5f + 50f : silla * 0.5f + 140f;
             GameObject et = new("Etiqueta_" + p, typeof(RectTransform));
-            RectTransform re = Rect(et, padre, ancla, centro + direccion[p] * (distancia + hueco), new Vector2(190, 70));
+            RectTransform re = Rect(et, padre, ancla, centro + direccion[p] * (distancia + hueco), new Vector2(260, 90));
             re.pivot = new Vector2(0.5f, 0.5f);
-            d.Etiquetas[p] = Texto(et.transform, "", 30, Crema, true);
+            d.Etiquetas[p] = Texto(et.transform, "", 36, Crema, true);
         }
 
         return d;
@@ -777,29 +777,29 @@ public partial class VistaMesaOnlineMus
 
     private void CrearSala()
     {
-        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(900, 960));
+        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1060, 1000));
         panelSalaUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
-        Rect(titulo, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -16), new Vector2(840, 70));
-        Texto(titulo.transform, "SALA: ELIGE TU SILLA", 54, Oro, true);
+        Rect(titulo, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -14), new Vector2(1000, 80));
+        Texto(titulo.transform, "SALA: ELIGE TU SILLA", 60, Oro, true);
 
         GameObject info = new("Info", typeof(RectTransform));
-        Rect(info, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -86), new Vector2(840, 40));
-        txtSalaUI = Texto(info.transform, "", 21, Crema);
+        Rect(info, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -94), new Vector2(1000, 44));
+        txtSalaUI = Texto(info.transform, "", 26, Crema);
 
-        CrearSelectorMesa(panelSalaUI.transform, -136);
-        diagramaSala = CrearDiagrama(panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -486), 250, puesto => partida.ElegirSitio(puesto));
+        CrearSelectorMesa(panelSalaUI.transform, -146);
+        diagramaSala = CrearDiagrama(panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -566), 230, puesto => partida.ElegirSitio(puesto));
 
         GameObject sinSitio = new("SinSitio", typeof(RectTransform));
-        Rect(sinSitio, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 112), new Vector2(840, 40));
-        txtSinSitioUI = Texto(sinSitio.transform, "", 20, Crema);
+        Rect(sinSitio, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 108), new Vector2(1000, 46));
+        txtSinSitioUI = Texto(sinSitio.transform, "", 25, Crema);
 
-        Button taquillaSala = Boton(panelSalaUI.transform, "morado", "TAQUILLA", new Vector2(190, 60), AbrirTaquilla, 24);
-        Rect(taquillaSala.gameObject, panelSalaUI.transform, new Vector2(0f, 0f), new Vector2(130, 32), new Vector2(190, 60));
+        Button taquillaSala = Boton(panelSalaUI.transform, "morado", "TAQUILLA", new Vector2(260, 80), AbrirTaquilla, 32);
+        Rect(taquillaSala.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(-260, 22), new Vector2(260, 80));
 
-        botonEmpezarSala = Boton(panelSalaUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(380, 80), () => partida.EmpezarPartidaServidor(), 30);
-        Rect(botonEmpezarSala.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 22), new Vector2(380, 80));
+        botonEmpezarSala = Boton(panelSalaUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(420, 80), () => partida.EmpezarPartidaServidor(), 34);
+        Rect(botonEmpezarSala.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(150, 22), new Vector2(420, 80));
     }
 
     private void ActualizarSala(bool enMesa, bool empezada)
@@ -824,7 +824,8 @@ public partial class VistaMesaOnlineMus
             bool libre = c == PartidaOnlineMus.SinCliente;
             string nombre = libre ? "LIBRE" : partida.NombreEnSitio(p);
             string relacion = miSitio < 0 ? (p % 2 == 0 ? "pareja A" : "pareja B") : mio ? "TU" : p == (miSitio + 2) % 4 ? "companero" : "rival";
-            string texto = "<size=60%>" + ColoresJugadoresMus.Nombre(p) + " · " + relacion + "</size>";
+            // Con quien se sienta va su personaje; si la silla esta libre, la ocupara un bot con el que sobre.
+            string texto = "<size=62%>" + ColoresJugadoresMus.Nombre(p) + (libre ? " (bot)" : "") + " · " + relacion + "</size>";
             PintarSitio(diagramaSala, p, texto, mio, libre);
             diagramaSala.Etiquetas[p].text = (libre ? "<color=#BBBBBB>LIBRE</color>" : TaquillaMus.NombreConColor(nombre, partida.AspectoEnSitio(p), "")) + "\n" + texto;
         }

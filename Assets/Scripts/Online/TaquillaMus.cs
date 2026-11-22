@@ -5,10 +5,29 @@ using UnityEngine;
 // Se guarda en el dispositivo (PlayerPrefs), igual que las monedas.
 public enum CategoriaTaquilla
 {
+    Personaje,
     Traje,
+    Complemento,
     Reverso,
-    ColorNombre,
-    Frases
+    ColorNombre
+}
+
+// Donde va cada complemento: solo uno por hueco (no dos sombreros a la vez).
+public enum HuecoComplemento
+{
+    Cabeza,
+    Ojos,
+    Pelo,
+    Boca,
+    Cuello,
+    Oreja
+}
+
+public sealed class ComplementoMus
+{
+    public string Nombre;           // como se llama en el FBX: ACC_<Nombre>_...
+    public HuecoComplemento Hueco;
+    public bool TapaCabeza;         // esconde el gorro o el pelo de arriba
 }
 
 public sealed class ArticuloTaquilla
@@ -44,15 +63,55 @@ public static class TaquillaMus
 
     public static readonly string[] ColoresNombre = { "", "#FFD24D", "#FF6B5E", "#6EC6FF", "#7CD67C", "#FF8AD8" };
 
-    public static readonly string[][] PacksFrases =
+    // Frases rapidas del chat: las mismas para todos.
+    public static readonly string[] Frases = { "¡Buena!", "¡Qué suerte!", "¡Vamos!", "Bien jugado", "Uff...", "¡Órdago!" };
+
+    public static readonly ComplementoMus[] Complementos =
     {
-        new[] { "¡Buena!", "¡Qué suerte!", "¡Vamos!", "Bien jugado", "Uff...", "¡Ja, ja!" },
-        new[] { "¡Órdago!", "Eso no lo quieres", "¡Mus visto!", "Hoy no es tu día", "Paciencia...", "¡Toma ya!" },
-        new[] { "¿Miedo o qué?", "Ni con esas cartas", "¡A la saca!", "Vuelve a casa", "Aprende, chaval", "Llora a tu pueblo" },
+        new() { Nombre = "Txapela", Hueco = HuecoComplemento.Cabeza, TapaCabeza = true },
+        new() { Nombre = "SombreroCopa", Hueco = HuecoComplemento.Cabeza, TapaCabeza = true },
+        new() { Nombre = "Gafas", Hueco = HuecoComplemento.Ojos },
+        new() { Nombre = "Bigote", Hueco = HuecoComplemento.Pelo },
+        new() { Nombre = "Barba", Hueco = HuecoComplemento.Pelo },
+        new() { Nombre = "Puro", Hueco = HuecoComplemento.Boca },
+        new() { Nombre = "Pajarita", Hueco = HuecoComplemento.Cuello },
+        new() { Nombre = "Bufanda", Hueco = HuecoComplemento.Cuello },
+        new() { Nombre = "Pendiente", Hueco = HuecoComplemento.Oreja },
     };
+
+    // Lo que lleva cada personaje por defecto (y los bots): asi se distinguen de un vistazo.
+    public static readonly int[] ComplementosPorDefecto =
+    {
+        Bits(2, 8),       // LILA: gafas y pendiente
+        Bits(0, 3, 5),    // MOSTAZA: txapela, bigote y puro
+        Bits(4, 7),       // MENTA: barba y bufanda
+        Bits(1, 6),       // CORAL: sombrero de copa y pajarita
+    };
+
+    private static int Bits(params int[] indices)
+    {
+        int m = 0;
+        foreach (int i in indices) m |= 1 << i;
+        return m;
+    }
 
     public static readonly ArticuloTaquilla[] Catalogo =
     {
+        A("pj_lila", CategoriaTaquilla.Personaje, "LILA", "Gafas redondas y pendiente. Lista y tranquila.", 0, 0),
+        A("pj_mostaza", CategoriaTaquilla.Personaje, "MOSTAZA", "Txapela, bigotazo y puro. El de toda la vida.", 0, 1),
+        A("pj_menta", CategoriaTaquilla.Personaje, "MENTA", "Barba y bufanda. No se le escapa una.", 0, 2),
+        A("pj_coral", CategoriaTaquilla.Personaje, "CORAL", "Sombrero de copa y pajarita. Muy fino.", 0, 3),
+
+        A("cp_txapela", CategoriaTaquilla.Complemento, "Txapela grande", "La boina de siempre, bien ancha.", 200, 0),
+        A("cp_copa", CategoriaTaquilla.Complemento, "Sombrero de copa", "Para las mesas de 1.000.", 600, 1),
+        A("cp_gafas", CategoriaTaquilla.Complemento, "Gafas redondas", "Para ver bien las senas.", 250, 2),
+        A("cp_bigote", CategoriaTaquilla.Complemento, "Bigotazo", "Un bigote con las puntas para arriba.", 300, 3),
+        A("cp_barba", CategoriaTaquilla.Complemento, "Barba", "Barba, perilla y patillas.", 350, 4),
+        A("cp_puro", CategoriaTaquilla.Complemento, "Puro", "Encendido y todo.", 400, 5),
+        A("cp_pajarita", CategoriaTaquilla.Complemento, "Pajarita", "Roja, muy elegante.", 200, 6),
+        A("cp_bufanda", CategoriaTaquilla.Complemento, "Bufanda", "Del color de tu ropa.", 250, 7),
+        A("cp_pendiente", CategoriaTaquilla.Complemento, "Pendiente", "Un aro de oro.", 150, 8),
+
         A("traje_casa", CategoriaTaquilla.Traje, "De la casa", "Los colores de siempre.", 0, 0),
         A("traje_txapela", CategoriaTaquilla.Traje, "Txapela negra", "Gorro negro, el de toda la vida.", 150, 1),
         A("traje_marinero", CategoriaTaquilla.Traje, "Marinero", "Azul marino, pompon rojo y pantalon blanco.", 300, 2),
@@ -72,10 +131,6 @@ public static class TaquillaMus
         A("nombre_azul", CategoriaTaquilla.ColorNombre, "Azul", "Tu nombre en azul.", 200, 3),
         A("nombre_verde", CategoriaTaquilla.ColorNombre, "Verde", "Tu nombre en verde.", 200, 4),
         A("nombre_rosa", CategoriaTaquilla.ColorNombre, "Rosa", "Tu nombre en rosa.", 200, 5),
-
-        A("frases_basicas", CategoriaTaquilla.Frases, "Basicas", "Las de siempre.", 0, 0),
-        A("frases_taberna", CategoriaTaquilla.Frases, "De taberna", "¡Órdago!, ¡Mus visto!, Hoy no es tu dia...", 150, 1),
-        A("frases_picantes", CategoriaTaquilla.Frases, "Picantes", "Para picar a los rivales (con carino).", 300, 2),
     };
 
     private const string ClaveComprados = "MusTinko_Comprados";
@@ -111,7 +166,9 @@ public static class TaquillaMus
         }
     }
 
-    public static bool Tiene(ArticuloTaquilla a) => a.Precio <= 0 || Comprados.Contains(a.Id);
+    // Los complementos de tu personaje por defecto son gratis.
+    public static bool Tiene(ArticuloTaquilla a) => a.Precio <= 0 || Comprados.Contains(a.Id) ||
+        (a.Categoria == CategoriaTaquilla.Complemento && (ComplementosPorDefecto[PersonajeMio] & (1 << a.Indice)) != 0);
 
     public static bool Comprar(ArticuloTaquilla a)
     {
@@ -142,12 +199,87 @@ public static class TaquillaMus
         catch { return 0; }
     }
 
-    public static bool EstaEquipado(ArticuloTaquilla a) => Equipado(a.Categoria) == a.Indice;
+    public static bool EstaEquipado(ArticuloTaquilla a) => a.Categoria == CategoriaTaquilla.Complemento
+        ? (ComplementosMios & (1 << a.Indice)) != 0
+        : a.Categoria == CategoriaTaquilla.Personaje ? PersonajeMio == a.Indice : Equipado(a.Categoria) == a.Indice;
+
+    // ---------- Mi personaje y mis complementos ----------
+
+    private const string ClavePersonaje = "MusTinko_Personaje";
+    private const string ClaveComplementos = "MusTinko_Complementos";
+
+    public static int PersonajeMio
+    {
+        get
+        {
+            try { return Mathf.Clamp(PlayerPrefs.GetInt(ClavePersonaje, 0), 0, 3); }
+            catch { return 0; }
+        }
+    }
+
+    // Si nunca los has tocado, llevas los de tu personaje.
+    public static int ComplementosMios
+    {
+        get
+        {
+            try { return PlayerPrefs.GetInt(ClaveComplementos, -1) is int m && m >= 0 ? m : ComplementosPorDefecto[PersonajeMio]; }
+            catch { return ComplementosPorDefecto[PersonajeMio]; }
+        }
+    }
+
+    public static void QuitarComplemento(ArticuloTaquilla a)
+    {
+        GuardarComplementos(ComplementosMios & ~(1 << a.Indice));
+    }
+
+    private static void GuardarComplementos(int mascara)
+    {
+        try
+        {
+            PlayerPrefs.SetInt(ClaveComplementos, mascara);
+            PlayerPrefs.Save();
+        }
+        catch
+        {
+        }
+
+        Cambio?.Invoke();
+    }
 
     public static void Equipar(ArticuloTaquilla a)
     {
         if (!Tiene(a))
             return;
+
+        if (a.Categoria == CategoriaTaquilla.Personaje)
+        {
+            try
+            {
+                PlayerPrefs.SetInt(ClavePersonaje, a.Indice);
+                // Al cambiar de personaje te pones sus complementos.
+                PlayerPrefs.DeleteKey(ClaveComplementos);
+                PlayerPrefs.Save();
+            }
+            catch
+            {
+            }
+
+            Cambio?.Invoke();
+            return;
+        }
+
+        if (a.Categoria == CategoriaTaquilla.Complemento)
+        {
+            int mascara = ComplementosMios;
+            HuecoComplemento hueco = Complementos[a.Indice].Hueco;
+
+            for (int i = 0; i < Complementos.Length; i++)
+                if (Complementos[i].Hueco == hueco)
+                    mascara &= ~(1 << i);
+
+            GuardarComplementos(mascara | (1 << a.Indice));
+            return;
+        }
 
         try
         {
@@ -161,15 +293,23 @@ public static class TaquillaMus
         Cambio?.Invoke();
     }
 
-    // Lo que ven los demas: traje y color del nombre en un solo numero.
-    public static int AspectoPropio => Mathf.Clamp(Equipado(CategoriaTaquilla.Traje), 0, Trajes.Length - 1) * 100 +
-                                       Mathf.Clamp(Equipado(CategoriaTaquilla.ColorNombre), 0, ColoresNombre.Length - 1);
+    // Lo que ven los demas, en un solo numero:
+    //   bits 0-2 personaje+1 (0 = sin elegir), 3-6 traje, 7-10 color del nombre, 11-22 complementos, 23 "complementos elegidos".
+    public static int AspectoPropio =>
+        (PersonajeMio + 1) |
+        (Mathf.Clamp(Equipado(CategoriaTaquilla.Traje), 0, 15) << 3) |
+        (Mathf.Clamp(Equipado(CategoriaTaquilla.ColorNombre), 0, 15) << 7) |
+        ((ComplementosMios & 0xFFF) << 11) | (1 << 23);
 
-    public static int TrajeDe(int aspecto) => Mathf.Clamp(aspecto / 100, 0, Trajes.Length - 1);
-    public static int ColorNombreDe(int aspecto) => Mathf.Clamp(aspecto % 100, 0, ColoresNombre.Length - 1);
+    public static int PersonajeDe(int aspecto) => (aspecto & 7) - 1;
+    public static int TrajeDe(int aspecto) => Mathf.Clamp((aspecto >> 3) & 15, 0, Trajes.Length - 1);
+    public static int ColorNombreDe(int aspecto) => Mathf.Clamp((aspecto >> 7) & 15, 0, ColoresNombre.Length - 1);
+
+    // Complementos que lleva quien tiene este aspecto (un bot, o alguien que no ha elegido, lleva los de su personaje).
+    public static int ComplementosDe(int aspecto, int personaje) =>
+        (aspecto & (1 << 23)) != 0 ? (aspecto >> 11) & 0xFFF : ComplementosPorDefecto[Mathf.Clamp(personaje, 0, 3)];
 
     public static string RutaReverso => Reversos[Mathf.Clamp(Equipado(CategoriaTaquilla.Reverso), 0, Reversos.Length - 1)];
-    public static string[] Frases => PacksFrases[Mathf.Clamp(Equipado(CategoriaTaquilla.Frases), 0, PacksFrases.Length - 1)];
 
     // Nombre coloreado si ha comprado un color; si no, el color que se pase (normalmente el del personaje).
     public static string NombreConColor(string nombre, int aspecto, string colorPorDefecto)

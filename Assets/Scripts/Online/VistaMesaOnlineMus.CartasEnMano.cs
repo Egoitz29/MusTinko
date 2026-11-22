@@ -181,7 +181,7 @@ public partial class VistaMesaOnlineMus
 
         for (int sitio = 0; sitio < 4; sitio++)
         {
-            if (abanicos[sitio] == null && hayMano)
+            if (abanicos[sitio] == null && (hayMano || taquillaAbierta))
                 abanicos[sitio] = CrearAbanico(sitio);
 
             AbanicoMano a = abanicos[sitio];
@@ -193,7 +193,9 @@ public partial class VistaMesaOnlineMus
             // salvo si la camara se ha ido lejos (camara de cine de la demo).
             Vector3 cabeza = a.Modelo.transform.position + Vector3.up * alturaCabezas;
             bool camaraCerca = cam != null && (cam.transform.position - cabeza).sqrMagnitude < 0.7f * 0.7f;
-            bool visible = hayMano && !(sitio == 0 && camaraCerca);
+            // En el probador ves tus cartas en la mano de tu personaje (con el reverso que lleves).
+            bool probador = taquillaAbierta && a.Modelo == MiModelo();
+            bool visible = probador || (hayMano && !(sitio == 0 && camaraCerca));
 
             if (a.Raiz.activeSelf != visible)
                 a.Raiz.SetActive(visible);
@@ -242,6 +244,17 @@ public partial class VistaMesaOnlineMus
             Quaternion rot = mirarMesa * Quaternion.Euler(inclinacion, 0f, 0f);
 
             a.Raiz.transform.SetPositionAndRotation(ancla, rot);
+        }
+    }
+
+    private void ReiniciarAbanicos()
+    {
+        for (int i = 0; i < abanicos.Length; i++)
+        {
+            if (abanicos[i] != null && abanicos[i].Raiz != null)
+                Destroy(abanicos[i].Raiz);
+
+            abanicos[i] = null;
         }
     }
 

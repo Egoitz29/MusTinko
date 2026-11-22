@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 00a7ca996f93408590351abd1f913c95
+ModelImporter:
+  serializedVersion: 22200
+  materials:
+    materialImportMode: 2
+  animations:
+    importAnimation: 0
+  importAnimation: 0
+  globalScale: 1
+  useFileScale: 1
+  bakeAxisConversion: 0
+  importBlendShapes: 0
+  importCameras: 0
+  importLights: 0

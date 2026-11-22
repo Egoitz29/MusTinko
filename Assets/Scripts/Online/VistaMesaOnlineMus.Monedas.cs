@@ -65,7 +65,7 @@ public partial class VistaMesaOnlineMus
     private void CrearSelectorMesa(Transform padre, float y)
     {
         GameObject fila = new("Mesas", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        Rect(fila, padre, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(820, 64));
+        Rect(fila, padre, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(980, 70));
         HorizontalLayoutGroup h = fila.GetComponent<HorizontalLayoutGroup>();
         h.spacing = 14;
         h.childAlignment = TextAnchor.MiddleCenter;
@@ -75,9 +75,9 @@ public partial class VistaMesaOnlineMus
         GameObject etiqueta = new("Etiqueta", typeof(RectTransform), typeof(LayoutElement));
         etiqueta.transform.SetParent(fila.transform, false);
         LayoutElement le = etiqueta.GetComponent<LayoutElement>();
-        le.preferredWidth = 150;
-        le.preferredHeight = 60;
-        Texto(etiqueta.transform, "MESA:", 32, Oro, true);
+        le.preferredWidth = 160;
+        le.preferredHeight = 66;
+        Texto(etiqueta.transform, "MESA:", 40, Oro, true);
 
         IReadOnlyList<int> entradas = partida.EntradasMesa;
 
@@ -85,14 +85,14 @@ public partial class VistaMesaOnlineMus
         {
             int entrada = entradas[i];
             string texto = entrada == 0 ? "GRATIS" : MonederoMus.Formato(entrada);
-            Button b = Boton(fila.transform, entrada == 0 ? "gris" : "dorado", texto, new Vector2(140, 60), () => partida.CambiarApuesta(entrada), 26);
+            Button b = Boton(fila.transform, entrada == 0 ? "gris" : "dorado", texto, new Vector2(165, 66), () => partida.CambiarApuesta(entrada), 30);
             botonesMesa.Add(b);
             entradasBotones.Add(entrada);
         }
 
         GameObject info = new("InfoMesa", typeof(RectTransform));
-        Rect(info, padre, new Vector2(0.5f, 1f), new Vector2(0, y - 66), new Vector2(840, 40));
-        txtInfoMesa = Texto(info.transform, "", 22, Crema);
+        Rect(info, padre, new Vector2(0.5f, 1f), new Vector2(0, y - 76), new Vector2(1000, 46));
+        txtInfoMesa = Texto(info.transform, "", 25, Crema);
     }
 
     private void ActualizarSelectorMesa(int miSitio)

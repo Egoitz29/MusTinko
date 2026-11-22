@@ -234,6 +234,10 @@ public partial class VistaMesaOnlineMus
     {
         if (DemoActiva)
             DirigirCamaraDemo();
+        else if (taquillaAbierta)
+            CamaraProbador();
+        else if (camaraProbadorActiva)
+            RestaurarCamaraProbador();
     }
 
     private void EnfocarDemo(PlanoDemo plano, int puesto, float segundos)

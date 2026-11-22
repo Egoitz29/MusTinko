@@ -3,12 +3,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// TAQUILLA: tienda de trajes, reversos, colores de nombre y frases, pagando con monedas.
-// Mientras miras un traje, el personaje de tu derecha se lo prueba (probador).
+// TAQUILLA: eliges tu personaje y le compras trajes, complementos, reversos y color de nombre.
+// Con la taquilla abierta la camara se pone delante de TU personaje (probador): lo que tocas, te lo pruebas.
 public partial class VistaMesaOnlineMus
 {
-    private const int SitioProbador = 1;
-
     private GameObject panelTaquilla;
     private Transform rejillaTaquilla;
     private TextMeshProUGUI txtSaldoTaquilla, txtMensajeTaquilla;
@@ -32,6 +30,7 @@ public partial class VistaMesaOnlineMus
     {
         taquillaAbierta = false;
         trajeProbador = -1;
+        complementoProbador = -1;
 
         if (panelTaquilla != null)
             panelTaquilla.SetActive(false);
@@ -39,7 +38,7 @@ public partial class VistaMesaOnlineMus
 
     private void CrearTaquilla()
     {
-        panelTaquilla = Panel("Taquilla", raizUI, "panel_madera", new Vector2(0f, 0.5f), new Vector2(30, 0), new Vector2(1160, 1000));
+        panelTaquilla = Panel("Taquilla", raizUI, "panel_madera", new Vector2(0f, 0.5f), new Vector2(30, 0), new Vector2(1180, 1020));
         panelTaquilla.GetComponent<RectTransform>().pivot = new Vector2(0f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
@@ -55,17 +54,18 @@ public partial class VistaMesaOnlineMus
         Rect(cerrar.gameObject, panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-110, -30), new Vector2(160, 66));
 
         GameObject pestanas = new("Pestanas", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        Rect(pestanas, panelTaquilla.transform, new Vector2(0.5f, 1f), new Vector2(0, -126), new Vector2(1088, 66));
+        Rect(pestanas, panelTaquilla.transform, new Vector2(0.5f, 1f), new Vector2(0, -126), new Vector2(1108, 70));
         HorizontalLayoutGroup h = pestanas.GetComponent<HorizontalLayoutGroup>();
         h.spacing = 12;
         h.childAlignment = TextAnchor.MiddleCenter;
         h.childControlWidth = h.childControlHeight = true;
         h.childForceExpandWidth = h.childForceExpandHeight = false;
 
+        AnadirPestana(pestanas.transform, CategoriaTaquilla.Personaje, "PERSONAJE");
         AnadirPestana(pestanas.transform, CategoriaTaquilla.Traje, "TRAJES");
-        AnadirPestana(pestanas.transform, CategoriaTaquilla.Reverso, "REVERSOS");
-        AnadirPestana(pestanas.transform, CategoriaTaquilla.ColorNombre, "COLOR NOMBRE");
-        AnadirPestana(pestanas.transform, CategoriaTaquilla.Frases, "FRASES");
+        AnadirPestana(pestanas.transform, CategoriaTaquilla.Complemento, "EXTRAS");
+        AnadirPestana(pestanas.transform, CategoriaTaquilla.Reverso, "CARTAS");
+        AnadirPestana(pestanas.transform, CategoriaTaquilla.ColorNombre, "NOMBRE");
 
         // Zona con scroll para los articulos.
         GameObject vista = new("Vista", typeof(RectTransform), typeof(RectMask2D));
@@ -74,7 +74,7 @@ public partial class VistaMesaOnlineMus
         rv.anchorMin = new Vector2(0, 0);
         rv.anchorMax = new Vector2(1, 1);
         rv.offsetMin = new Vector2(36, 80);
-        rv.offsetMax = new Vector2(-36, -214);
+        rv.offsetMax = new Vector2(-36, -218);
 
         GameObject contenido = new("Contenido", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
         RectTransform rc = contenido.GetComponent<RectTransform>();
@@ -85,7 +85,7 @@ public partial class VistaMesaOnlineMus
         rc.anchoredPosition = Vector2.zero;
         rc.sizeDelta = Vector2.zero;
         GridLayoutGroup g = contenido.GetComponent<GridLayoutGroup>();
-        g.cellSize = new Vector2(350, 330);
+        g.cellSize = new Vector2(356, 340);
         g.spacing = new Vector2(18, 18);
         g.childAlignment = TextAnchor.UpperCenter;
         g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
@@ -100,24 +100,23 @@ public partial class VistaMesaOnlineMus
         scroll.movementType = ScrollRect.MovementType.Clamped;
 
         GameObject mensaje = new("Mensaje", typeof(RectTransform));
-        Rect(mensaje, panelTaquilla.transform, new Vector2(0.5f, 0f), new Vector2(0, 18), new Vector2(1080, 50));
-        txtMensajeTaquilla = Texto(mensaje.transform, "", 26, Crema);
+        Rect(mensaje, panelTaquilla.transform, new Vector2(0.5f, 0f), new Vector2(0, 16), new Vector2(1100, 56));
+        txtMensajeTaquilla = Texto(mensaje.transform, "", 30, Crema);
 
         panelTaquilla.SetActive(false);
     }
 
     private void AnadirPestana(Transform padre, CategoriaTaquilla cat, string texto)
     {
-        Button b = Boton(padre, "azul", texto, new Vector2(262, 62), () => MostrarCategoria(cat), 26);
+        Button b = Boton(padre, "azul", texto, new Vector2(208, 66), () => MostrarCategoria(cat), 28);
         pestanasTaquilla[cat] = b;
     }
 
     private void MostrarCategoria(CategoriaTaquilla cat)
     {
         categoriaTaquilla = cat;
-
-        if (cat != CategoriaTaquilla.Traje)
-            trajeProbador = -1;
+        trajeProbador = -1;
+        complementoProbador = -1;
 
         foreach (KeyValuePair<CategoriaTaquilla, Button> par in pestanasTaquilla)
         {
@@ -133,14 +132,14 @@ public partial class VistaMesaOnlineMus
             if (a.Categoria == cat)
                 CrearTarjeta(a);
 
-        if (cat == CategoriaTaquilla.Traje)
-            MensajeTaquilla("Toca un traje para probartelo: lo lleva el personaje de tu derecha.", false);
+        if (cat == CategoriaTaquilla.Personaje)
+            MensajeTaquilla("Tu personaje va contigo a la silla donde te sientes.", false);
+        else if (cat == CategoriaTaquilla.Traje || cat == CategoriaTaquilla.Complemento)
+            MensajeTaquilla("Toca una tarjeta para probartelo: miralo en tu personaje.", false);
         else if (cat == CategoriaTaquilla.Reverso)
-            MensajeTaquilla("El reverso es lo que ves por detras de las cartas de los demas.", false);
-        else if (cat == CategoriaTaquilla.ColorNombre)
-            MensajeTaquilla("Tu nombre sale con este color en la sala y en el chat.", false);
+            MensajeTaquilla("Es la parte de atras de tus cartas: mira las que tiene en la mano.", false);
         else
-            MensajeTaquilla("Las frases rapidas del chat cambian por las del pack que lleves.", false);
+            MensajeTaquilla("Tu nombre sale con este color en la sala y en el chat.", false);
     }
 
     private void CrearTarjeta(ArticuloTaquilla a)
@@ -155,38 +154,59 @@ public partial class VistaMesaOnlineMus
         if (puesto)
             fondo.color = new Color(1f, 0.93f, 0.7f);
 
-        if (a.Categoria == CategoriaTaquilla.Traje)
-            tarjeta.GetComponent<Button>().onClick.AddListener(() =>
-            {
-                trajeProbador = a.Indice;
-                MensajeTaquilla("Probando: " + a.Nombre + " (mira al personaje de tu derecha)", false);
-            });
+        tarjeta.GetComponent<Button>().onClick.AddListener(() => Probar(a));
 
         GameObject nombre = new("Nombre", typeof(RectTransform));
-        Rect(nombre, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -10), new Vector2(330, 56));
-        Texto(nombre.transform, a.Nombre, 40, Tinta, true, TextAlignmentOptions.Center, false);
+        Rect(nombre, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -10), new Vector2(336, 60));
+        Texto(nombre.transform, a.Nombre, 44, Tinta, true, TextAlignmentOptions.Center, false);
 
         GameObject muestra = new("Muestra", typeof(RectTransform));
-        Rect(muestra, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -70), new Vector2(320, 120));
+        Rect(muestra, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -74), new Vector2(326, 110));
         CrearMuestra(a, muestra.transform);
 
         GameObject descripcion = new("Descripcion", typeof(RectTransform));
-        Rect(descripcion, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -192), new Vector2(320, 54));
-        Texto(descripcion.transform, a.Descripcion, 19, Tinta, false, TextAlignmentOptions.Center, false);
+        Rect(descripcion, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -186), new Vector2(330, 66));
+        Texto(descripcion.transform, a.Descripcion, 24, Tinta, false, TextAlignmentOptions.Center, false);
 
         bool tiene = TaquillaMus.Tiene(a);
-        string color = puesto ? "gris" : tiene ? "verde" : "dorado";
-        string texto = puesto ? "LO LLEVAS" : tiene ? "PONER" : a.Precio + " MONEDAS";
+        bool quitable = puesto && a.Categoria == CategoriaTaquilla.Complemento;
+        string color = quitable ? "rojo" : puesto ? "gris" : tiene ? "verde" : "dorado";
+        string texto = quitable ? "QUITAR" : puesto ? "LO LLEVAS" : tiene ? "PONER" : MonederoMus.Formato(a.Precio) + " MONEDAS";
 
-        Button boton = Boton(tarjeta.transform, color, texto, new Vector2(300, 62), () => PulsarArticulo(a), 24);
-        Rect(boton.gameObject, tarjeta.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(300, 62));
-        boton.interactable = !puesto;
+        Button boton = Boton(tarjeta.transform, color, texto, new Vector2(310, 66), () => PulsarArticulo(a), 28);
+        Rect(boton.gameObject, tarjeta.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(310, 66));
+        boton.interactable = !puesto || quitable;
+    }
+
+    private void Probar(ArticuloTaquilla a)
+    {
+        if (a.Categoria == CategoriaTaquilla.Traje)
+            trajeProbador = a.Indice;
+        else if (a.Categoria == CategoriaTaquilla.Complemento)
+            complementoProbador = a.Indice;
+        else
+            return;
+
+        MensajeTaquilla("Te estas probando: <b>" + a.Nombre + "</b>", false);
     }
 
     private void CrearMuestra(ArticuloTaquilla a, Transform padre)
     {
         switch (a.Categoria)
         {
+            case CategoriaTaquilla.Personaje:
+            {
+                GameObject m = new("Color", typeof(RectTransform), typeof(Image));
+                Rect(m, padre, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(96, 96)).pivot = new Vector2(0.5f, 0.5f);
+                Image img = m.GetComponent<Image>();
+                img.sprite = SpriteUI("moneda", 0);
+                img.color = ColoresJugadoresMus.Colores[a.Indice];
+                img.raycastTarget = false;
+                break;
+            }
+            case CategoriaTaquilla.Complemento:
+                Texto(padre, "Toca para probartelo", 26, new Color(0.45f, 0.3f, 0.15f), false, TextAlignmentOptions.Center, false);
+                break;
             case CategoriaTaquilla.Traje:
             {
                 TrajeMus t = TaquillaMus.Trajes[a.Indice];
@@ -200,15 +220,11 @@ public partial class VistaMesaOnlineMus
                 for (int i = 0; i < colores.Length; i++)
                 {
                     GameObject m = new("Color", typeof(RectTransform), typeof(Image));
-                    Rect(m, padre, new Vector2(0f, 0.5f), new Vector2(14 + i * 50, 20), new Vector2(42, 42));
+                    Rect(m, padre, new Vector2(0f, 0.5f), new Vector2(10 + i * 52, 22), new Vector2(46, 46));
                     Image img = m.GetComponent<Image>();
                     img.color = colores[i];
                     img.raycastTarget = false;
                 }
-
-                GameObject leyenda = new("Leyenda", typeof(RectTransform));
-                Rect(leyenda, padre, new Vector2(0.5f, 0f), new Vector2(0, 0), new Vector2(320, 34));
-                Texto(leyenda.transform, "gorro · pompon · manos · botones · pantalon · pelo", 14, Tinta, false, TextAlignmentOptions.Center, false);
                 break;
             }
             case CategoriaTaquilla.Reverso:
@@ -231,14 +247,21 @@ public partial class VistaMesaOnlineMus
                 Texto(padre, hex.Length == 0 ? "<b>" + nombre + "</b>" : "<b><color=" + hex + ">" + nombre + "</color></b>", 44, Color.white);
                 break;
             }
-            default:
-                Texto(padre, string.Join("   ", TaquillaMus.PacksFrases[a.Indice]), 20, Tinta, false, TextAlignmentOptions.Center, false);
-                break;
+
         }
     }
 
     private void PulsarArticulo(ArticuloTaquilla a)
     {
+        if (a.Categoria == CategoriaTaquilla.Complemento && TaquillaMus.EstaEquipado(a))
+        {
+            TaquillaMus.QuitarComplemento(a);
+            complementoProbador = -1;
+            MensajeTaquilla("Te has quitado: " + a.Nombre, true);
+            MostrarCategoria(categoriaTaquilla);
+            return;
+        }
+
         if (TaquillaMus.Tiene(a))
         {
             TaquillaMus.Equipar(a);
@@ -253,9 +276,6 @@ public partial class VistaMesaOnlineMus
             MensajeTaquilla("<color=#FF6B5E>No tienes monedas suficientes. ¡Gana partidas con entrada!</color>", true);
             return;
         }
-
-        if (a.Categoria == CategoriaTaquilla.Traje)
-            trajeProbador = -1;
 
         MostrarCategoria(categoriaTaquilla);
     }

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public partial class VistaMesaOnlineMus : MonoBehaviour
 {
-    private static readonly string[] NombresPuesto = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
+    private static string[] NombresPuesto => ColoresJugadoresMus.NombresPorPuesto;
 
     [Header("Partida online")]
     [SerializeField] private PartidaOnlineMus partida;
@@ -189,22 +189,24 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         puestoColoreado = partida.PuestoLocal;
         versionSalaColoreada = partida.VersionSala;
         probadorColoreado = trajeProbador;
+        necesitaColorear = false;
         int local = Mathf.Max(0, puestoColoreado);
+        int mio = MiPuesto();
 
         for (int sitio = 0; sitio < 4; sitio++)
         {
             GameObject posicion = ModeloEnSitio(sitio);
             int puesto = (local + sitio) % 4;
-            int traje = TaquillaMus.TrajeDe(partida.AspectoEnSitio(puesto));
+            int traje = TaquillaMus.TrajeDe(AspectoDePuesto(puesto));
 
-            // Probador de la taquilla: el personaje de enfrente se pone el traje que estas mirando.
-            if (trajeProbador >= 0 && sitio == SitioProbador)
-                traje = trajeProbador;
+            // Tu personaje lleva siempre lo que tienes puesto (y en el probador, lo que te estas probando).
+            if (puesto == mio)
+                traje = trajeProbador >= 0 ? trajeProbador : TaquillaMus.Equipado(CategoriaTaquilla.Traje);
 
             if (aspectoPorPiezas)
-                ColoresJugadoresMus.AplicarAspecto(posicion, puesto, saturacionRopa, brilloMaterial, traje);
+                ColoresJugadoresMus.AplicarAspecto(posicion, ColoresJugadoresMus.PersonajeDe(puesto), saturacionRopa, brilloMaterial, traje);
             else
-                ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.Colores[puesto], intensidadColorSuave);
+                ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.ColorDe(puesto), intensidadColorSuave);
         }
     }
 
@@ -598,8 +600,10 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         if (lienzoUI != null)
             ActualizarInterfaz();
 
+        ActualizarPersonajes();
+
         if (colorearPersonajes && (partida.PuestoLocal != puestoColoreado || partida.VersionSala != versionSalaColoreada ||
-                                   trajeProbador != probadorColoreado))
+                                   trajeProbador != probadorColoreado || necesitaColorear))
             ColorearPersonajes();
 
         partida.EsperandoAnimaciones = cola.Count > 0;

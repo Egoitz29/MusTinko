@@ -147,7 +147,8 @@ public struct ManosReveladasMus : INetworkSerializable
 public class PartidaOnlineMus : NetworkBehaviour
 {
     public const ulong SinCliente = ulong.MaxValue;
-    private static readonly string[] NombresPuesto = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
+    // Nombre del personaje sentado en cada silla (cambia segun quien se siente).
+    private static string[] NombresPuesto => ColoresJugadoresMus.NombresPorPuesto;
 
     [Header("Partida")]
     [SerializeField] private int limiteTantos = 40;
@@ -294,7 +295,7 @@ public class PartidaOnlineMus : NetworkBehaviour
     [Rpc(SendTo.Server)]
     private void AspectoRpc(int aspecto, RpcParams parametros = default)
     {
-        aspectosClientes[parametros.Receive.SenderClientId] = Mathf.Clamp(aspecto, 0, 9999);
+        aspectosClientes[parametros.Receive.SenderClientId] = Mathf.Max(0, aspecto);
         DifundirSala();
     }
 
@@ -355,8 +356,16 @@ public class PartidaOnlineMus : NetworkBehaviour
             if (Array.IndexOf(sitiosSala, id) < 0)
                 sinSitio.Add(NombreDe(id));
 
+        int[] pedidos = new int[4];
+
+        for (int p = 0; p < 4; p++)
+            pedidos[p] = sitiosSala[p] == SinCliente ? -1 : TaquillaMus.PersonajeDe(AspectoDe(sitiosSala[p]));
+
+        int[] pj = ColoresJugadoresMus.Repartir(pedidos);
+
         SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio), apuestaSala,
-            AspectoDe(sitiosSala[0]), AspectoDe(sitiosSala[1]), AspectoDe(sitiosSala[2]), AspectoDe(sitiosSala[3]));
+            AspectoDe(sitiosSala[0]), AspectoDe(sitiosSala[1]), AspectoDe(sitiosSala[2]), AspectoDe(sitiosSala[3]),
+            pj[0] * 1000 + pj[1] * 100 + pj[2] * 10 + pj[3]);
     }
 
     private bool EstaConectado(ulong id)
@@ -406,8 +415,9 @@ public class PartidaOnlineMus : NetworkBehaviour
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta, int a0, int a1, int a2, int a3)
+    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta, int a0, int a1, int a2, int a3, int personajes)
     {
+        ColoresJugadoresMus.PonerPersonajes(personajes / 1000 % 10, personajes / 100 % 10, personajes / 10 % 10, personajes % 10);
         ApuestaSalaVista = apuesta;
         aspectosVistos[0] = a0;
         aspectosVistos[1] = a1;

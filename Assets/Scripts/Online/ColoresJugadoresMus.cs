@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public static class ColoresJugadoresMus
@@ -14,12 +15,76 @@ public static class ColoresJugadoresMus
 
     public static readonly string[] Hex = { "#B88CF0", "#D9AE1F", "#74E0A6", "#FF7F6B" };
 
+    // Que personaje (0 LILA, 1 MOSTAZA, 2 MENTA, 3 CORAL) hay en cada silla.
+    // Cada jugador lleva SU personaje a la silla donde se sienta; los bots se quedan los que sobran.
+    private static readonly int[] personajeDePuesto = { 0, 1, 2, 3 };
+    public static readonly string[] NombresPorPuesto = { "LILA", "MOSTAZA", "MENTA", "CORAL" };
+    public static int Version { get; private set; }
+
+    public static int PersonajeDe(int puesto) => puesto >= 0 && puesto < 4 ? personajeDePuesto[puesto] : 0;
+    public static string HexDe(int puesto) => Hex[PersonajeDe(puesto)];
+    public static Color ColorDe(int puesto) => Colores[PersonajeDe(puesto)];
+
+    public static void PonerPersonajes(int p0, int p1, int p2, int p3)
+    {
+        int[] nuevos = { p0, p1, p2, p3 };
+        bool igual = true;
+
+        for (int i = 0; i < 4; i++)
+        {
+            nuevos[i] = Mathf.Clamp(nuevos[i], 0, 3);
+            igual &= nuevos[i] == personajeDePuesto[i];
+        }
+
+        if (igual)
+            return;
+
+        for (int i = 0; i < 4; i++)
+        {
+            personajeDePuesto[i] = nuevos[i];
+            NombresPorPuesto[i] = Nombres[nuevos[i]];
+        }
+
+        Version++;
+    }
+
+    // Reparte personajes: primero los que se piden (si no estan cogidos), luego los que sobran.
+    public static int[] Repartir(int[] pedidos)
+    {
+        int[] r = { -1, -1, -1, -1 };
+        bool[] usado = new bool[4];
+
+        for (int p = 0; p < 4; p++)
+        {
+            int k = pedidos[p];
+
+            if (k >= 0 && k < 4 && !usado[k])
+            {
+                r[p] = k;
+                usado[k] = true;
+            }
+        }
+
+        for (int p = 0; p < 4; p++)
+        {
+            if (r[p] >= 0)
+                continue;
+
+            int k = !usado[p] ? p : Array.IndexOf(usado, false);
+            r[p] = k;
+            usado[k] = true;
+        }
+
+        return r;
+    }
+
     public static string Nombre(int puesto)
     {
         if (puesto < 0 || puesto > 3)
             return "-";
 
-        return "<color=" + Hex[puesto] + "><b>" + Nombres[puesto] + "</b></color>";
+        int k = PersonajeDe(puesto);
+        return "<color=" + Hex[k] + "><b>" + Nombres[k] + "</b></color>";
     }
 
     private static readonly Color Piel = new(1f, 0.85f, 0.72f);
@@ -34,6 +99,7 @@ public static class ColoresJugadoresMus
         new(0.58f, 0.24f, 0.12f)
     };
 
+    // "personaje" es 0 LILA, 1 MOSTAZA, 2 MENTA, 3 CORAL (sus colores de ropa y pelo).
     public static void AplicarAspecto(GameObject raiz, int puesto, float saturacionRopa, float brillo, int traje = 0)
     {
         TrajeMus t = TaquillaMus.Trajes[Mathf.Clamp(traje, 0, TaquillaMus.Trajes.Length - 1)];
@@ -83,7 +149,7 @@ public static class ColoresJugadoresMus
     // Lo que cambia un traje de la taquilla (si no lo cambia, devuelve null y se usa lo de siempre).
     private static Color? ColorDeTraje(string pieza, TrajeMus t)
     {
-        if (pieza == "Gorro_ParteAlta") return t.Gorro;
+        if (pieza == "Gorro_ParteAlta" || pieza.StartsWith("Txapela")) return t.Gorro;
         if (pieza == "Gorro_Borde") return t.BordeGorro;
         if (pieza == "Gorro_Pompom") return t.Pompom;
         if (pieza.StartsWith("Manopla") || pieza.StartsWith("Pulgar")) return t.Manoplas;
@@ -114,6 +180,17 @@ public static class ColoresJugadoresMus
         if (pieza == "Gorro_Pompom" || pieza == "Cuello_Color") return Crema;
         if (pieza.StartsWith("Boton") || pieza.StartsWith("Etiqueta")) return Oro;
         if (pieza.StartsWith("Pierna")) return new Color(0.26f, 0.23f, 0.3f);
+        // Complementos (bigote y barba van como "Pelo_..." y cogen el color del pelo).
+        if (pieza.StartsWith("Gafas")) return new Color(0.1f, 0.09f, 0.09f);
+        if (pieza == "Puro") return new Color(0.42f, 0.24f, 0.12f);
+        if (pieza == "Brasa") return new Color(1f, 0.45f, 0.1f);
+        if (pieza == "Ceniza") return new Color(0.75f, 0.73f, 0.7f);
+        if (pieza.StartsWith("Pajarita") || pieza == "Cinta") return new Color(0.75f, 0.1f, 0.14f);
+        if (pieza.StartsWith("Txapela")) return new Color(0.12f, 0.12f, 0.14f);
+        if (pieza.StartsWith("Sombrero")) return new Color(0.08f, 0.08f, 0.09f);
+        if (pieza.StartsWith("Bufanda")) return ropaOscura;
+        if (pieza == "Raya") return Crema;
+        if (pieza == "Pendiente") return Oro;
         if (pieza.StartsWith("Zapato")) return new Color(0.32f, 0.19f, 0.11f);
         return null;
     }
