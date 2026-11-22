@@ -1229,6 +1229,8 @@ public partial class VistaMesaOnlineMus
             botonPausaUI.GetComponentInChildren<TextMeshProUGUI>().text = partida.Pausado ? "REANUDAR" : "PAUSA";
     }
 
+    private int puntosVistos0, puntosVistos1;
+
     private void ActualizarHud(bool revision)
     {
         if (revision)
@@ -1242,8 +1244,17 @@ public partial class VistaMesaOnlineMus
         EstadoPublicoMus e = partida.Estado;
         int local = partida.PuestoLocal;
         int pareja = local >= 0 ? local % 2 : 0;
-        int nuestros = pareja == 0 ? e.Puntos0 : e.Puntos1;
-        int suyos = pareja == 0 ? e.Puntos1 : e.Puntos0;
+
+        // El marcador va al ritmo de la mesa: los tantos se ven cuando la mesa ya ha ensenado la jugada
+        // (si no, suben antes de tiempo y al final de la mano saltan los de las dos parejas de golpe).
+        if (cola.Count == 0 || !e.EnCurso)
+        {
+            puntosVistos0 = e.Puntos0;
+            puntosVistos1 = e.Puntos1;
+        }
+
+        int nuestros = pareja == 0 ? puntosVistos0 : puntosVistos1;
+        int suyos = pareja == 0 ? puntosVistos1 : puntosVistos0;
         int limite = Mathf.Max(1, e.Limite);
 
         txtNos.text = "NOSOTROS  " + nuestros;
