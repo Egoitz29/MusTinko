@@ -175,7 +175,7 @@ public partial class VistaMesaOnlineMus
             yawObjetivo += delta.x * gradosPorPixel;
             pitchObjetivo -= delta.y * gradosPorPixel;
             yawObjetivo = yawBase + Mathf.Clamp(Mathf.DeltaAngle(yawBase, yawObjetivo), -giroMaximoMirada, giroMaximoMirada);
-            pitchObjetivo = Mathf.Clamp(pitchObjetivo, pitchBase - 20f, pitchBase + inclinacionCartasMirada + 5f);
+            pitchObjetivo = Mathf.Clamp(pitchObjetivo, pitchBase - 20f, pitchBase + inclinacionCartasMirada + 12f);
 
             if ((puntero - inicioToque).magnitude > Screen.height * 0.02f)
                 posibleToque = false;
@@ -298,6 +298,16 @@ public partial class VistaMesaOnlineMus
         miradaElegida = false;
         yawObjetivo = yawBase;
         pitchObjetivo = pitchBase + inclinacionCartasMirada;
+
+        // Si estan tus cartas 3D, se mira justo a ellas.
+        Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+
+        if (manoJugador != null && cam != null)
+        {
+            Vector3 e = Quaternion.LookRotation(manoJugador.position - cam.transform.position, Vector3.up).eulerAngles;
+            yawObjetivo = e.y;
+            pitchObjetivo = Mathf.DeltaAngle(0f, e.x);
+        }
     }
 
     // Quien queda en el centro de la vista (1..3 sitios de los demas, 4 = mirando tus cartas, -1 nadie).

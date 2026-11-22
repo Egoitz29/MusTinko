@@ -153,6 +153,9 @@ public partial class VistaMesaOnlineMus
     private bool PrimeraPersona => !taquillaAbierta && !enRevision && !(DemoActiva && !vistaJugadorDemo);
 
     private readonly GameObject[] sillas = new GameObject[4];
+    private Transform manoJugador;          // tus cartas en 3D (ManoJugador3D): van siempre delante de tu camara
+    private Vector3 manoRelPos;
+    private Quaternion manoRelRot;
     private Vector3 camaraPosSilla0;
     private Quaternion camaraGiroSilla0;
     private int sillaCamaraColocada = -1;
@@ -190,6 +193,13 @@ public partial class VistaMesaOnlineMus
         // Tu sitio no tenia silla (eras la camara): se pone una igual que la de enfrente, al otro lado de la mesa.
         GameObject modelo = sillas[2];
 
+        // La caja que hacia de asiento en tu sitio se esconde: ahora hay una silla de verdad.
+        GameObject caja = GameObject.Find("AsientoJugador");
+
+        if (caja != null && modelo != null)
+            foreach (Renderer r in caja.GetComponentsInChildren<Renderer>())
+                r.enabled = false;
+
         if (sillas[0] == null && modelo != null)
         {
             Vector3 p = modelo.transform.position;
@@ -225,6 +235,10 @@ public partial class VistaMesaOnlineMus
         Vector3 centro = CentroMesa();
         Vector3 pos = centro + giro * (camaraPosSilla0 - centro);
         Quaternion rot = giro * camaraGiroSilla0;
+
+        // Tus cartas 3D van delante de la camara de tu silla.
+        if (manoJugador != null)
+            manoJugador.SetPositionAndRotation(pos + rot * manoRelPos, rot * manoRelRot);
 
         // Si ahora mismo manda otra camara (revision, probador, demo), se cambia el sitio al que vuelve.
         if (camaraMovida)
@@ -373,11 +387,24 @@ public partial class VistaMesaOnlineMus
 
             if (cam != null)
             {
-                camaraPosSilla0 = camaraMovida ? posicionCamaraGuardada : cam.transform.position;
-                // Un poco mas atras y arriba: se ve mejor la mesa y los personajes no llenan la pantalla.
-                camaraPosSilla0 += Plano(camaraPosSilla0 - centro) * alejarCamara + Vector3.up * subirCamara;
+                Vector3 camaraEscena = camaraMovida ? posicionCamaraGuardada : cam.transform.position;
                 camaraGiroSilla0 = miradaIniciada ? Quaternion.Euler(pitchBase, yawBase, 0f)
                     : camaraMovida ? rotacionCamaraGuardada : cam.transform.rotation;
+
+                // Tus cartas 3D (las que ves al mirar abajo): se guarda donde estan respecto a la camara de tu escena,
+                // para llevarlas siempre delante de tu camara (en cualquier silla).
+                GameObject mano = GameObject.Find("ManoJugador3D");
+
+                if (mano != null)
+                {
+                    manoJugador = mano.transform;
+                    Quaternion inversa = Quaternion.Inverse(camaraGiroSilla0);
+                    manoRelPos = inversa * (manoJugador.position - camaraEscena);
+                    manoRelRot = inversa * manoJugador.rotation;
+                }
+
+                // Un poco mas atras y arriba: se ve mejor la mesa y los personajes no llenan la pantalla.
+                camaraPosSilla0 = camaraEscena + Plano(camaraEscena - centro) * alejarCamara + Vector3.up * subirCamara;
             }
 
             // Cada modelo: hacia donde mira (en tu escena todos miran a la mesa) y su cadera, respecto a su raiz.
