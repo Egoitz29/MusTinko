@@ -28,7 +28,7 @@ public partial class VistaMesaOnlineMus
 
     [Header("Vision: mirada fija (zoom)")]
     [Tooltip("Solo cuando eliges a quien mirar (tocandole, arrastrando o con 1-2-3), no en la vista normal.")]
-    [UnityEngine.Range(0.5f, 1f)][SerializeField] private float zoomMiradaFija = 0.85f;
+    [UnityEngine.Range(0.5f, 1f)][SerializeField] private float zoomMiradaFija = 0.8f;
     [SerializeField] private float segundosParaZoom = 0.7f;
 
     [Header("Vision periferica (borroso alrededor)")]

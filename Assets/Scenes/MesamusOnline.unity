@@ -8493,14 +8493,14 @@ MonoBehaviour:
   usarReversoDeLaTaquilla: 1
   tamanoCartaEnMano: {x: 0.11, y: 0.17}
   aperturaAbanico: 11
-  alturaCartasEnMano: 0.82
+  alturaCartasEnMano: 0.22
   adelanteCartasEnMano: 0.28
   inclinacionCartasBajadas: 58
   inclinacionCartasMirando: 18
   subidaCartasAlMirar: 0.2
   acercarCartasAlMirar: 0.35
-  altoCartaManos: 0.38
-  adelanteRespectoManos: 0.3
+  altoCartaManos: 0.2
+  adelanteRespectoManos: 0.2
   escalaSinManos: 2.5
   ritmoVisualDemo: 1.9
   pausaSenaDemo: 3

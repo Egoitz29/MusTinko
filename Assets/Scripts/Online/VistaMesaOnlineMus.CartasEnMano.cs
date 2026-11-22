@@ -15,7 +15,7 @@ public partial class VistaMesaOnlineMus
     [Tooltip("Grados de apertura entre carta y carta del abanico.")]
     [SerializeField] private float aperturaAbanico = 11f;
     [Tooltip("Altura sobre la silla si no se encuentran las manos del modelo.")]
-    [SerializeField] private float alturaCartasEnMano = 0.82f;
+    [SerializeField] private float alturaCartasEnMano = 0.22f;
     [Tooltip("Cuanto se adelantan las cartas hacia la mesa desde el personaje.")]
     [SerializeField] private float adelanteCartasEnMano = 0.28f;
     [SerializeField] private float inclinacionCartasBajadas = 58f;
@@ -27,9 +27,9 @@ public partial class VistaMesaOnlineMus
 
     [Header("Tamano segun el personaje")]
     [Tooltip("Alto de la carta comparado con la distancia entre las dos manos del personaje.")]
-    [SerializeField] private float altoCartaManos = 0.38f;
+    [SerializeField] private float altoCartaManos = 0.2f;
     [Tooltip("Cuanto se adelantan las cartas por delante de las manos (respecto a la distancia entre manos).")]
-    [SerializeField] private float adelanteRespectoManos = 0.3f;
+    [SerializeField] private float adelanteRespectoManos = 0.2f;
     [Tooltip("Si el modelo no tiene manos, se multiplica el tamano por esto.")]
     [SerializeField] private float escalaSinManos = 2.5f;
 
