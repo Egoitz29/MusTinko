@@ -119,6 +119,16 @@ public partial class VistaMesaOnlineMus
             pivote.transform.localRotation = Quaternion.Euler(0f, 0f, (1.5f - c) * aperturaAbanico);
             pivote.transform.localPosition = new Vector3(0f, 0f, -0.002f * c);
 
+            // Carta 3D hecha en Blender (si esta): el reverso mira a la mesa para que lo vean los demas.
+            GameObject carta3D = Cartas3DMus.Crear("Carta3D", pivote.transform, tamanoCartaEnMano.y, null);
+
+            if (carta3D != null)
+            {
+                carta3D.transform.localPosition = new Vector3(0f, tamanoCartaEnMano.y * 0.42f, 0f);
+                carta3D.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                continue;
+            }
+
             GameObject atras = CrearCara(pivote.transform, materialReverso, "Reverso");
             atras.transform.localPosition = new Vector3(0f, tamanoCartaEnMano.y * 0.42f, -0.0006f);
             atras.transform.localRotation = Quaternion.identity;
@@ -161,6 +171,7 @@ public partial class VistaMesaOnlineMus
             return;
 
         // Si ha cambiado el reverso en la taquilla, se cambia la textura.
+        Cartas3DMus.RefrescarReverso();
         if (usarReversoDeLaTaquilla && TaquillaMus.RutaReverso != reversoCargado && materialReverso != null)
         {
             Texture2D nuevo = Resources.Load<Texture2D>(TaquillaMus.RutaReverso);

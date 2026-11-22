@@ -888,89 +888,123 @@ public partial class VistaMesaOnlineMus
         if (tabla == null)
             return;
 
-        GameObject hoja = Panel("Hoja", panelTanteoUI.transform, "panel_pergamino", new Vector2(0.5f, 0.5f), new Vector2(0, 20), new Vector2(1560, 880));
+        GameObject hoja = Panel("Hoja", panelTanteoUI.transform, "panel_pergamino", new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(1720, 920));
         hoja.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+        Transform h = hoja.transform;
 
-        GameObject titulo = new("Titulo", typeof(RectTransform));
-        Rect(titulo, hoja.transform, new Vector2(0.5f, 1f), new Vector2(0, -24), new Vector2(1400, 70));
         EstadoPublicoMus e = partida.Estado;
-        Texto(titulo.transform, e.EnCurso ? "TANTEO DE LA MANO" : TextoFase(e, false), 56, Tinta, true, TextAlignmentOptions.Center, false);
-
         int local = Mathf.Max(0, partida.PuestoLocal);
-        int[] orden = { local, (local + 2) % 4, (local + 1) % 4, (local + 3) % 4 };
+        int parejaLocal = local % 2;
+        int nuestros = parejaLocal == 0 ? e.Puntos0 : e.Puntos1;
+        int suyos = parejaLocal == 0 ? e.Puntos1 : e.Puntos0;
+        const string Verde = "#2E7D32", Rojo = "#B23A2E";
 
-        for (int b = 0; b < 4; b++)
+        Etiqueta(h, new Vector2(0, -18), new Vector2(1600, 72), e.EnCurso ? "TANTEO DE LA MANO" : TextoFase(e, false), 58, true, TextAlignmentOptions.Center, new Vector2(0.5f, 1f));
+        Etiqueta(h, new Vector2(0, -90), new Vector2(1600, 40),
+            "Esta mano:  <color=" + Verde + "><b>NOSOTROS +" + tabla.TotalNosotros + "</b></color>   ·   <color=" + Rojo + "><b>ELLOS +" + tabla.TotalEllos + "</b></color>",
+            30, false, TextAlignmentOptions.Center, new Vector2(0.5f, 1f));
+
+        // ---------- Izquierda: las cartas, por parejas ----------
+        int[][] parejas = { new[] { local, (local + 2) % 4 }, new[] { (local + 1) % 4, (local + 3) % 4 } };
+        float y = -140;
+
+        for (int pa = 0; pa < 2; pa++)
         {
-            int puesto = orden[b];
-            bool nuestro = puesto % 2 == local % 2;
-            float y = -110 - b * 180;
-            GameObject fila = new("Mano_" + puesto, typeof(RectTransform));
-            Rect(fila, hoja.transform, new Vector2(0f, 1f), new Vector2(50, y), new Vector2(560, 36));
-            int[] mano = manosVistas == null ? new[] { -1, -1, -1, -1 } :
-                new[] { manosVistas[puesto * 4], manosVistas[puesto * 4 + 1], manosVistas[puesto * 4 + 2], manosVistas[puesto * 4 + 3] };
-            string resumen = "";
+            bool nuestra = pa == 0;
+            Etiqueta(h, new Vector2(40, y), new Vector2(800, 44), "<color=" + (nuestra ? Verde : Rojo) + ">" + (nuestra ? "NOSOTROS" : "ELLOS") + "</color>",
+                38, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+            y -= 46;
 
-            if (mano[0] >= 0)
+            foreach (int puesto in parejas[pa])
             {
-                EvaluadorManoMus.Resultado r = CartasMus.Evaluar(mano);
-                resumen = r.DetallePares + ", " + (r.TieneJuego ? "juego " : "punto ") + r.PuntosJuego;
-            }
+                int[] mano = manosVistas == null ? new[] { -1, -1, -1, -1 } :
+                    new[] { manosVistas[puesto * 4], manosVistas[puesto * 4 + 1], manosVistas[puesto * 4 + 2], manosVistas[puesto * 4 + 3] };
 
-            Texto(fila.transform, "<b>" + Nombre(puesto) + (puesto == local ? " (tu)" : "") + "</b>  <size=20><color=" +
-                (nuestro ? "#2E7D32" : "#B23A2E") + ">" + (nuestro ? "nosotros" : "ellos") + "</color>  " + resumen + "</size>",
-                26, Tinta, false, TextAlignmentOptions.Left, false);
+                for (int c = 0; c < 4 && mano[0] >= 0; c++)
+                {
+                    GameObject carta = new("Carta", typeof(RectTransform), typeof(Image));
+                    Rect(carta, h, new Vector2(0f, 1f), new Vector2(40 + c * 100, y), new Vector2(92, 144));
+                    Image img = carta.GetComponent<Image>();
+                    img.sprite = BarajaSpritesMus.Obtener(CartasMus.Texto(mano[c]));
+                    img.preserveAspect = true;
+                    img.raycastTarget = false;
+                }
 
-            for (int c = 0; c < 4 && mano[0] >= 0; c++)
-            {
-                Sprite sprite = BarajaSpritesMus.Obtener(CartasMus.Texto(mano[c]));
-                GameObject carta = new("Carta", typeof(RectTransform), typeof(Image));
-                Rect(carta, hoja.transform, new Vector2(0f, 1f), new Vector2(50 + c * 92, y - 40), new Vector2(86, 135));
-                Image img = carta.GetComponent<Image>();
-                img.sprite = sprite;
-                img.preserveAspect = true;
+                string resumen = "";
+
+                if (mano[0] >= 0)
+                {
+                    EvaluadorManoMus.Resultado r = CartasMus.Evaluar(mano);
+                    resumen = r.DetallePares + "\n" + (r.TieneJuego ? "Juego " : "Punto ") + r.PuntosJuego;
+                }
+
+                Etiqueta(h, new Vector2(450, y - 4), new Vector2(390, 150), NombreEnTanteo(puesto, local) + "\n<size=78%>" + resumen + "</size>",
+                    32, false, TextAlignmentOptions.TopLeft, new Vector2(0f, 1f));
+                y -= 156;
             }
         }
 
+        // ---------- Derecha: los lances ----------
         string[] colores = { "#9A6B00", "#1F5F99", "#A0306E", "#B3541E" };
-        float x0 = 680, ancho = 820, columna = (ancho - 170) / 2f;
-        Fila(hoja.transform, x0, -110, "", "<color=#2E7D32>NOSOTROS</color>", "<color=#B23A2E>ELLOS</color>", columna, 34);
+        const float X = 880, AnchoLance = 220, Columna = 290;
+        Etiqueta(h, new Vector2(X + AnchoLance, -140), new Vector2(Columna, 44), "<color=" + Verde + ">NOSOTROS</color>", 36, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X + AnchoLance + Columna, -140), new Vector2(Columna, 44), "<color=" + Rojo + ">ELLOS</color>", 36, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
 
         for (int i = 0; i < tabla.Filas.Length; i++)
         {
             TablaTanteoMus.Fila f = tabla.Filas[i];
-            Fila(hoja.transform, x0, -170 - i * 120, "<color=" + colores[i] + ">" + f.Lance + "</color>",
-                f.Nosotros.Count == 0 ? "-" : string.Join("\n", f.Nosotros),
-                f.Ellos.Count == 0 ? "-" : string.Join("\n", f.Ellos), columna, 22);
+            float yf = -192 - i * 118;
+
+            // La fila se tine del color de quien gana el lance con las cartas.
+            if (f.Ganador >= 0)
+            {
+                GameObject fondo = new("Ganador", typeof(RectTransform), typeof(Image));
+                Rect(fondo, h, new Vector2(0f, 1f), new Vector2(X - 12, yf + 6), new Vector2(AnchoLance + Columna * 2 + 12, 112));
+                Image img = fondo.GetComponent<Image>();
+                img.color = f.Ganador == 0 ? new Color(0.18f, 0.5f, 0.2f, 0.16f) : new Color(0.7f, 0.22f, 0.18f, 0.16f);
+                img.raycastTarget = false;
+            }
+
+            string gana = f.Ganador < 0 ? "" : "\n<size=60%><color=" + (f.Ganador == 0 ? Verde : Rojo) + ">gana " + (f.Ganador == 0 ? "NOSOTROS" : "ELLOS") + "</color></size>";
+            Etiqueta(h, new Vector2(X, yf), new Vector2(AnchoLance, 110), "<color=" + colores[i] + "><b>" + f.Lance + "</b></color>" + gana, 36, true, TextAlignmentOptions.TopLeft, new Vector2(0f, 1f));
+            Etiqueta(h, new Vector2(X + AnchoLance, yf), new Vector2(Columna - 10, 110), f.Nosotros.Count == 0 ? "-" : string.Join("\n", f.Nosotros), 24, false, TextAlignmentOptions.TopLeft, new Vector2(0f, 1f));
+            Etiqueta(h, new Vector2(X + AnchoLance + Columna, yf), new Vector2(Columna - 10, 110), f.Ellos.Count == 0 ? "-" : string.Join("\n", f.Ellos), 24, false, TextAlignmentOptions.TopLeft, new Vector2(0f, 1f));
         }
 
-        int parejaLocal = local % 2;
-        int nuestros = parejaLocal == 0 ? e.Puntos0 : e.Puntos1;
-        int suyos = parejaLocal == 0 ? e.Puntos1 : e.Puntos0;
-        Fila(hoja.transform, x0, -660, "ESTA MANO", "+" + tabla.TotalNosotros, "+" + tabla.TotalEllos, columna, 32);
-        Fila(hoja.transform, x0, -720, "TOTAL", nuestros + " / " + e.Limite, suyos + " / " + e.Limite, columna, 36);
+        Etiqueta(h, new Vector2(X, -670), new Vector2(AnchoLance, 50), "ESTA MANO", 34, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X + AnchoLance, -670), new Vector2(Columna, 50), "<color=" + Verde + ">+" + tabla.TotalNosotros + "</color>", 36, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X + AnchoLance + Columna, -670), new Vector2(Columna, 50), "<color=" + Rojo + ">+" + tabla.TotalEllos + "</color>", 36, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X, -724), new Vector2(AnchoLance, 56), "TOTAL", 40, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X + AnchoLance, -724), new Vector2(Columna, 56), nuestros + " / " + e.Limite, 40, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
+        Etiqueta(h, new Vector2(X + AnchoLance + Columna, -724), new Vector2(Columna, 56), suyos + " / " + e.Limite, 40, true, TextAlignmentOptions.Left, new Vector2(0f, 1f));
 
+        // Botones abajo a la derecha (ya no tapan las cartas).
         GameObject botones = new("Botones", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        Rect(botones, hoja.transform, new Vector2(0.5f, 0f), new Vector2(0, 30), new Vector2(900, 96));
-        HorizontalLayoutGroup h = botones.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = 24;
-        h.childAlignment = TextAnchor.MiddleCenter;
-        h.childControlWidth = h.childControlHeight = true;
-        h.childForceExpandWidth = h.childForceExpandHeight = false;
-        Boton(botones.transform, "azul", "VER LAS CARTAS EN LA MESA", new Vector2(420, 90), () => tablaVisible = false, 26);
-        botonSiguienteUI = Boton(botones.transform, "verde", "SIGUIENTE MANO", new Vector2(360, 90), () => partida.PedirSiguienteMano(), 28);
+        Rect(botones, h, new Vector2(0f, 0f), new Vector2(X - 12, 26), new Vector2(812, 96));
+        HorizontalLayoutGroup hl = botones.GetComponent<HorizontalLayoutGroup>();
+        hl.spacing = 20;
+        hl.childAlignment = TextAnchor.MiddleCenter;
+        hl.childControlWidth = hl.childControlHeight = true;
+        hl.childForceExpandWidth = hl.childForceExpandHeight = false;
+        Boton(botones.transform, "azul", "VER LA MESA", new Vector2(340, 90), () => tablaVisible = false, 30);
+        botonSiguienteUI = Boton(botones.transform, "verde", "SIGUIENTE MANO", new Vector2(400, 90), () => partida.PedirSiguienteMano(), 32);
     }
 
-    private void Fila(Transform padre, float x, float y, string lance, string nos, string ellos, float columna, float tamano)
+    // Personaje (con su color, oscurecido para que se lea en el pergamino) y el apodo si es una persona.
+    private string NombreEnTanteo(int puesto, int local)
     {
-        GameObject a = new("Lance", typeof(RectTransform));
-        Rect(a, padre, new Vector2(0f, 1f), new Vector2(x, y), new Vector2(170, 110));
-        Texto(a.transform, "<b>" + lance + "</b>", 30, Tinta, true, TextAlignmentOptions.TopLeft, false);
-        GameObject b = new("Nos", typeof(RectTransform));
-        Rect(b, padre, new Vector2(0f, 1f), new Vector2(x + 170, y), new Vector2(columna, 110));
-        Texto(b.transform, nos, tamano, Tinta, false, TextAlignmentOptions.TopLeft, false);
-        GameObject c = new("Ellos", typeof(RectTransform));
-        Rect(c, padre, new Vector2(0f, 1f), new Vector2(x + 170 + columna, y), new Vector2(columna, 110));
-        Texto(c.transform, ellos, tamano, Tinta, false, TextAlignmentOptions.TopLeft, false);
+        Color c = ColoresJugadoresMus.ColorDe(puesto) * 0.62f;
+        string hex = "#" + ColorUtility.ToHtmlStringRGB(c);
+        string apodo = partida.ClienteEnSitio(puesto) != PartidaOnlineMus.SinCliente ? partida.NombreEnSitio(puesto) : "bot";
+        return "<b><color=" + hex + ">" + ColoresJugadoresMus.NombresPorPuesto[puesto] + "</color></b>  <size=72%>" +
+               (puesto == local && partida.PuestoLocal >= 0 ? "(tu) " : "") + apodo + "</size>";
+    }
+
+    private void Etiqueta(Transform padre, Vector2 pos, Vector2 tamano, string texto, float letra, bool titulo, TextAlignmentOptions alineacion, Vector2 ancla)
+    {
+        GameObject go = new("Texto", typeof(RectTransform));
+        Rect(go, padre, ancla, pos, tamano);
+        Texto(go.transform, texto, letra, Tinta, titulo, alineacion, false);
     }
 
     private const string ClaveNombre = "MusTinko_Nombre";

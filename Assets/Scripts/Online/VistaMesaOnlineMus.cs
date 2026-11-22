@@ -359,8 +359,10 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             }
 
             Vector3 centro = CentroMesa();
-            Vector3 posicion = centro + new Vector3(0f, alturaVistaMesa, -retrocesoVistaMesa);
-            camaraJugador.transform.SetPositionAndRotation(posicion, Quaternion.LookRotation(centro - posicion, Vector3.forward));
+            // Encima de la mesa, un poco hacia tu silla, mirando hacia abajo (las cartas se leen derechas).
+            Vector3 atras = anclaPosicion != null ? DireccionSilla(0) : Vector3.back;
+            Vector3 posicion = centro + Vector3.up * alturaVistaMesa + atras * retrocesoVistaMesa;
+            camaraJugador.transform.SetPositionAndRotation(posicion, Quaternion.LookRotation(centro - posicion, -atras));
         }
 
         if (panelCartas != null) panelCartas.SetActive(false);
@@ -596,6 +598,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         ProcesarCola();
         ActualizarDemo();
         ActualizarCartasEnMano();
+        ActualizarCartasEnMesa();
 
         if (lienzoUI != null)
             ActualizarInterfaz();
@@ -770,8 +773,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             for (int sitio = 1; sitio < 4; sitio++)
                 reparto.EstablecerManoExterna(sitio, new[] { "", "", "", "" });
 
-            if (revelador != null)
-                revelador.OcultarManos();
+            OcultarManosEnMesa();
 
             manosEnMesa = false;
             OcultarBocadillos();
@@ -801,8 +803,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             reparto.EstablecerManoExterna(Relativo(puesto), textos);
         }
 
-        if (revelador != null)
-            revelador.MostrarManos();
+        MostrarManosEnMesa(todas);
 
         manosEnMesa = true;
 

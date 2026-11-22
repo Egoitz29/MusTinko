@@ -5,6 +5,7 @@ public static class TablaTanteoMus
     public class Fila
     {
         public string Lance;
+        public int Ganador = -1;   // -1 nadie, 0 nosotros, 1 ellos (quien gana el lance con las cartas)
         public readonly List<string> Nosotros = new();
         public readonly List<string> Ellos = new();
     }
@@ -83,6 +84,10 @@ public static class TablaTanteoMus
 
             if (nuestro) fila.Nosotros.Add(texto);
             else fila.Ellos.Add(texto);
+
+            // El "no quiero" se cobra aunque no se gane con las cartas: no cuenta como ganador del lance.
+            if (c.Tipo != TipoConceptoMus.NoQuerido)
+                fila.Ganador = nuestro ? 0 : 1;
 
             if (c.Tipo == TipoConceptoMus.Ordago)
                 tabla.Ordago = texto;

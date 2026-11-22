@@ -205,8 +205,7 @@ public partial class VistaMesaOnlineMus
     // Lo mismo que hace ProcesarMano al empezar mano, pero sin cartas propias.
     private void ManoNuevaComoEspectador()
     {
-        if (revelador != null)
-            revelador.OcultarManos();
+        OcultarManosEnMesa();
 
         for (int sitio = 0; sitio < 4; sitio++)
             reparto.EstablecerManoExterna(sitio, new[] { "", "", "", "" });
@@ -299,7 +298,8 @@ public partial class VistaMesaOnlineMus
 
         if (enRevision)
         {
-            destino = centro + giro * new Vector3(0f, 2f, -0.9f);
+            // Por encima de las cabezas y cerca del centro (antes se metia entre los personajes).
+            destino = centro + giro * new Vector3(0f, 2.3f, -0.35f);
             mirar = centro;
         }
         else if (planoDemo == PlanoDemo.General)

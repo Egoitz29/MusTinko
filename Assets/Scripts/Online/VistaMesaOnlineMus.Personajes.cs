@@ -172,22 +172,18 @@ public partial class VistaMesaOnlineMus
             alturaOriginal = new float[4];
             escalaOriginal = new Vector3[4];
 
-            // Centro de la mesa: el punto medio de las cuatro sillas.
-            Vector3 centro = Vector3.zero;
+            // Centro de la mesa (tu silla esta mas atras que las demas, asi que no vale la media de las sillas).
+            Vector3 centro = CentroMesa();
 
             for (int sitio = 0; sitio < 4; sitio++)
             {
-                GameObject m = ModeloEnSitio(sitio);
-
-                if (m == null)
+                if (ModeloEnSitio(sitio) == null)
                 {
                     modeloDePersonaje = null;
                     cambiarPersonajesDeSilla = false;
                     Debug.LogWarning("[PERSONAJES] Falta algun modelo en la mesa: no se cambian de silla.");
                     return;
                 }
-
-                centro += CaderaDe(m) / 4f;
             }
 
             // Cada silla: donde estaba la cadera de su modelo y hacia donde queda la mesa desde ahi.
