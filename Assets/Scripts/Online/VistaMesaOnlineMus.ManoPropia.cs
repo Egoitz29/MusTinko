@@ -10,13 +10,13 @@ public partial class VistaMesaOnlineMus
 {
     [Header("Tus cartas 3D (al mirar abajo)")]
     [Tooltip("Usa las cartas nuevas de Blender en tu mano. Si lo desmarcas, vuelven las de tu escena.")]
-    [SerializeField] private bool usarCartasNuevasEnMano = true;
+    [SerializeField] private bool usarCartasNuevasEnMano = false;
     [Tooltip("Al mirar tus cartas, esconde lo que haya entre la camara y ellas.")]
     [SerializeField] private bool despejarVistaCartas = true;
     [Tooltip("Cuanto reflejan la luz las cartas 3D (1 = normal). Mas alto = se ven mas vivas.")]
-    [UnityEngine.Range(0.8f, 2.2f)][SerializeField] private float brilloCartas = 1.45f;
+    [UnityEngine.Range(0.8f, 2.2f)][SerializeField] private float brilloCartas = 0.8f;
     [Tooltip("Luz suave encima de tus cartas cuando las miras (0 = sin luz).")]
-    [UnityEngine.Range(0f, 4f)][SerializeField] private float luzLectura = 1.6f;
+    [UnityEngine.Range(0f, 4f)][SerializeField] private float luzLectura = 0.4f;
 
     private Light luzCartas;
 

@@ -23,7 +23,7 @@ public static class Cartas3DMus
     }
 
     // Cuanto reflejan la luz el carton y el reverso (1 = normal). En tu taberna la luz es tenue y salian apagadas.
-    public static float Brillo { get; private set; } = 1.45f;
+    public static float Brillo { get; private set; } = 0.8f;
 
     public static void PonerBrillo(float brillo)
     {
