@@ -17,7 +17,10 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private float adelanteCartasEnMano = 0.28f;
     [SerializeField] private float inclinacionCartasBajadas = 58f;
     [SerializeField] private float inclinacionCartasMirando = 18f;
-    [SerializeField] private float subidaCartasMirando = 0.12f;
+    [Tooltip("Cuanto suben las cartas al mirarlas (en altos de carta: 0.2 = una quinta parte de la carta).")]
+    [SerializeField] private float subidaCartasAlMirar = 0.2f;
+    [Tooltip("Cuanto se acercan a la cara al mirarlas (en altos de carta).")]
+    [SerializeField] private float acercarCartasAlMirar = 0.35f;
 
     [Header("Tamano segun el personaje")]
     [Tooltip("Alto de la carta comparado con la distancia entre las dos manos del personaje.")]
@@ -206,7 +209,9 @@ public partial class VistaMesaOnlineMus
                 ancla = a.Modelo.transform.position + Vector3.up * alturaCartasEnMano + haciaCentro * adelanteCartasEnMano;
             }
 
-            ancla += Vector3.up * (subidaCartasMirando * escala * w);
+            // Al mirarlas suben un poco y se acercan a la cara, sin irse por encima de la cabeza.
+            float altoCarta = tamanoCartaEnMano.y * escala;
+            ancla += Vector3.up * (subidaCartasAlMirar * altoCarta * w) - haciaCentro * (acercarCartasAlMirar * altoCarta * w);
             a.Raiz.transform.localScale = Vector3.one * escala;
 
             // El reverso mira hacia la mesa; inclinado hacia atras para que se vea desde las otras sillas.
