@@ -760,7 +760,7 @@ public partial class VistaMesaOnlineMus
 
     private void CrearSala()
     {
-        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(900, 860));
+        panelSalaUI = Panel("Sala", raizUI, "panel_madera", new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(900, 960));
         panelSalaUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
@@ -771,7 +771,8 @@ public partial class VistaMesaOnlineMus
         Rect(info, panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -86), new Vector2(840, 40));
         txtSalaUI = Texto(info.transform, "", 21, Crema);
 
-        diagramaSala = CrearDiagrama(panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -420), 250, puesto => partida.ElegirSitio(puesto));
+        CrearSelectorMesa(panelSalaUI.transform, -136);
+        diagramaSala = CrearDiagrama(panelSalaUI.transform, new Vector2(0.5f, 1f), new Vector2(0, -486), 250, puesto => partida.ElegirSitio(puesto));
 
         GameObject sinSitio = new("SinSitio", typeof(RectTransform));
         Rect(sinSitio, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(0, 112), new Vector2(840, 40));
@@ -826,7 +827,8 @@ public partial class VistaMesaOnlineMus
             : "En la sala sin silla: " + sinSitio;
 
         botonEmpezarSala.gameObject.SetActive(partida.IsServer);
-        botonEmpezarSala.interactable = miSitio >= 0;
+        botonEmpezarSala.interactable = miSitio >= 0 && MonederoMus.PuedePagar(partida.ApuestaSalaVista);
+        ActualizarSelectorMesa(miSitio);
 
         if (!partida.IsServer)
             txtSinSitioUI.text += "\nEsperando a que el host empiece...";
@@ -1071,6 +1073,8 @@ public partial class VistaMesaOnlineMus
         GameObject estado = new("Estado", typeof(RectTransform));
         Rect(estado, caja.transform, new Vector2(0.5f, 0f), new Vector2(0, 26), new Vector2(680, 110));
         txtEstadoMenuUI = Texto(estado.transform, "", 24, Crema);
+
+        CrearMonedasMenu();
     }
 
 #if MUS_TINKO_INTERNET
@@ -1133,6 +1137,7 @@ public partial class VistaMesaOnlineMus
         }
 
         EnviarNombreAlEntrar(enMesa);
+        ActualizarMonedas(conectado, enMesa);
 
         bool revision = enRevision && empezada;
         ActualizarChat(enMesa);

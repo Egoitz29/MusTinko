@@ -28,6 +28,8 @@ public struct EstadoPublicoMus : INetworkSerializable
     public ulong Cliente1;
     public ulong Cliente2;
     public ulong Cliente3;
+    public int Apuesta;
+    public int CodigoPartida;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
@@ -53,6 +55,8 @@ public struct EstadoPublicoMus : INetworkSerializable
         s.SerializeValue(ref Cliente1);
         s.SerializeValue(ref Cliente2);
         s.SerializeValue(ref Cliente3);
+        s.SerializeValue(ref Apuesta);
+        s.SerializeValue(ref CodigoPartida);
     }
 
     public ulong Cliente(int puesto)
@@ -299,6 +303,24 @@ public class PartidaOnlineMus : NetworkBehaviour
         DifundirSala();
     }
 
+    [Header("Mesas con entrada (monedas)")]
+    [SerializeField] private int[] entradasMesa = { 0, 50, 200, 1000 };
+    private int apuestaSala;
+    private int apuestaPartida;
+    private int codigoPartida;
+
+    public IReadOnlyList<int> EntradasMesa => entradasMesa;
+    public int ApuestaSalaVista { get; private set; }
+
+    public void CambiarApuesta(int entrada)
+    {
+        if (!IsServer || PartidaEnCurso || entrada < 0)
+            return;
+
+        apuestaSala = entrada;
+        DifundirSala();
+    }
+
     private void DifundirSala()
     {
         if (!IsServer)
@@ -315,7 +337,7 @@ public class PartidaOnlineMus : NetworkBehaviour
             if (Array.IndexOf(sitiosSala, id) < 0)
                 sinSitio.Add(NombreDe(id));
 
-        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio));
+        SalaRpc(sitiosSala[0], sitiosSala[1], sitiosSala[2], sitiosSala[3], n[0], n[1], n[2], n[3], string.Join(", ", sinSitio), apuestaSala);
     }
 
     private bool EstaConectado(ulong id)
@@ -365,8 +387,9 @@ public class PartidaOnlineMus : NetworkBehaviour
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio)
+    private void SalaRpc(ulong c0, ulong c1, ulong c2, ulong c3, string n0, string n1, string n2, string n3, string sinSitio, int apuesta)
     {
+        ApuestaSalaVista = apuesta;
         nombresSalaVistos[0] = n0;
         nombresSalaVistos[1] = n1;
         nombresSalaVistos[2] = n2;
@@ -485,6 +508,8 @@ public class PartidaOnlineMus : NetworkBehaviour
         senasPendientesBots.Clear();
         manoConSenalesBots = -1;
         idPartida++;
+        apuestaPartida = ModoDemo ? 0 : apuestaSala;
+        codigoPartida = azarBots.Next(1, int.MaxValue);
         registro?.EmpezarPartida(idPartida);
         partida.IniciarPartida();
         numeroMano++;
@@ -994,6 +1019,8 @@ public class PartidaOnlineMus : NetworkBehaviour
             ParejaGanadora = partida.ParejaGanadora,
             PorOrdago = partida.VictoriaPorOrdago,
             MusCorrido = partida.MusCorridoPendiente,
+            Apuesta = apuestaPartida,
+            CodigoPartida = codigoPartida,
             TantosEnvite = partida.TantosEnvite,
             Cliente0 = clientes[0],
             Cliente1 = clientes[1],
