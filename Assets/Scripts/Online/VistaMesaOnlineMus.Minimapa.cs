@@ -26,8 +26,8 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private bool retratosEnVivo = true;
     [Tooltip("Cuanto se ve alrededor de la cabeza (mas pequeno = mas cerca).")]
     [SerializeField] private float encuadreRetrato = 0.8f;
-    [Tooltip("Sube o baja el centro del retrato (para que quepan txapelas y sombreros).")]
-    [SerializeField] private float subirRetrato = 0.08f;
+    [Tooltip("Sube (+) o baja (-) el centro del retrato. Negativo = se ve mas la cara y menos el sombrero.")]
+    [SerializeField] private float centroRetrato = -0.05f;
     [Tooltip("1 = cada retrato se refresca 1 de cada 4 fotogramas. 2 = la mitad (mejor en moviles).")]
     [SerializeField] private int saltoRetratos = 1;
 
@@ -41,7 +41,7 @@ public partial class VistaMesaOnlineMus
     [SerializeField] private bool arcoTiempoMesa = true;
     [Tooltip("Donde va el arco del tiempo (fraccion del radio de la mesa).")]
     [SerializeField] private float radioArco = 0.82f;
-    [SerializeField] private float anchoArco = 0.03f;
+    [SerializeField] private float grosorArco = 0.05f;
     [SerializeField] private bool cartelMano = true;
 
     // ------------------------------------------------------------------ minimapa (UI)
@@ -59,9 +59,9 @@ public partial class VistaMesaOnlineMus
     }
 
     private const float TamMapa = 360f;
-    private const float AltoPieMapa = 48f;
+    private const float AltoPieMapa = 62f;
     private const float AltoCabeceraMapa = 42f;
-    private const float RadioSitiosMapa = 118f;
+    private const float RadioSitiosMapa = 112f;
     private const float TamCaraMapa = 92f;
     private static readonly Vector2[] DireccionMapa = { new(0, -1), new(1, 0), new(0, 1), new(-1, 0) };
 
@@ -81,6 +81,8 @@ public partial class VistaMesaOnlineMus
         // En el movil la pantalla es mas pequena: un poco mas chico para no pisar las senas.
         if (Application.isMobilePlatform)
             panelMapa.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+        else
+            panelMapa.transform.localScale = new Vector3(1.12f, 1.12f, 1f);
 
         // Cabecera: el lance y lo que hay en juego.
         GameObject lance = new("Lance", typeof(RectTransform));
@@ -153,11 +155,11 @@ public partial class VistaMesaOnlineMus
         s.Cara.raycastTarget = false;
         s.Cara.enabled = false;
 
-        // Placa con el nombre (azul = tu pareja, roja = rivales), montada sobre la parte de abajo del retrato.
+        // Placa con el nombre (azul = tu pareja, roja = rivales), justo debajo del retrato (sin taparle la boca).
         GameObject placa = new("Placa", typeof(RectTransform), typeof(Image));
-        Rect(placa, s.Raiz, new Vector2(0.5f, 0.5f), new Vector2(0, -TamCaraMapa * 0.5f - 2f), new Vector2(112, 30));
+        Rect(placa, s.Raiz, new Vector2(0.5f, 0.5f), new Vector2(0, -TamCaraMapa * 0.5f - 10f), new Vector2(114, 30));
         s.Placa = placa.GetComponent<Image>();
-        s.Placa.sprite = SpriteUI("barra_fondo", 8);
+        s.Placa.sprite = SpriteUI("placa", 14);
         s.Placa.type = Image.Type.Sliced;
         s.Placa.raycastTarget = false;
         s.Nombre = Texto(placa.transform, "", 19, Color.white);
@@ -283,7 +285,7 @@ public partial class VistaMesaOnlineMus
             s.Mano.SetActive(e.EnCurso && e.Mano == p);
 
             bool nuestra = local >= 0 ? p % 2 == local % 2 : p % 2 == 0;
-            Color placa = nuestra ? new Color(0.26f, 0.45f, 0.82f) : new Color(0.78f, 0.28f, 0.22f);
+            Color placa = nuestra ? new Color(0.25f, 0.5f, 0.95f) : new Color(0.9f, 0.3f, 0.22f);
             s.Placa.color = fuera ? placa * 0.6f : placa;
             s.Nombre.text = p == local ? "TÚ" : NombreCorto(p, 10);
         }
@@ -428,12 +430,12 @@ public partial class VistaMesaOnlineMus
         Vector3 cabeza = CabezaDe(modelo);
         float alto = Mathf.Clamp(cabeza.y - CuerpoDe(modelo).y, 0.2f, 2f);
         Vector3 haciaMesa = Plano(CentroMesa() - cabeza);
-        Vector3 punto = cabeza + Vector3.up * (alto * subirRetrato);
+        Vector3 punto = cabeza + Vector3.up * (alto * centroRetrato);
         float visible = Mathf.Max(0.1f, alto * encuadreRetrato);
         float distancia = visible * 0.5f / Mathf.Tan(camaraRetratos.fieldOfView * 0.5f * Mathf.Deg2Rad);
 
         Transform t = camaraRetratos.transform;
-        t.position = punto + haciaMesa * distancia + Vector3.up * (distancia * 0.12f);
+        t.position = punto + haciaMesa * distancia + Vector3.up * (distancia * 0.04f);
         t.rotation = Quaternion.LookRotation(punto - t.position, Vector3.up);
         // Solo se ve la cabeza: lo de detras (paredes, otros jugadores) queda fuera.
         camaraRetratos.nearClipPlane = Mathf.Max(0.02f, distancia * 0.25f);
@@ -611,12 +613,12 @@ public partial class VistaMesaOnlineMus
         Vector3 haciaJugador = Quaternion.Euler(0f, giroArco, 0f) * Vector3.forward;
 
         const float medio = 38f;
-        float pulso = 0.7f + 0.3f * Mathf.Sin(Time.time * (prisa ? 10f : 3f));
+        float pulso = 0.85f + 0.15f * Mathf.Sin(Time.time * (prisa ? 10f : 3f));
         Color color = conReloj ? ColorReloj(fraccion) : new Color(1f, 0.8f, 0.3f);
         color = new Color(Mathf.Min(1f, color.r * 1.15f), Mathf.Min(1f, color.g * 1.15f), Mathf.Min(1f, color.b * 1.15f), pulso);
 
-        ConstruirArco(mallaPista, centro, haciaJugador, radio, anchoArco * 1.8f, medio, new Color(0.08f, 0.05f, 0.03f, 0.55f));
-        ConstruirArco(mallaArco, centro + Vector3.up * 0.002f, haciaJugador, radio, anchoArco * 2f,
+        ConstruirArco(mallaPista, centro, haciaJugador, radio, grosorArco * 1.6f, medio, new Color(0.06f, 0.04f, 0.02f, 0.6f));
+        ConstruirArco(mallaArco, centro + Vector3.up * 0.002f, haciaJugador, radio, grosorArco * 1.4f,
             medio * (conReloj ? Mathf.Max(0.03f, fraccion) : 1f), color);
         renderArco.enabled = renderPista.enabled = true;
     }
@@ -648,7 +650,7 @@ public partial class VistaMesaOnlineMus
         Vector3[] v = new Vector3[(pasos + 1) * 3];
         Color[] c = new Color[v.Length];
         int[] t = new int[pasos * 12];
-        Color transparente = new(color.r, color.g, color.b, 0f);
+        Color borde = new(color.r, color.g, color.b, color.a * 0.25f);
 
         for (int i = 0; i <= pasos; i++)
         {
@@ -659,9 +661,9 @@ public partial class VistaMesaOnlineMus
             v[i * 3] = centro + d * (radio - ancho * 0.5f);
             v[i * 3 + 1] = centro + d * radio;
             v[i * 3 + 2] = centro + d * (radio + ancho * 0.5f);
-            c[i * 3] = transparente;
+            c[i * 3] = new Color(borde.r, borde.g, borde.b, borde.a * punta);
             c[i * 3 + 1] = new Color(color.r, color.g, color.b, color.a * punta);
-            c[i * 3 + 2] = transparente;
+            c[i * 3 + 2] = c[i * 3];
         }
 
         int k = 0;
@@ -725,8 +727,8 @@ public partial class VistaMesaOnlineMus
         tabla.name = "Tabla";
         Destroy(tabla.GetComponent<Collider>());
         tabla.transform.SetParent(cartelManoGo.transform, false);
-        tabla.transform.localPosition = new Vector3(0f, 0.032f, 0.004f);
-        tabla.transform.localScale = new Vector3(0.15f, 0.06f, 0.008f);
+        tabla.transform.localPosition = new Vector3(0f, 0.045f, 0.005f);
+        tabla.transform.localScale = new Vector3(0.24f, 0.085f, 0.01f);
         MeshRenderer r = tabla.GetComponent<MeshRenderer>();
         r.shadowCastingMode = ShadowCastingMode.Off;
         Shader lit = Shader.Find("Universal Render Pipeline/Lit");
@@ -742,9 +744,9 @@ public partial class VistaMesaOnlineMus
 
         GameObject texto = new("Texto", typeof(RectTransform));
         texto.transform.SetParent(cartelManoGo.transform, false);
-        texto.transform.localPosition = new Vector3(0f, 0.032f, -0.0005f);
+        texto.transform.localPosition = new Vector3(0f, 0.045f, -0.0008f);
         txtCartelMano = texto.AddComponent<TextMeshPro>();
-        txtCartelMano.rectTransform.sizeDelta = new Vector2(0.14f, 0.05f);
+        txtCartelMano.rectTransform.sizeDelta = new Vector2(0.22f, 0.075f);
 
         if (fuenteTitulos != null)
             txtCartelMano.font = fuenteTitulos;
