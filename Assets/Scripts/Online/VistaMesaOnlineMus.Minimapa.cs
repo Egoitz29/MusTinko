@@ -362,7 +362,10 @@ public partial class VistaMesaOnlineMus
 
         contadorRetratos++;
 
-        if (saltoRetratos > 1 && contadorRetratos % saltoRetratos != 0)
+        // En el movil, como minimo uno de cada dos fotogramas (la camara de los retratos tambien gasta).
+        int salto = Application.isMobilePlatform ? Mathf.Max(2, saltoRetratos) : saltoRetratos;
+
+        if (salto > 1 && contadorRetratos % salto != 0)
         {
             camaraRetratos.enabled = false;
             return;

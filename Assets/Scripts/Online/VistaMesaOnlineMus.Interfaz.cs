@@ -1146,6 +1146,13 @@ public partial class VistaMesaOnlineMus
         }, 28);
         Rect(unirse.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x + 185, y), new Vector2(190, 74));
 
+#if !MUS_TINKO_INTERNET
+        // Buscar la partida de otro movil en la misma WiFi (sin escribir la IP).
+        // (Con las salas por Internet activadas no cabe en la caja: entonces habra que recolocar el menu.)
+        y -= 90;
+        CrearBusquedaLan(caja.transform, y);
+#endif
+
 #if MUS_TINKO_INTERNET
         y -= 104;
         Button sala = Boton(caja.transform, "morado", "CREAR SALA POR INTERNET", new Vector2(560, 84), () => SalaInternet()?.CrearSala(), 28);
@@ -1221,6 +1228,7 @@ public partial class VistaMesaOnlineMus
                 estadoMenu += "\n<size=20>Tu IP en esta red: " + conexion.IpLocal + "</size>";
 
             txtEstadoMenuUI.text = estadoMenu;
+            ActualizarBusquedaLan();
         }
 
         EnviarNombreAlEntrar(enMesa);

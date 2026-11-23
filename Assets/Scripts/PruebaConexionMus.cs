@@ -32,6 +32,7 @@ public class PruebaConexionMus : MonoBehaviour
 
         ipLocal = ObtenerIpLocal();
         red = NetworkManager.Singleton;
+        partidaOnline = FindFirstObjectByType<PartidaOnlineMus>();
 
 #if MUS_TINKO_INTERNET
         if (GetComponent<SalaInternetMus>() == null)
@@ -48,6 +49,46 @@ public class PruebaConexionMus : MonoBehaviour
         red.OnClientConnectedCallback += ClienteConectado;
         red.OnClientDisconnectCallback += ClienteDesconectado;
     }
+
+    private PartidaOnlineMus partidaOnline;
+    private float siguienteInfo;
+
+    // Mientras eres host, tu partida se anuncia en la WiFi (BUSCAR PARTIDAS la encuentra sin escribir la IP).
+    private void Update()
+    {
+        bool host = red != null && red.IsListening && red.IsServer;
+
+        if (!host)
+        {
+            if (BuscadorLanMus.Anunciando)
+                BuscadorLanMus.PararAnuncio();
+            return;
+        }
+
+        if (!BuscadorLanMus.Anunciando)
+            BuscadorLanMus.EmpezarAnuncio();
+
+        if (Time.unscaledTime < siguienteInfo)
+            return;
+
+        siguienteInfo = Time.unscaledTime + 1f;
+        string nombre = "";
+
+        try
+        {
+            nombre = PlayerPrefs.GetString("MusTinko_Nombre", "");
+        }
+        catch
+        {
+        }
+
+        BuscadorLanMus.PonerInfo(string.IsNullOrWhiteSpace(nombre) ? "Mus TINKO" : nombre, red.ConnectedClientsIds.Count,
+            partidaOnline != null && partidaOnline.PartidaEnCurso);
+    }
+
+    private void OnApplicationQuit() => BuscadorLanMus.PararAnuncio();
+
+    public void RefrescarIp() => ipLocal = ObtenerIpLocal();
 
     public string Estado => estado;
     public string IpLocal => ipLocal;
@@ -172,6 +213,18 @@ public class PruebaConexionMus : MonoBehaviour
 
     private static string ObtenerIpLocal()
     {
+        // Todas las IPs privadas de este aparato (WiFi y zona WiFi primero), por ejemplo "192.168.1.23".
+        try
+        {
+            string ips = BuscadorLanMus.TextoIps();
+
+            if (!string.IsNullOrEmpty(ips))
+                return ips;
+        }
+        catch
+        {
+        }
+
         try
         {
             foreach (NetworkInterface interfaz in NetworkInterface.GetAllNetworkInterfaces())
@@ -227,11 +280,13 @@ public class PruebaConexionMus : MonoBehaviour
         if (red.IsHost)
             estado = "Jugadores conectados: " + red.ConnectedClients.Count;
         else
-            estado = "Desconectado. Revisa la IP y que esteis en la misma WiFi.";
+            estado = "No se pudo conectar. Revisa la IP y que esteis en la misma WiFi (o usa BUSCAR PARTIDAS).";
     }
 
     private void OnDestroy()
     {
+        BuscadorLanMus.PararAnuncio();
+
         if (red == null)
             return;
 
