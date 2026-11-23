@@ -611,6 +611,8 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         if (lienzoUI != null)
             ActualizarInterfaz();
 
+        ActualizarAvisoTurno();
+
         ActualizarPersonajes();
         ActualizarManoPropia();
         ActualizarTamanoOjos();

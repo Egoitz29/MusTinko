@@ -78,6 +78,7 @@ public partial class VistaMesaOnlineMus
         CrearAcciones();
         CrearSelectorEnvite();
         CrearRelojes();
+        CrearMinimapa();
         CrearPanelSenas();
         CrearHistorial();
         CrearPanelHost();
@@ -92,6 +93,8 @@ public partial class VistaMesaOnlineMus
 
     private void OnDestroy()
     {
+        LimpiarMinimapa();
+
         if (lienzoUI != null)
             InterfazNuevaActiva = false;
     }
@@ -1230,6 +1233,7 @@ public partial class VistaMesaOnlineMus
         ActualizarHost(enMesa, empezada, revision);
         ActualizarSala(enMesa, empezada);
         AjustarInterfazDemo(enMesa, empezada, revision);
+        ActualizarMinimapa(empezada, revision);
 
         if (!empezada)
         {
