@@ -510,10 +510,21 @@ public class PartidaOnlineMus : NetworkBehaviour
         Empezar(false);
     }
 
+    // Salas por Internet: hacen falta al menos 2 personas para empezar (las sillas libres las ocupan bots).
+    // Jugando solo contra bots o en la WiFi basta con 1.
+    public int MinimoHumanos { get; set; } = 1;
+    public int HumanosConectados => IsServer && NetworkManager != null ? NetworkManager.ConnectedClientsIds.Count : 0;
+
     public void EmpezarPartidaServidor()
     {
         if (!IsServer)
             return;
+
+        if (HumanosConectados < MinimoHumanos)
+        {
+            Debug.Log("[MUS ONLINE] Faltan jugadores: hay " + HumanosConectados + " y hacen falta " + MinimoHumanos + ".");
+            return;
+        }
 
         ModoDemo = false;
         Empezar(true);

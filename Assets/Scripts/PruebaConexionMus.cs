@@ -52,11 +52,23 @@ public class PruebaConexionMus : MonoBehaviour
 
     private PartidaOnlineMus partidaOnline;
     private float siguienteInfo;
+#if MUS_TINKO_INTERNET
+    private SalaInternetMus salaInternet;
+#endif
 
     // Mientras eres host, tu partida se anuncia en la WiFi (BUSCAR PARTIDAS la encuentra sin escribir la IP).
     private void Update()
     {
         bool host = red != null && red.IsListening && red.IsServer;
+
+#if MUS_TINKO_INTERNET
+        // Una sala por Internet va por Relay: no se anuncia en la WiFi (por IP no se podria entrar).
+        if (salaInternet == null)
+            salaInternet = GetComponent<SalaInternetMus>();
+
+        if (salaInternet != null && salaInternet.EnSala)
+            host = false;
+#endif
 
         if (!host)
         {

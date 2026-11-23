@@ -51,7 +51,7 @@ public partial class VistaMesaOnlineMus
 
     private GameObject panelMenuUI;
     private TextMeshProUGUI txtEstadoMenuUI;
-    private TMP_InputField campoIpUI, campoCodigoUI;
+    private TMP_InputField campoIpUI;
     private PruebaConexionMus conexion;
 
     private GameObject panelTanteoUI, botonesMesaUI;
@@ -819,6 +819,10 @@ public partial class VistaMesaOnlineMus
 
         botonEmpezarSala = Boton(panelSalaUI.transform, "verde", "EMPEZAR PARTIDA", new Vector2(420, 80), () => partida.EmpezarPartidaServidor(), 34);
         Rect(botonEmpezarSala.gameObject, panelSalaUI.transform, new Vector2(0.5f, 0f), new Vector2(150, 22), new Vector2(420, 80));
+
+        // Salir de la sala (vuelve al menu). Si eres el que la creo, la sala se cierra para todos.
+        Button salir = Boton(panelSalaUI.transform, "rojo", "SALIR", new Vector2(150, 58), SalirDeLaSala, 26);
+        Rect(salir.gameObject, panelSalaUI.transform, new Vector2(0f, 1f), new Vector2(22, -22), new Vector2(150, 58));
     }
 
     private void ActualizarSala(bool enMesa, bool empezada)
@@ -855,8 +859,8 @@ public partial class VistaMesaOnlineMus
             conexionTexto = "Tu IP: " + conexion.IpLocal;
 
 #if MUS_TINKO_INTERNET
-        if (SalaInternet() != null && !string.IsNullOrEmpty(SalaInternet().Codigo))
-            conexionTexto = "<color=#FFD24D>CODIGO DE LA SALA: " + SalaInternet().Codigo + "</color>";
+        if (EnSalaPorInternet)
+            conexionTexto = "<color=#FFD24D>" + SalaInternet().NombreSala + "</color> (por Internet)";
 #endif
 
         string instruccion = miSitio < 0 ? "Toca una silla libre para sentarte." : "Puedes cambiarte a otra silla libre.";
@@ -866,8 +870,15 @@ public partial class VistaMesaOnlineMus
         txtSinSitioUI.text = string.IsNullOrEmpty(sinSitio) ? "Las sillas que queden libres las ocupan bots."
             : "En la sala sin silla: " + sinSitio;
 
+        // Salas por Internet: minimo 2 personas para empezar.
+        bool faltanJugadores = partida.IsServer && partida.HumanosConectados < partida.MinimoHumanos;
+
+        if (faltanJugadores)
+            txtSinSitioUI.text = "<color=#FFD24D>Esperando jugadores: hacen falta al menos " + partida.MinimoHumanos +
+                                 " (ahora " + partida.HumanosConectados + ").</color> Las sillas libres las ocupan bots.";
+
         botonEmpezarSala.gameObject.SetActive(partida.IsServer);
-        botonEmpezarSala.interactable = miSitio >= 0 && MonederoMus.PuedePagar(partida.ApuestaSalaVista);
+        botonEmpezarSala.interactable = miSitio >= 0 && !faltanJugadores && MonederoMus.PuedePagar(partida.ApuestaSalaVista);
         ActualizarSelectorMesa(miSitio);
 
         if (!partida.IsServer)
@@ -1116,52 +1127,44 @@ public partial class VistaMesaOnlineMus
         campoNombreUI.characterLimit = PartidaOnlineMus.LargoMaximoNombre;
         campoNombreUI.onEndEdit.AddListener(GuardarNombre);
 
-        float x = 0;
-        float y = -270;
-        Button jugar = Boton(caja.transform, "dorado", "JUGAR CONTRA BOTS", new Vector2(560, 96), () =>
+        Button jugar = Boton(caja.transform, "dorado", "JUGAR CONTRA BOTS", new Vector2(560, 86), () =>
         {
             GuardarNombre(campoNombreUI.text);
             conexion?.CrearPartida();
         }, 34);
-        Rect(jugar.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 96));
+        Rect(jugar.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(0, -258), new Vector2(560, 86));
 
-        y -= 96;
-        Button demo = Boton(caja.transform, "naranja", "MODO DEMO (PARA GRABAR)", new Vector2(560, 70), EmpezarDemoDesdeMenu, 26);
-        Rect(demo.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 70));
+        // Dos pestanas: salas por Internet (lo normal) y "WiFi y mas" (misma WiFi, IP a mano y modo demo).
+        botonPestanaInternet = Boton(caja.transform, "naranja", "POR INTERNET", new Vector2(300, 60), () => pestanaInternetActiva = true, 26);
+        Rect(botonPestanaInternet.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(-155, -362), new Vector2(300, 60));
+        botonPestanaMas = Boton(caja.transform, "gris", "WIFI Y MAS", new Vector2(300, 60), () => pestanaInternetActiva = false, 26);
+        Rect(botonPestanaMas.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(155, -362), new Vector2(300, 60));
 
-        y -= 96;
-        Button crear = Boton(caja.transform, "azul", "CREAR PARTIDA (MISMA WIFI)", new Vector2(560, 84), () =>
+        pestanaInternetUI = Contenedor("PestanaInternet", caja.transform);
+        CrearPestanaInternet(pestanaInternetUI.transform, -436);
+
+        pestanaMasUI = Contenedor("PestanaMas", caja.transform);
+        Transform mas = pestanaMasUI.transform;
+        Button crear = Boton(mas, "azul", "CREAR PARTIDA (MISMA WIFI)", new Vector2(560, 70), () =>
         {
             GuardarNombre(campoNombreUI.text);
             conexion?.CrearPartida();
         }, 28);
-        Rect(crear.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 84));
+        Rect(crear.gameObject, mas, new Vector2(0.5f, 1f), new Vector2(0, -436), new Vector2(560, 70));
 
-        y -= 100;
-        campoIpUI = Campo(caja.transform, new Vector2(x - 95, y), new Vector2(360, 74), "IP del host", conexion != null ? conexion.IpGuardada : "127.0.0.1");
-        Button unirse = Boton(caja.transform, "verde", "UNIRSE", new Vector2(190, 74), () =>
+        campoIpUI = Campo(mas, new Vector2(-95, -518), new Vector2(360, 70), "IP del host", conexion != null ? conexion.IpGuardada : "127.0.0.1");
+        Button unirse = Boton(mas, "verde", "UNIRSE", new Vector2(190, 70), () =>
         {
             GuardarNombre(campoNombreUI.text);
             conexion?.Unirse(campoIpUI.text);
         }, 28);
-        Rect(unirse.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x + 185, y), new Vector2(190, 74));
+        Rect(unirse.gameObject, mas, new Vector2(0.5f, 1f), new Vector2(185, -518), new Vector2(190, 70));
 
-#if !MUS_TINKO_INTERNET
         // Buscar la partida de otro movil en la misma WiFi (sin escribir la IP).
-        // (Con las salas por Internet activadas no cabe en la caja: entonces habra que recolocar el menu.)
-        y -= 90;
-        CrearBusquedaLan(caja.transform, y);
-#endif
+        CrearBusquedaLan(mas, -600);
 
-#if MUS_TINKO_INTERNET
-        y -= 104;
-        Button sala = Boton(caja.transform, "morado", "CREAR SALA POR INTERNET", new Vector2(560, 84), () => SalaInternet()?.CrearSala(), 28);
-        Rect(sala.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x, y), new Vector2(560, 84));
-        y -= 98;
-        campoCodigoUI = Campo(caja.transform, new Vector2(x - 95, y), new Vector2(360, 74), "Codigo de sala", "");
-        Button unirseCodigo = Boton(caja.transform, "morado", "UNIRSE", new Vector2(190, 74), () => SalaInternet()?.UnirseConCodigo(campoCodigoUI.text), 28);
-        Rect(unirseCodigo.gameObject, caja.transform, new Vector2(0.5f, 1f), new Vector2(x + 185, y), new Vector2(190, 74));
-#endif
+        Button demo = Boton(mas, "naranja", "MODO DEMO (PARA GRABAR)", new Vector2(420, 46), EmpezarDemoDesdeMenu, 22);
+        Rect(demo.gameObject, mas, new Vector2(0.5f, 1f), new Vector2(0, -806), new Vector2(420, 46));
 
         GameObject estado = new("Estado", typeof(RectTransform));
         Rect(estado, caja.transform, new Vector2(0.5f, 0f), new Vector2(0, 26), new Vector2(680, 110));
@@ -1228,7 +1231,7 @@ public partial class VistaMesaOnlineMus
                 estadoMenu += "\n<size=20>Tu IP en esta red: " + conexion.IpLocal + "</size>";
 
             txtEstadoMenuUI.text = estadoMenu;
-            ActualizarBusquedaLan();
+            ActualizarMenuPestanas();
         }
 
         EnviarNombreAlEntrar(enMesa);
