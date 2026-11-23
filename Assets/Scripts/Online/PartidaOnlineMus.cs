@@ -556,6 +556,19 @@ public class PartidaOnlineMus : NetworkBehaviour
         Debug.Log("[MUS ONLINE] Fin de partida: todos vuelven a la sala para elegir silla.");
     }
 
+    // Reglas elegidas al crear la sala (tantos de la partida y segundos para responder). Solo el host, antes de empezar.
+    public int LimiteTantos => limiteTantos;
+    public float SegundosParaResponder => segundosParaResponder;
+
+    public void ConfigurarReglas(int limite, float segundos)
+    {
+        if (!IsServer || PartidaEnCurso)
+            return;
+
+        if (limite >= 5) limiteTantos = limite;
+        if (segundos > 0f) segundosParaResponder = segundos;
+    }
+
     // Salas por Internet: hacen falta al menos 2 personas para empezar (las sillas libres las ocupan bots).
     // Jugando solo contra bots o en la WiFi basta con 1.
     public int MinimoHumanos { get; set; } = 1;

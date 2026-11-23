@@ -3,19 +3,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Netcode;
-using Unity.Services.Authentication;
-using Unity.Services.Core;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 
 // SALAS POR INTERNET (Unity Lobby + Relay, con el paquete Multiplayer Services)
 //
-//  - CREAR SALA: la sala sale en la lista de todos ("Mesa de Egoitz", jugadores y entrada en monedas).
-//  - ENTRAR: te unes y eliges silla en la sala, como en la WiFi.
-//  - Para empezar hacen falta al menos 2 personas (maximo 4); las sillas libres las ocupan bots.
+//  - CREAR SALA: publica (sale en la lista) o con codigo (solo entra quien tenga el codigo).
+//    Se eligen la entrada en monedas, a cuantos tantos y el tiempo por turno.
+//  - ENTRAR: te unes y eliges silla. Para empezar hacen falta al menos 2 personas (maximo 4); el resto, bots.
 //  - Mientras se juega, la sala se cierra (no sale en la lista ni se puede entrar). Al terminar se vuelve a abrir.
-//
-// Necesita el proyecto vinculado a Unity Cloud con Lobby y Relay activados (Project Settings > Services).
+//  - Cada jugador lleva su nombre en la sala (para "jugasteis hace poco" en Amigos).
 public class SalaInternetMus : MonoBehaviour
 {
     public const int MaxJugadores = 4;
@@ -23,6 +20,8 @@ public class SalaInternetMus : MonoBehaviour
 
     private const string ClaveVersion = "version";
     private const string ClaveApuesta = "apuesta";
+    private const string ClaveTantos = "tantos";
+    private const string ClaveNombre = "nombre";
     private const string VersionSalas = "mus1";   // si cambian las reglas de red, se sube y no se mezclan versiones
 
     public struct SalaPublica
@@ -31,6 +30,22 @@ public class SalaInternetMus : MonoBehaviour
         public string Nombre;
         public int Jugadores;
         public int Apuesta;
+        public int Tantos;
+    }
+
+    public class Opciones
+    {
+        public string Nombre = "";
+        public bool Privada;
+        public int Apuesta;
+        public int Tantos = 40;
+        public float Segundos = 25f;
+    }
+
+    public struct JugadorReciente
+    {
+        public string Id;
+        public string Nombre;
     }
 
     private ISession sesion;
@@ -41,55 +56,26 @@ public class SalaInternetMus : MonoBehaviour
     private bool cerradaEnviada;
     private int apuestaEnviada = -1;
     private float sinRedDesde = -1f;
+    private Opciones pendientes;
+    private string miNombre = "";
 
     public IReadOnlyList<SalaPublica> Salas => salas;
     public bool Buscando => buscando;
     public bool Ocupado => ocupado;
     public string Estado => estado;
     public bool EnSala => sesion != null;
+    public bool SoyAnfitrion => sesion != null && sesion.IsHost;
+    public string IdSala => sesion?.Id ?? "";
     public string Codigo => sesion?.Code ?? "";
     public string NombreSala => sesion?.Name ?? "";
+    public bool SalaPrivada => sesion != null && sesion.IsPrivate;
+    public int JugadoresEnSala => sesion?.PlayerCount ?? 0;
     public int Busquedas { get; private set; }
 
-    // ------------------------------------------------------------------ servicios
+    // Personas con las que has estado en la sala (para anadirlas como amigos).
+    public static readonly List<JugadorReciente> Recientes = new();
 
-    private Task<bool> preparando;
-
-    // Una sola preparacion a la vez (la lista se refresca sola y a la vez puedes pulsar CREAR SALA).
-    private Task<bool> PrepararServicios()
-    {
-        if (preparando == null || (preparando.IsCompleted && !preparando.Result))
-            preparando = Preparar();
-
-        return preparando;
-    }
-
-    private async Task<bool> Preparar()
-    {
-        try
-        {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
-            {
-                InitializationOptions opciones = new();
-#if UNITY_EDITOR
-                // Varias ventanas de prueba en el mismo ordenador: cada una con su propio jugador.
-                opciones.SetProfile("editor" + UnityEngine.Random.Range(0, 1000000));
-#endif
-                await UnityServices.InitializeAsync(opciones);
-            }
-
-            if (!AuthenticationService.Instance.IsSignedIn)
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
-            return true;
-        }
-        catch (Exception e)
-        {
-            estado = "No se pudo conectar con los servidores de Unity: " + e.Message;
-            Debug.LogException(e);
-            return false;
-        }
-    }
+    private Task<bool> PrepararServicios() => ServiciosUnityMus.Preparar();
 
     private static string Mensaje(Exception e)
     {
@@ -116,6 +102,11 @@ public class SalaInternetMus : MonoBehaviour
         return m;
     }
 
+    private Dictionary<string, PlayerProperty> PropiedadesJugador() => new()
+    {
+        { ClaveNombre, new PlayerProperty(string.IsNullOrWhiteSpace(miNombre) ? "Jugador" : miNombre, VisibilityPropertyOptions.Member) }
+    };
+
     // ------------------------------------------------------------------ lista de salas
 
     public async void BuscarSalas()
@@ -130,7 +121,7 @@ public class SalaInternetMus : MonoBehaviour
         {
             try
             {
-                QuerySessionsOptions consulta = new() { Count = 20 };
+                QuerySessionsOptions consulta = new() { Count = 30 };
                 consulta.FilterOptions.Add(new FilterOption(FilterField.AvailableSlots, "0", FilterOperation.Greater));
                 consulta.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, VersionSalas, FilterOperation.Equal));
                 consulta.SortOptions.Add(new SortOption(SortOrder.Descending, SortField.CreationTime));
@@ -144,17 +135,13 @@ public class SalaInternetMus : MonoBehaviour
                     if (info.IsLocked || info.HasPassword)
                         continue;
 
-                    int apuesta = 0;
-
-                    if (info.Properties != null && info.Properties.TryGetValue(ClaveApuesta, out SessionProperty p))
-                        int.TryParse(p.Value, out apuesta);
-
                     salas.Add(new SalaPublica
                     {
                         Id = info.Id,
                         Nombre = info.Name,
                         Jugadores = info.MaxPlayers - info.AvailableSlots,
-                        Apuesta = apuesta
+                        Apuesta = Numero(info.Properties, ClaveApuesta, 0),
+                        Tantos = Numero(info.Properties, ClaveTantos, 40)
                     });
                 }
 
@@ -166,43 +153,63 @@ public class SalaInternetMus : MonoBehaviour
                 Debug.LogWarning("[MUS INTERNET] " + e);
             }
         }
+        else
+        {
+            estado = ServiciosUnityMus.Error;
+        }
 
         buscando = false;
     }
 
+    private static int Numero(IReadOnlyDictionary<string, SessionProperty> propiedades, string clave, int porDefecto)
+    {
+        if (propiedades != null && propiedades.TryGetValue(clave, out SessionProperty p) && int.TryParse(p.Value, out int n))
+            return n;
+
+        return porDefecto;
+    }
+
     // ------------------------------------------------------------------ crear / entrar / salir
 
-    public async void CrearSala(string nombreJugador, int apuesta)
+    public void CrearSala(string nombreJugador, int apuesta) =>
+        CrearSala(nombreJugador, new Opciones { Apuesta = apuesta });
+
+    public async void CrearSala(string nombreJugador, Opciones opciones)
     {
-        if (ocupado || EnSala)
+        if (ocupado || EnSala || opciones == null)
             return;
 
         ocupado = true;
+        miNombre = nombreJugador ?? "";
         estado = "Creando sala...";
 
         if (await PrepararServicios())
         {
             try
             {
-                string nombre = "Mesa de " + (string.IsNullOrWhiteSpace(nombreJugador) ? "Mus" : nombreJugador.Trim());
-                SessionOptions opciones = new SessionOptions
+                string nombre = !string.IsNullOrWhiteSpace(opciones.Nombre) ? opciones.Nombre.Trim()
+                    : "Mesa de " + (string.IsNullOrWhiteSpace(miNombre) ? "Mus" : miNombre.Trim());
+                SessionOptions so = new SessionOptions
                 {
                     Name = nombre,
                     MaxPlayers = MaxJugadores,
-                    IsPrivate = false,
+                    IsPrivate = opciones.Privada,
+                    PlayerProperties = PropiedadesJugador(),
                     SessionProperties = new Dictionary<string, SessionProperty>
                     {
                         { ClaveVersion, new SessionProperty(VersionSalas, VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-                        { ClaveApuesta, new SessionProperty(Mathf.Max(0, apuesta).ToString(), VisibilityPropertyOptions.Public, PropertyIndex.Number1) }
+                        { ClaveApuesta, new SessionProperty(Mathf.Max(0, opciones.Apuesta).ToString(), VisibilityPropertyOptions.Public, PropertyIndex.Number1) },
+                        { ClaveTantos, new SessionProperty(opciones.Tantos.ToString(), VisibilityPropertyOptions.Public, PropertyIndex.Number2) }
                     }
                 }.WithRelayNetwork();
 
-                IHostSession nueva = await MultiplayerService.Instance.CreateSessionAsync(opciones);
+                IHostSession nueva = await MultiplayerService.Instance.CreateSessionAsync(so);
                 Entrar(nueva);
+                pendientes = opciones;
                 cerradaEnviada = false;
-                apuestaEnviada = Mathf.Max(0, apuesta);
+                apuestaEnviada = Mathf.Max(0, opciones.Apuesta);
                 estado = "";
-                Debug.Log("[MUS INTERNET] Sala creada: " + nueva.Name);
+                Debug.Log("[MUS INTERNET] Sala creada: " + nueva.Name + (opciones.Privada ? " (codigo " + nueva.Code + ")" : ""));
             }
             catch (Exception e)
             {
@@ -210,23 +217,28 @@ public class SalaInternetMus : MonoBehaviour
                 Debug.LogException(e);
             }
         }
+        else
+        {
+            estado = ServiciosUnityMus.Error;
+        }
 
         ocupado = false;
     }
 
-    public async void Unirse(string idSala)
+    public async void Unirse(string idSala, string nombreJugador = "")
     {
         if (ocupado || EnSala || string.IsNullOrEmpty(idSala))
             return;
 
         ocupado = true;
+        miNombre = nombreJugador ?? "";
         estado = "Entrando en la sala...";
 
         if (await PrepararServicios())
         {
             try
             {
-                Entrar(await MultiplayerService.Instance.JoinSessionByIdAsync(idSala));
+                Entrar(await MultiplayerService.Instance.JoinSessionByIdAsync(idSala, new JoinSessionOptions { PlayerProperties = PropiedadesJugador() }));
                 estado = "";
                 Debug.Log("[MUS INTERNET] Dentro de la sala " + sesion.Name);
             }
@@ -236,12 +248,16 @@ public class SalaInternetMus : MonoBehaviour
                 Debug.LogException(e);
             }
         }
+        else
+        {
+            estado = ServiciosUnityMus.Error;
+        }
 
         ocupado = false;
     }
 
-    // Con codigo (por si alguna vez se quieren salas privadas).
-    public async void UnirseConCodigo(string codigo)
+    // Salas con codigo (privadas).
+    public async void UnirseConCodigo(string codigo, string nombreJugador = "")
     {
         codigo = (codigo ?? "").Trim().ToUpperInvariant();
 
@@ -249,13 +265,14 @@ public class SalaInternetMus : MonoBehaviour
             return;
 
         ocupado = true;
+        miNombre = nombreJugador ?? "";
         estado = "Entrando en la sala " + codigo + "...";
 
         if (await PrepararServicios())
         {
             try
             {
-                Entrar(await MultiplayerService.Instance.JoinSessionByCodeAsync(codigo));
+                Entrar(await MultiplayerService.Instance.JoinSessionByCodeAsync(codigo, new JoinSessionOptions { PlayerProperties = PropiedadesJugador() }));
                 estado = "";
             }
             catch (Exception e)
@@ -263,6 +280,10 @@ public class SalaInternetMus : MonoBehaviour
                 estado = "No se pudo entrar: " + Mensaje(e);
                 Debug.LogException(e);
             }
+        }
+        else
+        {
+            estado = ServiciosUnityMus.Error;
         }
 
         ocupado = false;
@@ -274,6 +295,29 @@ public class SalaInternetMus : MonoBehaviour
         sinRedDesde = -1f;
         nueva.RemovedFromSession += AlSalirDeLaSala;
         nueva.Deleted += AlSalirDeLaSala;
+        nueva.Changed += AnotarRecientes;
+        AnotarRecientes();
+    }
+
+    // Guarda quien hay en la sala (menos tu) para poder anadirlos como amigos despues.
+    private void AnotarRecientes()
+    {
+        if (sesion == null || sesion.Players == null)
+            return;
+
+        string yo = ServiciosUnityMus.IdJugador;
+
+        foreach (IReadOnlyPlayer p in sesion.Players)
+        {
+            if (p == null || p.Id == yo || Recientes.Exists(r => r.Id == p.Id))
+                continue;
+
+            string nombre = p.Properties != null && p.Properties.TryGetValue(ClaveNombre, out PlayerProperty n) ? n.Value : "Jugador";
+            Recientes.Insert(0, new JugadorReciente { Id = p.Id, Nombre = nombre });
+        }
+
+        while (Recientes.Count > 8)
+            Recientes.RemoveAt(Recientes.Count - 1);
     }
 
     private void AlSalirDeLaSala()
@@ -292,6 +336,7 @@ public class SalaInternetMus : MonoBehaviour
     {
         ISession s = sesion;
         sesion = null;
+        pendientes = null;
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
@@ -344,10 +389,19 @@ public class SalaInternetMus : MonoBehaviour
 
         sinRedDesde = -1f;
 
-        if (partida == null || !sesion.IsHost)
+        if (partida == null || !sesion.IsHost || !partida.IsSpawned)
             return;
 
         partida.MinimoHumanos = MinimoJugadores;
+
+        // Las opciones elegidas al crear la sala se aplican en cuanto la mesa existe.
+        if (pendientes != null && partida.IsServer)
+        {
+            partida.CambiarApuesta(Mathf.Max(0, pendientes.Apuesta));
+            partida.ConfigurarReglas(pendientes.Tantos, pendientes.Segundos);
+            pendientes = null;
+        }
+
         bool cerrar = partida.PartidaEnCurso;
         int apuesta = partida.ApuestaSalaVista;
 

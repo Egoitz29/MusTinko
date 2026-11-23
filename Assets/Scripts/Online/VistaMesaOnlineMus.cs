@@ -604,6 +604,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private void Update()
     {
         ActualizarVueltaASala();
+        ActualizarRedSocial();
         ProcesarCola();
         ActualizarDemo();
         ActualizarCartasEnMano();
@@ -828,6 +829,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
         int pareja = partida.PuestoLocal >= 0 ? partida.PuestoLocal % 2 : 0;
         tabla = TablaTanteoMus.Construir(partida.UltimoDesglose, todas, pareja, NombresPuesto);
+        RegistrarManoEnPerfil(todas);
         manosVistas = todas;
         ReaccionarAlTanteo();
         ActivarVistaRevision();

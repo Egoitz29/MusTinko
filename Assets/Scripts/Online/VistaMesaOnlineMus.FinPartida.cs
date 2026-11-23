@@ -50,6 +50,31 @@ public partial class VistaMesaOnlineMus
         empezadaVista = empezada;
     }
 
+    // Al acabar cada mano: que lances ha ganado tu pareja con las cartas y tu mano (para el perfil y los logros).
+    private void RegistrarManoEnPerfil(int[] todas)
+    {
+        int local = partida.PuestoLocal;
+
+        if (local < 0 || DemoActiva || tabla == null || todas == null || todas.Length < 16)
+            return;
+
+        bool[] ganados = new bool[5];
+
+        for (int i = 0; i < tabla.Filas.Length; i++)
+        {
+            TablaTanteoMus.Fila f = tabla.Filas[i];
+
+            if (f == null || f.Ganador != 0)
+                continue;
+
+            int indice = i < 3 ? i : f.Lance == "PUNTO" ? 4 : 3;
+            ganados[indice] = true;
+        }
+
+        int[] mias = { todas[local * 4], todas[local * 4 + 1], todas[local * 4 + 2], todas[local * 4 + 3] };
+        PerfilMus.RegistrarMano(ganados, CartasMus.Evaluar(mias));
+    }
+
     private void LimpiarMesaParaSala()
     {
         cola.Clear();

@@ -156,10 +156,19 @@ public partial class VistaMesaOnlineMus
         EstadoPublicoMus e = partida.Estado;
         int local = partida.PuestoLocal;
 
+        // Para el logro "Remontada": lo maximo que ha ido perdiendo mi pareja en esta partida.
+        if (e.EnCurso && local >= 0 && e.CodigoPartida == codigoPagado)
+        {
+            int nos = local % 2 == 0 ? e.Puntos0 : e.Puntos1;
+            int ellos = local % 2 == 0 ? e.Puntos1 : e.Puntos0;
+            peorDiferencia = Mathf.Max(peorDiferencia, ellos - nos);
+        }
+
         // Al empezar una partida en la que estoy sentado, pago la entrada.
         if (e.EnCurso && local >= 0 && e.CodigoPartida != 0 && e.CodigoPartida != codigoPagado)
         {
             codigoPagado = e.CodigoPartida;
+            peorDiferencia = 0;
             parejaPagada = local % 2;
             apuestaPagada = MonederoMus.Pagar(e.Apuesta) ? e.Apuesta : 0;
 
@@ -176,6 +185,7 @@ public partial class VistaMesaOnlineMus
             codigoCobrado = codigoPagado;
             bool ganamos = e.ParejaGanadora == parejaPagada;
             MonederoMus.ContarPartida(ganamos);
+            RegistrarEnPerfil(e, ganamos, ganamos && apuestaPagada > 0 ? apuestaPagada : 0);
 
             if (apuestaPagada > 0)
             {
@@ -190,6 +200,44 @@ public partial class VistaMesaOnlineMus
                 }
             }
         }
+    }
+
+    private int peorDiferencia;
+
+    // Al acabar la partida: estadisticas, logros, ultimas partidas y puntos de la clasificacion.
+    private void RegistrarEnPerfil(EstadoPublicoMus e, bool ganamos, int monedasGanadas)
+    {
+        int local = Mathf.Clamp(parejaPagada, 0, 1);
+        int yo = partida.PuestoLocal >= 0 ? partida.PuestoLocal : local;
+        int companero = (yo + 2) % 4;
+        int r1 = (yo + 1) % 4, r2 = (yo + 3) % 4;
+        int humanos = 0;
+
+        for (int p = 0; p < 4; p++)
+            if (!e.EsBot(p))
+                humanos++;
+
+        string Nombre(int p) => e.EsBot(p) ? "bot" : ColoresJugadoresMus.NombresPorPuesto[p];
+        string rivales = e.EsBot(r1) && e.EsBot(r2) ? "2 bots" : Nombre(r1) + " y " + Nombre(r2);
+
+        PerfilMus.RegistrarPartida(new PerfilMus.Resumen
+        {
+            Ganada = ganamos,
+            PorOrdago = e.PorOrdago,
+            Nos = yo % 2 == 0 ? e.Puntos0 : e.Puntos1,
+            Ellos = yo % 2 == 0 ? e.Puntos1 : e.Puntos0,
+            Companero = ColoresJugadoresMus.NombresPorPuesto[companero],
+            CompaneroHumano = !e.EsBot(companero),
+            Rivales = rivales,
+            Humanos = humanos,
+            PeorDiferencia = peorDiferencia,
+            MonedasGanadas = monedasGanadas
+        });
+
+#if !MUS_TINKO_SIN_INTERNET
+        if (humanos >= 2)
+            SocialMus.Instancia.SubirPuntos();
+#endif
     }
 
     // ---------- Aviso con la moneda ----------
