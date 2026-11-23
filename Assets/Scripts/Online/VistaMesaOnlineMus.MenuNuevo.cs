@@ -186,6 +186,10 @@ public partial class VistaMesaOnlineMus
         if (p == PantallaMenu.Salas)
             siguienteBusquedaSalas = 0f;
 
+        // Los servicios de Unity no se arrancan desde Awake (el menu se crea ahi): se espera al primer fotograma.
+        if (!menuEnMarcha)
+            return;
+
         if (p == PantallaMenu.Inicio || p == PantallaMenu.Amigos)
             _ = SocialMus.Instancia.PrepararAmigos();
 
@@ -1272,10 +1276,18 @@ public partial class VistaMesaOnlineMus
 
     // ------------------------------------------------------------------ cada fotograma (con el menu a la vista)
 
+    private bool menuEnMarcha;
+
     private void ActualizarMenuNuevo()
     {
         if (marcoMenu == null)
             return;
+
+        if (!menuEnMarcha)
+        {
+            menuEnMarcha = true;
+            IrA(pantallaMenu);
+        }
 
         // El marco se escala para caber en la pantalla.
         Vector2 tam = ((RectTransform)panelMenuUI.transform).rect.size;

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Unity.Services.Core;
 using Unity.Services.Friends;
 using Unity.Services.Friends.Models;
 using Unity.Services.Friends.Notifications;
@@ -76,6 +77,14 @@ public class SocialMus : MonoBehaviour
 
     private static SocialMus instancia;
 
+    // Se piden al registro de Unity Services y no a FriendsService.Instance / LeaderboardsService.Instance:
+    // en el editor esos accesos se vacian al cargar la escena aunque los servicios ya esten iniciados.
+    private static IFriendsService Amistad =>
+        UnityServices.Instance?.GetFriendsService() ?? throw new InvalidOperationException("Friends no esta iniciado (¿esta activado en Unity Cloud?)");
+
+    private static ILeaderboardsService Tablas =>
+        UnityServices.Instance?.GetLeaderboardsService() ?? throw new InvalidOperationException("Leaderboards no esta iniciado (¿esta activado en Unity Cloud?)");
+
     public static SocialMus Instancia
     {
         get
@@ -96,6 +105,7 @@ public class SocialMus : MonoBehaviour
     public Invitacion InvitacionPendiente { get; set; }
 
     private Task<bool> preparandoAmigos;
+    private bool eventosPuestos;
     private string presenciaEnviada = "";
     private float siguientePresencia;
     private readonly List<string> invitarAlCrearSala = new();
@@ -121,11 +131,15 @@ public class SocialMus : MonoBehaviour
 
         try
         {
-            await FriendsService.Instance.InitializeAsync(new InitializeOptions().WithEvents(true).WithMemberPresence(true).WithMemberProfile(true));
-            FriendsService.Instance.RelationshipAdded += _ => Refrescar();
-            FriendsService.Instance.RelationshipDeleted += _ => Refrescar();
-            FriendsService.Instance.PresenceUpdated += _ => Refrescar();
-            FriendsService.Instance.MessageReceived += AlRecibirMensaje;
+            await Amistad.InitializeAsync(new InitializeOptions().WithEvents(true).WithMemberPresence(true).WithMemberProfile(true));
+            if (!eventosPuestos)
+            {
+                eventosPuestos = true;
+                Amistad.RelationshipAdded += _ => Refrescar();
+                Amistad.RelationshipDeleted += _ => Refrescar();
+                Amistad.PresenceUpdated += _ => Refrescar();
+                Amistad.MessageReceived += AlRecibirMensaje;
+            }
             AmigosListos = true;
             ErrorAmigos = "";
             Refrescar();
@@ -145,9 +159,9 @@ public class SocialMus : MonoBehaviour
         if (!AmigosListos)
             return;
 
-        Llenar(Amigos, FriendsService.Instance.Friends);
-        Llenar(Solicitudes, FriendsService.Instance.IncomingFriendRequests);
-        Llenar(Enviadas, FriendsService.Instance.OutgoingFriendRequests);
+        Llenar(Amigos, Amistad.Friends);
+        Llenar(Solicitudes, Amistad.IncomingFriendRequests);
+        Llenar(Enviadas, Amistad.OutgoingFriendRequests);
 
         // Primero los conectados.
         Amigos.Sort((a, b) => a.Conectado != b.Conectado ? (a.Conectado ? -1 : 1) : string.Compare(a.Nombre, b.Nombre, StringComparison.OrdinalIgnoreCase));
@@ -225,7 +239,7 @@ public class SocialMus : MonoBehaviour
 
         try
         {
-            await FriendsService.Instance.AddFriendByNameAsync(codigo);
+            await Amistad.AddFriendByNameAsync(codigo);
             Avisar("Solicitud enviada a " + ServiciosUnityMus.SinCodigo(codigo));
         }
         catch (Exception e)
@@ -243,7 +257,7 @@ public class SocialMus : MonoBehaviour
 
         try
         {
-            await FriendsService.Instance.AddFriendAsync(id);
+            await Amistad.AddFriendAsync(id);
             Avisar("Solicitud enviada a " + nombre);
         }
         catch (Exception e)
@@ -261,7 +275,7 @@ public class SocialMus : MonoBehaviour
     {
         try
         {
-            await FriendsService.Instance.DeleteIncomingFriendRequestAsync(a.Id);
+            await Amistad.DeleteIncomingFriendRequestAsync(a.Id);
         }
         catch (Exception e)
         {
@@ -278,7 +292,7 @@ public class SocialMus : MonoBehaviour
 
         try
         {
-            await FriendsService.Instance.MessageAsync(idAmigo, new MensajeMus { Tipo = "invitacion", SalaId = idSala, SalaNombre = nombreSala, De = miNombre });
+            await Amistad.MessageAsync(idAmigo, new MensajeMus { Tipo = "invitacion", SalaId = idSala, SalaNombre = nombreSala, De = miNombre });
             Avisar("Invitacion enviada");
         }
         catch (Exception e)
@@ -342,7 +356,7 @@ public class SocialMus : MonoBehaviour
     {
         try
         {
-            await FriendsService.Instance.SetPresenceAsync(Availability.Online, actividad);
+            await Amistad.SetPresenceAsync(Availability.Online, actividad);
         }
         catch (Exception e)
         {
@@ -385,8 +399,8 @@ public class SocialMus : MonoBehaviour
 
         try
         {
-            await LeaderboardsService.Instance.AddPlayerScoreAsync(ClasificacionSemanal, PerfilMus.PuntosSemana);
-            await LeaderboardsService.Instance.AddPlayerScoreAsync(ClasificacionGlobal, PerfilMus.PuntosTotal);
+            await Tablas.AddPlayerScoreAsync(ClasificacionSemanal, PerfilMus.PuntosSemana);
+            await Tablas.AddPlayerScoreAsync(ClasificacionGlobal, PerfilMus.PuntosTotal);
         }
         catch (Exception e)
         {
@@ -426,7 +440,7 @@ public class SocialMus : MonoBehaviour
                 foreach (Amigo a in Amigos)
                     ids.Add(a.Id);
 
-                LeaderboardScoresWithNotFoundPlayerIds r = await LeaderboardsService.Instance.GetScoresByPlayerIdsAsync(id, ids);
+                LeaderboardScoresWithNotFoundPlayerIds r = await Tablas.GetScoresByPlayerIdsAsync(id, ids);
                 List<LeaderboardEntry> lista = r.Results ?? new List<LeaderboardEntry>();
                 lista.Sort((a, b) => b.Score.CompareTo(a.Score));
 
@@ -437,14 +451,14 @@ public class SocialMus : MonoBehaviour
             }
             else
             {
-                LeaderboardScoresPage pagina = await LeaderboardsService.Instance.GetScoresAsync(id, new GetScoresOptions { Limit = 10 });
+                LeaderboardScoresPage pagina = await Tablas.GetScoresAsync(id, new GetScoresOptions { Limit = 10 });
 
                 foreach (LeaderboardEntry e in pagina.Results ?? new List<LeaderboardEntry>())
                     nuevos.Add(APuesto(e, e.Rank + 1, yo));
 
                 try
                 {
-                    LeaderboardEntry propio = await LeaderboardsService.Instance.GetPlayerScoreAsync(id);
+                    LeaderboardEntry propio = await Tablas.GetPlayerScoreAsync(id);
                     mio = APuesto(propio, propio.Rank + 1, yo);
                 }
                 catch (Exception)

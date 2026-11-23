@@ -15,13 +15,37 @@ public static class ServiciosUnityMus
     private static Task nombrePendiente;
 
     public static string Error { get; private set; } = "";
-    public static bool Listo => UnityServices.State == ServicesInitializationState.Initialized &&
-                                AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
 
-    public static string IdJugador => Listo ? AuthenticationService.Instance.PlayerId : "";
+    // En el editor, AuthenticationService.Instance se vacia al cargar la escena: si pasa, se pide al registro.
+    private static IAuthenticationService Auth
+    {
+        get
+        {
+            try
+            {
+                return AuthenticationService.Instance;
+            }
+            catch (Exception)
+            {
+            }
+
+            try
+            {
+                return UnityServices.Instance?.GetService<IAuthenticationService>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+    }
+
+    public static bool Listo => UnityServices.State == ServicesInitializationState.Initialized && Auth != null && Auth.IsSignedIn;
+
+    public static string IdJugador => Listo ? Auth.PlayerId : "";
 
     // "Egoitz#4821" (o vacio si aun no hay).
-    public static string CodigoAmigo => Listo ? AuthenticationService.Instance.PlayerName ?? "" : "";
+    public static string CodigoAmigo => Listo ? Auth.PlayerName ?? "" : "";
 
     // Una sola preparacion a la vez (varias pantallas la piden a la vez).
     public static Task<bool> Preparar()
@@ -47,13 +71,13 @@ public static class ServiciosUnityMus
                 await UnityServices.InitializeAsync(opciones);
             }
 
-            if (!AuthenticationService.Instance.IsSignedIn)
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            if (!Auth.IsSignedIn)
+                await Auth.SignInAnonymouslyAsync();
 
             // El nombre de Unity (tu codigo de amigo): se pide y se pone igual que tu apodo.
             try
             {
-                await AuthenticationService.Instance.GetPlayerNameAsync();
+                await Auth.GetPlayerNameAsync();
                 string apodo = PlayerPrefs.GetString("MusTinko_Nombre", "");
 
                 if (!string.IsNullOrWhiteSpace(apodo))
@@ -83,7 +107,7 @@ public static class ServiciosUnityMus
         if (limpio.Length == 0 || !Listo)
             return;
 
-        string actual = AuthenticationService.Instance.PlayerName ?? "";
+        string actual = Auth.PlayerName ?? "";
         int almohadilla = actual.LastIndexOf('#');
         string sinCodigo = almohadilla >= 0 ? actual.Substring(0, almohadilla) : actual;
 
@@ -97,7 +121,7 @@ public static class ServiciosUnityMus
     {
         try
         {
-            await AuthenticationService.Instance.UpdatePlayerNameAsync(limpio);
+            await Auth.UpdatePlayerNameAsync(limpio);
         }
         catch (Exception e)
         {
