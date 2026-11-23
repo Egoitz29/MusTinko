@@ -900,8 +900,9 @@ public partial class VistaMesaOnlineMus
         h.childAlignment = TextAnchor.MiddleCenter;
         h.childControlWidth = h.childControlHeight = true;
         h.childForceExpandWidth = h.childForceExpandHeight = false;
-        Boton(botonesMesaUI.transform, "dorado", "VER TANTEO", new Vector2(340, 96), () => tablaVisible = true);
+        Boton(botonesMesaUI.transform, "dorado", "VER TANTEO", new Vector2(260, 96), () => tablaVisible = true);
         botonSiguienteMesaUI = Boton(botonesMesaUI.transform, "verde", "SIGUIENTE MANO", new Vector2(340, 96), () => partida.PedirSiguienteMano());
+        CrearBotonesFinMesa(botonesMesaUI.transform);
 
         panelTanteoUI.SetActive(false);
         botonesMesaUI.SetActive(false);
@@ -1015,8 +1016,9 @@ public partial class VistaMesaOnlineMus
         hl.childAlignment = TextAnchor.MiddleCenter;
         hl.childControlWidth = hl.childControlHeight = true;
         hl.childForceExpandWidth = hl.childForceExpandHeight = false;
-        Boton(botones.transform, "azul", "VER LA MESA", new Vector2(340, 90), () => tablaVisible = false, 30);
+        Boton(botones.transform, "azul", "VER LA MESA", new Vector2(260, 90), () => tablaVisible = false, 30);
         botonSiguienteUI = Boton(botones.transform, "verde", "SIGUIENTE MANO", new Vector2(400, 90), () => partida.PedirSiguienteMano(), 32);
+        CrearBotonesFinTanteo(botones.transform);
     }
 
     // Personaje (con su color, oscurecido para que se lea en el pergamino) y el apodo si es una persona.
@@ -1451,5 +1453,8 @@ public partial class VistaMesaOnlineMus
 
         if (botonSiguienteMesaUI != null)
             botonSiguienteMesaUI.gameObject.SetActive(partida.PuedePasarDeMano);
+
+        // Partida acabada: OTRA PARTIDA (todos a la sala) o SALIR AL MENU.
+        ActualizarBotonesFin();
     }
 }

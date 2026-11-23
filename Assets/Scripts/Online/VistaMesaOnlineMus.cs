@@ -603,6 +603,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
 
     private void Update()
     {
+        ActualizarVueltaASala();
         ProcesarCola();
         ActualizarDemo();
         ActualizarCartasEnMano();

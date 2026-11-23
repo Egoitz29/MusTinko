@@ -510,6 +510,52 @@ public class PartidaOnlineMus : NetworkBehaviour
         Empezar(false);
     }
 
+    // ---------- Fin de partida: OTRA PARTIDA (todos vuelven a la sala a elegir silla) ----------
+
+    [Header("Fin de partida")]
+    [Tooltip("Segundos despues de acabar la partida para volver todos a la sala aunque nadie pulse nada (0 = nunca).")]
+    [SerializeField] private float volverASalaSolo = 90f;
+    private float finPartidaServidor = -1f;
+
+    // La partida ha terminado (alguien ha llegado a los tantos o se ha ganado un ordago).
+    public bool PartidaAcabada => !estado.EnCurso && estado.ParejaGanadora >= 0;
+
+    // Cualquiera puede pedirlo desde la pantalla final.
+    public void PedirOtraPartida() => OtraPartidaRpc();
+
+    [Rpc(SendTo.Server)]
+    private void OtraPartidaRpc(RpcParams parametros = default)
+    {
+        // Unos segundos de margen para que a todos les llegue el final (y cobren las monedas) antes de volver.
+        if (finPartidaServidor > 0f && Time.time - finPartidaServidor < 3f)
+            return;
+
+        VolverASalaServidor();
+    }
+
+    // Todos vuelven a la sala: cada uno sigue en su silla, puede cambiarse, y el host vuelve a pulsar EMPEZAR.
+    public void VolverASalaServidor()
+    {
+        if (!IsServer || partida == null || !partida.PartidaTerminada)
+            return;
+
+        partida = null;
+        finPartidaServidor = -1f;
+        pausado = false;
+        ModoDemo = false;
+
+        for (int p = 0; p < 4; p++)
+        {
+            bots[p] = null;
+            clientes[p] = SinCliente;
+        }
+
+        estado = EstadoInicial();
+        EstadoRpc(estado);
+        PrepararSala();
+        Debug.Log("[MUS ONLINE] Fin de partida: todos vuelven a la sala para elegir silla.");
+    }
+
     // Salas por Internet: hacen falta al menos 2 personas para empezar (las sillas libres las ocupan bots).
     // Jugando solo contra bots o en la WiFi basta con 1.
     public int MinimoHumanos { get; set; } = 1;
@@ -645,6 +691,11 @@ public class PartidaOnlineMus : NetworkBehaviour
 
     private void Update()
     {
+        // Partida acabada: si nadie pulsa OTRA PARTIDA, todos vuelven solos a la sala al cabo de un rato.
+        if (IsServer && partida != null && partida.PartidaTerminada && volverASalaSolo > 0f && finPartidaServidor > 0f &&
+            Time.time - finPartidaServidor > volverASalaSolo)
+            VolverASalaServidor();
+
         if (!IsServer || partida == null || partida.PartidaTerminada)
             return;
 
@@ -906,6 +957,7 @@ public class PartidaOnlineMus : NetworkBehaviour
 
         if (partida.PartidaTerminada)
         {
+            finPartidaServidor = Time.time;
             registro?.TerminarPartida(partida.ParejaGanadora);
             Debug.Log("[MUS ONLINE] Fin de partida. Gana la pareja " + (partida.ParejaGanadora == 0 ? "0-2" : "1-3") +
                       ". " + partida.MotivoVictoria);
