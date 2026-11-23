@@ -34,7 +34,7 @@ public class PruebaConexionMus : MonoBehaviour
         red = NetworkManager.Singleton;
         partidaOnline = FindFirstObjectByType<PartidaOnlineMus>();
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         if (GetComponent<SalaInternetMus>() == null)
             gameObject.AddComponent<SalaInternetMus>();
 #endif
@@ -52,7 +52,7 @@ public class PruebaConexionMus : MonoBehaviour
 
     private PartidaOnlineMus partidaOnline;
     private float siguienteInfo;
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
     private SalaInternetMus salaInternet;
 #endif
 
@@ -61,7 +61,7 @@ public class PruebaConexionMus : MonoBehaviour
     {
         bool host = red != null && red.IsListening && red.IsServer;
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         // Una sala por Internet va por Relay: no se anuncia en la WiFi (por IP no se podria entrar).
         if (salaInternet == null)
             salaInternet = GetComponent<SalaInternetMus>();

@@ -1,4 +1,4 @@
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -53,7 +53,18 @@ public class SalaInternetMus : MonoBehaviour
 
     // ------------------------------------------------------------------ servicios
 
-    private async Task<bool> PrepararServicios()
+    private Task<bool> preparando;
+
+    // Una sola preparacion a la vez (la lista se refresca sola y a la vez puedes pulsar CREAR SALA).
+    private Task<bool> PrepararServicios()
+    {
+        if (preparando == null || (preparando.IsCompleted && !preparando.Result))
+            preparando = Preparar();
+
+        return preparando;
+    }
+
+    private async Task<bool> Preparar()
     {
         try
         {
@@ -74,7 +85,7 @@ public class SalaInternetMus : MonoBehaviour
         }
         catch (Exception e)
         {
-            estado = "No se pudo conectar con los servidores. Revisa Internet.";
+            estado = "No se pudo conectar con los servidores de Unity: " + e.Message;
             Debug.LogException(e);
             return false;
         }

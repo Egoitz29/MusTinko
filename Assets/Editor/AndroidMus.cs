@@ -73,7 +73,10 @@ public static class AndroidMus
         Construir(true, false);
     }
 
-    private const string SimboloInternet = "MUS_TINKO_INTERNET";
+    // Las salas por Internet van activadas siempre (el paquete Multiplayer Services ya esta instalado).
+    // Si algun dia dan problemas, "Desactivar" pone MUS_TINKO_SIN_INTERNET y se compila sin ellas.
+    private const string SimboloSinInternet = "MUS_TINKO_SIN_INTERNET";
+    private const string SimboloAntiguo = "MUS_TINKO_INTERNET";
 
     [MenuItem("Mus TINKO/Internet/Activar salas por Internet (Relay)")]
     public static void ActivarInternet() => CambiarSimbolo(true);
@@ -87,16 +90,17 @@ public static class AndroidMus
         {
             string actuales = PlayerSettings.GetScriptingDefineSymbols(destino);
             System.Collections.Generic.List<string> lista = new(actuales.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries));
-            lista.Remove(SimboloInternet);
+            lista.Remove(SimboloSinInternet);
+            lista.Remove(SimboloAntiguo);
 
-            if (activar)
-                lista.Add(SimboloInternet);
+            if (!activar)
+                lista.Add(SimboloSinInternet);
 
             PlayerSettings.SetScriptingDefineSymbols(destino, string.Join(";", lista));
         }
 
         Debug.Log("[INTERNET] Salas por Internet " + (activar ? "ACTIVADAS" : "desactivadas") +
-                  ". Unity recompilara los scripts. Si salen errores en SalaInternetMus, desactivalas y avisa.");
+                  ". Unity recompilara los scripts (si estas en Play, para y vuelve a darle).");
     }
 
     private static void Construir(bool desarrollo, bool instalar)

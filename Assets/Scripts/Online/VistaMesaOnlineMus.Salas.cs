@@ -12,7 +12,7 @@ public partial class VistaMesaOnlineMus
 {
     private GameObject pestanaInternetUI, pestanaMasUI;
     private Button botonPestanaInternet, botonPestanaMas;
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
     private bool pestanaInternetActiva = true;
 #else
     private bool pestanaInternetActiva;
@@ -56,7 +56,7 @@ public partial class VistaMesaOnlineMus
     // Boton SALIR de la sala (antes de empezar la partida).
     private void SalirDeLaSala()
     {
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         if (SalaInternet() != null && SalaInternet().EnSala)
         {
             SalaInternet().Salir();
@@ -70,7 +70,7 @@ public partial class VistaMesaOnlineMus
     {
         get
         {
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
             return SalaInternet() != null && SalaInternet().EnSala;
 #else
             return false;
@@ -78,7 +78,7 @@ public partial class VistaMesaOnlineMus
         }
     }
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
     private const int FilasSalas = 4;
     private readonly GameObject[] filasSalas = new GameObject[FilasSalas];
     private readonly TextMeshProUGUI[] txtFilasSalas = new TextMeshProUGUI[FilasSalas];
@@ -92,7 +92,7 @@ public partial class VistaMesaOnlineMus
 
     private void CrearPestanaInternet(Transform padre, float y)
     {
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         botonCrearSalaUI = Boton(padre, "verde", "CREAR SALA", new Vector2(560, 70), () =>
         {
             GuardarNombre(campoNombreUI.text);
@@ -143,13 +143,13 @@ public partial class VistaMesaOnlineMus
 #else
         GameObject info = new("InfoSalas", typeof(RectTransform));
         Rect(info, padre, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(620, 160));
-        Texto(info.transform, "Las salas por Internet estan desactivadas en esta version.\n<size=80%>(Falta MUS_TINKO_INTERNET en Player Settings)</size>", 24, Crema);
+        Texto(info.transform, "Las salas por Internet estan desactivadas.\n<size=80%>(Mus TINKO > Internet > Activar salas por Internet)</size>", 24, Crema);
 #endif
     }
 
     private void ActualizarPestanaInternet()
     {
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         SalaInternetMus s = SalaInternet();
 
         if (botonCrearSalaUI == null)
@@ -207,7 +207,7 @@ public partial class VistaMesaOnlineMus
 #endif
     }
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
     private void EntrarEnSala(int indice)
     {
         string id = idsFilasSalas[indice];

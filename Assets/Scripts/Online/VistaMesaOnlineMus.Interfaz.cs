@@ -858,7 +858,7 @@ public partial class VistaMesaOnlineMus
         if (conexion != null && !string.IsNullOrEmpty(conexion.IpLocal) && partida.IsServer)
             conexionTexto = "Tu IP: " + conexion.IpLocal;
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         if (EnSalaPorInternet)
             conexionTexto = "<color=#FFD24D>" + SalaInternet().NombreSala + "</color> (por Internet)";
 #endif
@@ -1173,13 +1173,19 @@ public partial class VistaMesaOnlineMus
         CrearMonedasMenu();
     }
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
     private SalaInternetMus salaInternet;
 
     private SalaInternetMus SalaInternet()
     {
         if (salaInternet == null)
             salaInternet = FindFirstObjectByType<SalaInternetMus>();
+
+        // Si nadie la ha puesto en la escena, se crea (va junto a la conexion o sola).
+        if (salaInternet == null)
+            salaInternet = conexion != null ? conexion.gameObject.AddComponent<SalaInternetMus>()
+                : new GameObject("SalaInternetMus").AddComponent<SalaInternetMus>();
+
         return salaInternet;
     }
 #endif
@@ -1223,7 +1229,7 @@ public partial class VistaMesaOnlineMus
         if (!conectado)
         {
             string estadoMenu = conexion != null ? conexion.Estado : "";
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
             if (SalaInternet() != null && !string.IsNullOrEmpty(SalaInternet().Estado))
                 estadoMenu = SalaInternet().Estado;
 #endif
@@ -1285,7 +1291,7 @@ public partial class VistaMesaOnlineMus
         if (conexion != null && !string.IsNullOrEmpty(conexion.IpLocal))
             texto += "\n<size=18>IP: " + conexion.IpLocal + "</size>";
 
-#if MUS_TINKO_INTERNET
+#if !MUS_TINKO_SIN_INTERNET
         if (SalaInternet() != null && !string.IsNullOrEmpty(SalaInternet().Codigo))
             texto += "\n<size=22><color=#FFD24D>CODIGO: " + SalaInternet().Codigo + "</color></size>";
 #endif
