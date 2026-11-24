@@ -1,0 +1,26 @@
+{
+    "name": "MusTinko.Trailer.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Recorder.Editor",
+        "Unity.Recorder",
+        "Unity.Recorder.Base"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.recorder",
+            "expression": "5.0.0",
+            "define": "MUS_RECORDER"
+        }
+    ],
+    "noEngineReferences": false
+}

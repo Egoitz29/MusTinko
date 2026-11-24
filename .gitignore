@@ -110,3 +110,6 @@ InitTestScene*.unity*
 
 # Salidas del simulador de bots
 /Entrenamiento/*.jsonl
+
+# Videos del trailer (Mus TINKO > Trailer > Grabar trailer en MP4)
+/[Tt]railer/

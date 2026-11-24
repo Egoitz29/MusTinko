@@ -1171,6 +1171,13 @@ public partial class VistaMesaOnlineMus
 
     private void ActualizarInterfaz()
     {
+        // Rodando el trailer: fuera menus y paneles, solo los bocadillos.
+        if (ModoTrailer)
+        {
+            ActualizarInterfazTrailer();
+            return;
+        }
+
         NetworkManager red = NetworkManager.Singleton;
         bool conectado = red != null && red.IsListening;
         bool enMesa = conectado && partida.IsSpawned;
