@@ -26,7 +26,7 @@ public partial class VistaMesaOnlineMus
 
     private void CrearSelectorEnvite()
     {
-        panelEnviteUI = Panel("Envite", raizUI, "panel_madera", new Vector2(0.5f, 0f), new Vector2(0, 172), new Vector2(760, 250));
+        panelEnviteUI = Panel("Envite", raizUI, "panel_madera", new Vector2(0.5f, 0f), new Vector2(0, 200), new Vector2(760, 250));
         panelEnviteUI.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
@@ -114,7 +114,7 @@ public partial class VistaMesaOnlineMus
 
     private void CrearRelojes()
     {
-        relojPropio = Panel("TuReloj", raizUI, "panel_madera_oscura", new Vector2(0.5f, 0f), new Vector2(0, 128), new Vector2(560, 34));
+        relojPropio = Panel("TuReloj", raizUI, "panel_madera_oscura", new Vector2(0.5f, 0f), new Vector2(0, 150), new Vector2(560, 34));
         relojPropio.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0f);
 
         GameObject barra = new("Barra", typeof(RectTransform), typeof(Image));
@@ -122,8 +122,9 @@ public partial class VistaMesaOnlineMus
         rb.SetParent(relojPropio.transform, false);
         rb.anchorMin = new Vector2(0f, 0f);
         rb.anchorMax = new Vector2(1f, 1f);
-        rb.offsetMin = new Vector2(6, 6);
-        rb.offsetMax = new Vector2(-6, -6);
+        // La barra deja sitio a la derecha para los segundos: asi el texto no queda pisado por el relleno.
+        rb.offsetMin = new Vector2(8, 11);
+        rb.offsetMax = new Vector2(-104, -11);
         barraRelojPropio = barra.GetComponent<Image>();
         barraRelojPropio.sprite = SpriteUI("circulo", 0);
         barraRelojPropio.type = Image.Type.Filled;
@@ -131,7 +132,7 @@ public partial class VistaMesaOnlineMus
         barraRelojPropio.raycastTarget = false;
 
         GameObject t = new("Segundos", typeof(RectTransform));
-        Rect(t, relojPropio.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(540, 34)).pivot = new Vector2(0.5f, 0.5f);
+        Rect(t, relojPropio.transform, new Vector2(1f, 0.5f), new Vector2(-8, 0), new Vector2(92, 34)).pivot = new Vector2(1f, 0.5f);
         txtRelojPropio = Texto(t.transform, "", 24, Color.white);
         relojPropio.SetActive(false);
     }
@@ -176,7 +177,7 @@ public partial class VistaMesaOnlineMus
             Color c = ColorReloj(fraccion);
             barraRelojPropio.color = c;
             int s = Mathf.CeilToInt(quedan);
-            txtRelojPropio.text = s <= 5 ? "<b>¡" + s + " s!</b>" : s + " s para decidir";
+            txtRelojPropio.text = s <= 5 ? "<b>¡" + s + " s!</b>" : s + " s";
             float pulso = s <= 5 ? 1f + 0.06f * Mathf.Sin(Time.time * 10f) : 1f;
             relojPropio.transform.localScale = new Vector3(pulso, pulso, 1f);
         }

@@ -341,7 +341,7 @@ public partial class VistaMesaOnlineMus
                 conexion?.CrearPartida();
             }, out _);
         CrearTarjetaModo(p, 565, 196, "Salas por Internet", "Entra en una mesa abierta o crea la tuya. Minimo 2 personas; el resto, bots.",
-            "verde", "VER SALAS", () => IrA(PantallaMenu.Salas), out txtSalasAbiertas);
+            "rojo", "VER SALAS", () => IrA(PantallaMenu.Salas), out txtSalasAbiertas);
         CrearTarjetaModo(p, 0, 466, "Con amigos", "Invita a tus amigos a tu mesa o unete a la suya.",
             "morado", "AMIGOS", () => IrA(PantallaMenu.Amigos), out _);
         CrearTarjetaModo(p, 565, 466, "Misma WiFi", "Para jugar con quien tienes al lado, aunque no haya Internet.",
@@ -376,12 +376,29 @@ public partial class VistaMesaOnlineMus
     private void CrearTarjetaModo(Transform padre, float x, float y, string titulo, string texto, string color, string boton, UnityAction accion,
         out TextMeshProUGUI extra)
     {
-        RectTransform c = Caja("Modo_" + titulo, padre, x, y, 545, 250, "panel_madera");
-        Letra(c, 28, 18, 489, 60, titulo, 48, Crema, true);
-        Letra(c, 28, 80, 489, 72, texto, 25, CremaApagada);
+        // Cada modo es un naipe de papel, un poco girado, como una mano de cuatro cartas.
+        RectTransform c = Caja("Modo_" + titulo, padre, x, y, 545, 250, "panel_pergamino");
+        float giro = (x < 100f ? -1.2f : 1.2f) * (y < 300f ? 1f : -1f);
+        c.localRotation = Quaternion.Euler(0f, 0f, giro);
+        Color tintaSuave = new(0.35f, 0.27f, 0.2f);
+        Letra(c, 28, 20, 489, 60, titulo, 44, Tinta, true, TextAlignmentOptions.TopLeft, false);
+        Letra(c, 28, 80, 489, 72, texto, 24, tintaSuave, false, TextAlignmentOptions.TopLeft, false);
         BotonEn(c, 28, 158, 290, 70, color, boton, accion, 28);
-        extra = Letra(c, 330, 168, 190, 50, "", 22, Crema, false, TextAlignmentOptions.MidlineLeft);
+        extra = Letra(c, 330, 168, 190, 50, "", 22, Tinta, false, TextAlignmentOptions.MidlineLeft, false);
+
+        // Esquina del naipe: una pinta del color del boton (oros, copas, espadas o bastos).
+        Image pinta = Imagen("Pinta", c, "circulo", 34, ColorPinta(color));
+        Rect(pinta.gameObject, c, new Vector2(1f, 1f), new Vector2(-24, -24), new Vector2(34, 34));
     }
+
+    private static Color ColorPinta(string color) => color switch
+    {
+        "dorado" => new Color(0.89f, 0.70f, 0.24f),
+        "rojo" => new Color(0.72f, 0.2f, 0.16f),
+        "azul" => new Color(0.17f, 0.44f, 0.65f),
+        "morado" => new Color(0.18f, 0.42f, 0.24f),
+        _ => new Color(0.17f, 0.11f, 0.08f)
+    };
 
     private FilaAmigo CrearFilaAmigo(Transform padre, float x, float y, float ancho, float tamCara, float tamTexto, float anchoBoton)
     {
@@ -520,6 +537,7 @@ public partial class VistaMesaOnlineMus
         Image img = b.GetComponent<Image>();
         img.sprite = SpriteUI("boton_" + color, 22);
         b.spriteState = new SpriteState { pressedSprite = SpriteUI("boton_" + color + "_pulsado", 22) };
+        AjustarTextoBoton(b, color);
         t.text = texto;
     }
 

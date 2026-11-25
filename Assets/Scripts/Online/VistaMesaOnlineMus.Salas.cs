@@ -15,6 +15,7 @@ public partial class VistaMesaOnlineMus
         Image img = b.GetComponent<Image>();
         img.sprite = SpriteUI("boton_" + color, 22);
         b.spriteState = new SpriteState { pressedSprite = SpriteUI("boton_" + color + "_pulsado", 22) };
+        AjustarTextoBoton(b, color);
     }
 
     // Boton SALIR de la sala (antes de empezar la partida) y SALIR AL MENU al acabar.

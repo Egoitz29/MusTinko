@@ -20,6 +20,7 @@ public partial class VistaMesaOnlineMus
     private Canvas lienzoUI;
     private RectTransform raizUI;
     private TMP_FontAsset fuenteTitulos;
+    private TMP_FontAsset fuenteTextos;
     private readonly Dictionary<string, Sprite> spritesUI = new();
 
     private GameObject grupoHud;
@@ -61,7 +62,10 @@ public partial class VistaMesaOnlineMus
     private void CrearInterfaz()
     {
         conexion = FindFirstObjectByType<PruebaConexionMus>();
-        fuenteTitulos = CargarFuente("UI_Tinko/Fuentes/PirataOne-Regular");
+        // Estilo baraja: titulos en letra de cartel (Alfa Slab One) y textos en Bitter.
+        // Si faltan los archivos se vuelve a la letra de antes.
+        fuenteTitulos = CargarFuente("UI_Tinko/Fuentes/AlfaSlabOne-Regular") ?? CargarFuente("UI_Tinko/Fuentes/PirataOne-Regular");
+        fuenteTextos = CargarFuente("UI_Tinko/Fuentes/Bitter-Regular");
 
         GameObject go = new("InterfazTinko", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         lienzoUI = go.GetComponent<Canvas>();
@@ -286,7 +290,13 @@ public partial class VistaMesaOnlineMus
 
         try
         {
-            return TMP_FontAsset.CreateFontAsset(fuente);
+            TMP_FontAsset asset = TMP_FontAsset.CreateFontAsset(fuente);
+
+            // Si a la letra le falta algun simbolo, se usa la de TextMeshPro de siempre.
+            if (asset != null && TMP_Settings.defaultFontAsset != null)
+                asset.fallbackFontAssetTable = new List<TMP_FontAsset> { TMP_Settings.defaultFontAsset };
+
+            return asset;
         }
         catch (Exception e)
         {
@@ -360,6 +370,8 @@ public partial class VistaMesaOnlineMus
 
         if (titulo && fuenteTitulos != null)
             t.font = fuenteTitulos;
+        else if (!titulo && fuenteTextos != null)
+            t.font = fuenteTextos;
 
         t.text = texto;
         t.fontSize = tamano;
@@ -405,7 +417,22 @@ public partial class VistaMesaOnlineMus
         t.enableAutoSizing = true;
         t.fontSizeMin = 14;
         t.fontSizeMax = tamanoTexto;
+        AjustarTextoBoton(b, color);
         return b;
+    }
+
+    // Los botones "gris" son ahora de papel claro: llevan la letra en tinta y sin contorno.
+    // Hay que llamarlo cada vez que un boton cambia de color.
+    private static void AjustarTextoBoton(Button b, string color)
+    {
+        TextMeshProUGUI t = b.GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (t == null)
+            return;
+
+        bool papel = color == "gris";
+        t.color = papel ? Tinta : Crema;
+        t.outlineWidth = papel ? 0f : 0.18f;
     }
 
     private void CrearHud()
@@ -446,7 +473,7 @@ public partial class VistaMesaOnlineMus
         txtAyuda = Texto(cajaAyuda.transform, "", 21, Crema);
         GameObject sena = new("AvisoSena", typeof(RectTransform));
         Rect(sena, raizUI, new Vector2(0.5f, 1f), new Vector2(0, -298), new Vector2(900, 44));
-        txtAvisoSena = Texto(sena.transform, "", 28, new Color(0.88f, 0.78f, 1f));
+        txtAvisoSena = Texto(sena.transform, "", 28, new Color(1f, 0.85f, 0.45f));
     }
 
     private Image Barra(Transform padre, Vector2 pos, string relleno)
@@ -473,25 +500,49 @@ public partial class VistaMesaOnlineMus
 
     private void CrearAcciones()
     {
-        barraAcciones = new GameObject("Acciones", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        Rect(barraAcciones, raizUI, new Vector2(0.5f, 0f), new Vector2(0, 28), new Vector2(1500, 110));
-        HorizontalLayoutGroup h = barraAcciones.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = 14;
+        // Los botones van sobre una hoja de papel que se ajusta a los que haya en cada momento.
+        barraAcciones = Panel("Acciones", raizUI, "panel_pergamino", new Vector2(0.5f, 0f), new Vector2(0, 24), new Vector2(1500, 116));
+        barraAcciones.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0f);
+        HorizontalLayoutGroup h = barraAcciones.AddComponent<HorizontalLayoutGroup>();
+        h.padding = new RectOffset(22, 22, 14, 14);
+        h.spacing = 12;
         h.childAlignment = TextAnchor.MiddleCenter;
         h.childControlWidth = h.childControlHeight = true;
         h.childForceExpandWidth = h.childForceExpandHeight = false;
+        barraAcciones.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+        // Tinta = lo principal, papel = lo secundario, ocre = envidar, rojo = solo el ordago.
         Vector2 t = new(200, 88);
-        botonesAccion[TipoAccionMus.Mus] = Boton(barraAcciones.transform, "verde", "MUS", t, () => Pedir(AccionMus.Mus));
-        botonesAccion[TipoAccionMus.NoHayMus] = Boton(barraAcciones.transform, "rojo", "NO HAY MUS", t, () => Pedir(AccionMus.NoHayMus));
-        botonesAccion[TipoAccionMus.Descartar] = Boton(barraAcciones.transform, "azul", "DESCARTAR", t, Descartar);
-        botonesAccion[TipoAccionMus.Pasar] = Boton(barraAcciones.transform, "gris", "PASO", t, () => Pedir(AccionMus.Pasar));
+        botonesAccion[TipoAccionMus.Mus] = Boton(barraAcciones.transform, "verde", "Mus", t, () => Pedir(AccionMus.Mus), 34);
+        botonesAccion[TipoAccionMus.NoHayMus] = Boton(barraAcciones.transform, "gris", "No hay mus", t, () => Pedir(AccionMus.NoHayMus));
+        botonesAccion[TipoAccionMus.Descartar] = Boton(barraAcciones.transform, "verde", "Descartar", t, Descartar);
+        botonesAccion[TipoAccionMus.Pasar] = Boton(barraAcciones.transform, "gris", "Paso", t, () => Pedir(AccionMus.Pasar));
         // Envites libres: abren un selector para elegir cuantos tantos.
-        botonesAccion[TipoAccionMus.Envidar] = Boton(barraAcciones.transform, "naranja", "ENVIDO...", t, () => AbrirSelectorEnvite(false));
-        botonesAccion[TipoAccionMus.Reenvidar] = Boton(barraAcciones.transform, "naranja", "SUBIR...", t, () => AbrirSelectorEnvite(true));
-        botonesAccion[TipoAccionMus.Quiero] = Boton(barraAcciones.transform, "verde", "QUIERO", t, () => Pedir(AccionMus.Quiero));
-        botonesAccion[TipoAccionMus.NoQuiero] = Boton(barraAcciones.transform, "rojo", "NO QUIERO", t, () => Pedir(AccionMus.NoQuiero));
-        botonesAccion[TipoAccionMus.Ordago] = Boton(barraAcciones.transform, "dorado", "ORDAGO", t, () => Pedir(AccionMus.Ordago));
+        botonesAccion[TipoAccionMus.Envidar] = Boton(barraAcciones.transform, "naranja", "Envido...", t, () => AbrirSelectorEnvite(false));
+        botonesAccion[TipoAccionMus.Reenvidar] = Boton(barraAcciones.transform, "naranja", "Subir...", t, () => AbrirSelectorEnvite(true));
+        botonesAccion[TipoAccionMus.Quiero] = Boton(barraAcciones.transform, "verde", "Quiero", t, () => Pedir(AccionMus.Quiero), 34);
+        botonesAccion[TipoAccionMus.NoQuiero] = Boton(barraAcciones.transform, "gris", "No quiero", t, () => Pedir(AccionMus.NoQuiero));
+        botonesAccion[TipoAccionMus.Ordago] = Boton(barraAcciones.transform, "rojo", "Órdago", new Vector2(240, 88), () => Pedir(AccionMus.Ordago), 38);
+
+        // El ordago, separado del resto y con la letra de cartel.
+        Button ordago = botonesAccion[TipoAccionMus.Ordago];
+        ordago.GetComponent<LayoutElement>().minWidth = 240;
+        TextMeshProUGUI txtOrdago = ordago.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (fuenteTitulos != null)
+            txtOrdago.font = fuenteTitulos;
+        txtOrdago.fontStyle = FontStyles.Normal;
+        GameObject hueco = new("Separacion", typeof(RectTransform), typeof(LayoutElement));
+        hueco.transform.SetParent(barraAcciones.transform, false);
+        hueco.GetComponent<LayoutElement>().preferredWidth = 18;
+        hueco.transform.SetSiblingIndex(ordago.transform.GetSiblingIndex());
+
+        foreach (TipoAccionMus tipo in new[] { TipoAccionMus.Mus, TipoAccionMus.Quiero })
+        {
+            TextMeshProUGUI tt = botonesAccion[tipo].GetComponentInChildren<TextMeshProUGUI>(true);
+            if (fuenteTitulos != null)
+                tt.font = fuenteTitulos;
+            tt.fontStyle = FontStyles.Normal;
+        }
     }
 
     private void CrearPanelSenas()
@@ -510,7 +561,7 @@ public partial class VistaMesaOnlineMus
         GameObject titulo = new("Titulo", typeof(RectTransform), typeof(LayoutElement));
         titulo.transform.SetParent(panelSenasUI.transform, false);
         titulo.GetComponent<LayoutElement>().preferredHeight = 36;
-        Texto(titulo.transform, "SENAS", 30, Oro, true);
+        Texto(titulo.transform, "Señas", 30, Oro, true);
 
         GameObject info = new("Info", typeof(RectTransform), typeof(LayoutElement));
         info.transform.SetParent(panelSenasUI.transform, false);
