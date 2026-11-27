@@ -123,7 +123,7 @@ public class ReveladorManosMus : MonoBehaviour
                     desplazamiento * separacionVertical
                 );
 
-            // Nuestro compaÒero enfrente.
+            // Nuestro compa√±ero enfrente.
             case 2:
                 return new Vector3(
                     desplazamiento * separacionHorizontal,
@@ -217,10 +217,10 @@ public class ReveladorManosMus : MonoBehaviour
 
         texto.text = contenido;
 
-        // TamaÒo de letra para las cartas 3D
+        // Tama√±o de letra para las cartas 3D
         texto.fontSize = 15f;
 
-        // Impedimos que Unity reduzca autom·ticamente
+        // Impedimos que Unity reduzca autom√°ticamente
         // las letras al ajustar el texto.
         texto.enableAutoSizing = false;
 
@@ -231,7 +231,7 @@ public class ReveladorManosMus : MonoBehaviour
         // Color negro
         texto.color = Color.black;
 
-        // ¡rea disponible para el texto
+        // √Årea disponible para el texto
         texto.rectTransform.sizeDelta =
             new Vector2(9f, 10f);
 

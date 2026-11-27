@@ -55,7 +55,7 @@ public class MarcadorMus : MonoBehaviour
     [SerializeField] private int puntos13;
 
     // Negadas ya cobradas durante la mano actual.
-    // Nos servirán para el resumen final.
+    // Nos servirÃ¡n para el resumen final.
     private int negadasMano02;
     private int negadasMano13;
 
@@ -164,7 +164,7 @@ public class MarcadorMus : MonoBehaviour
 
             default:
                 Debug.LogWarning(
-                    "El envite todavía no está resuelto."
+                    "El envite todavÃ­a no estÃ¡ resuelto."
                 );
                 return;
         }
@@ -245,8 +245,8 @@ public class MarcadorMus : MonoBehaviour
                 : -1;
 
             // Si se rechaza una apuesta, gana el
-            // lance la pareja que realizó el
-            // último envite.
+            // lance la pareja que realizÃ³ el
+            // Ãºltimo envite.
 
 
             if (registro.tipo ==
@@ -397,7 +397,7 @@ public class MarcadorMus : MonoBehaviour
     }
 
     // =========================================
-    // RESOLVER ÓRDAGO ACEPTADO
+    // RESOLVER Ã“RDAGO ACEPTADO
     // =========================================
 
     public int ResolverOrdagoAceptado(
@@ -423,7 +423,7 @@ public class MarcadorMus : MonoBehaviour
         if (ganador < 0)
         {
             Debug.LogError(
-                "No hay ganador válido para este órdago."
+                "No hay ganador vÃ¡lido para este Ã³rdago."
             );
             return -1;
         }
@@ -436,7 +436,7 @@ public class MarcadorMus : MonoBehaviour
         manoContabilizada = true;
 
         Debug.Log(
-            "¡¡ÓRDAGO ACEPTADO!!\n" +
+            "Â¡Â¡Ã“RDAGO ACEPTADO!!\n" +
             "Lance: " + fase + "\n" +
             "Jugador ganador: " + ganador + "\n" +
             "Pareja ganadora: " +
@@ -497,7 +497,7 @@ public class MarcadorMus : MonoBehaviour
     }
 
     // =========================================
-    // MÉTODOS AUXILIARES
+    // MÃ‰TODOS AUXILIARES
     // =========================================
 
     private EvaluadorManoMus.Resultado[] ObtenerResultados()
@@ -620,7 +620,7 @@ public class MarcadorMus : MonoBehaviour
         motivoVictoria = "Victoria por tantos: " + motivo;
 
         Debug.Log(
-            "¡FIN DEL JUEGO POR TANTOS! Ganadora pareja " +
+            "Â¡FIN DEL JUEGO POR TANTOS! Ganadora pareja " +
             (parejaGanadoraJuego == 0 ? "0-2" : "1-3") +
             ". Limite: " + limiteTantos +
             ". Motivo: " + motivo
@@ -638,11 +638,11 @@ public class MarcadorMus : MonoBehaviour
         if (juegoTerminado)
         {
             string ganador = parejaGanadoraJuego == 0
-                ? "¡TU PAREJA GANA EL JUEGO!"
-                : "¡LOS RIVALES GANAN EL JUEGO!";
+                ? "Â¡TU PAREJA GANA EL JUEGO!"
+                : "Â¡LOS RIVALES GANAN EL JUEGO!";
 
             textoMarcador.text = ganador +
-                (victoriaPorOrdago ? " (ÓRDAGO)" : "") +
+                (victoriaPorOrdago ? " (Ã“RDAGO)" : "") +
                 "\nTU PAREJA: " + puntos02 +
                 "  |  RIVALES: " + puntos13;
             return;

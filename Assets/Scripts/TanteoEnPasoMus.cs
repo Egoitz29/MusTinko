@@ -78,7 +78,7 @@ public static class TanteoEnPasoMus
             detalle.AppendLine("Pares: nadie tiene pares.");
         }
 
-        // Juego: 31 vale tres; los dem·s juegos, dos.
+        // Juego: 31 vale tres; los dem√°s juegos, dos.
         // Si no hay juego, Punto vale uno.
         if (hayJuego)
         {

@@ -10,7 +10,7 @@ public class ControlDescarte : MonoBehaviour
     {
         if (reparto == null)
         {
-            Debug.LogError("No est· asignado el gestor de reparto.");
+            Debug.LogError("No est√° asignado el gestor de reparto.");
             return;
         }
 

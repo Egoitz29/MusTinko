@@ -3,7 +3,7 @@ using System;
 
 public static class ComparadorLancesMus
 {
-    // Determina quiÈn gana Grande.
+    // Determina qui√©n gana Grande.
     public static int GanadorGrande(
         EvaluadorManoMus.Resultado[] resultados,
         int jugadorMano = 0)
@@ -13,7 +13,7 @@ public static class ComparadorLancesMus
         );
     }
 
-    // Determina quiÈn gana Chica.
+    // Determina qui√©n gana Chica.
     public static int GanadorChica(
         EvaluadorManoMus.Resultado[] resultados,
         int jugadorMano = 0)
@@ -46,7 +46,7 @@ public static class ComparadorLancesMus
         EvaluadorManoMus.Resultado a,
         EvaluadorManoMus.Resultado b)
     {
-        // En Chica gana el valor m·s pequeÒo.
+        // En Chica gana el valor m√°s peque√±o.
         for (int i = 0; i < 4; i++)
         {
             int valorA = a.RangosOrdenados[i];
@@ -85,7 +85,7 @@ public static class ComparadorLancesMus
         {
             if (resultado == null)
                 throw new ArgumentException(
-                    "Falta una evaluaciÛn de jugador."
+                    "Falta una evaluaci√≥n de jugador."
                 );
         }
 
@@ -105,7 +105,7 @@ public static class ComparadorLancesMus
         }
 
         // En caso de empate, conserva prioridad
-        // quien est· antes en el orden de mano.
+        // quien est√° antes en el orden de mano.
         return ganador;
     }
 
@@ -134,7 +134,7 @@ public static class ComparadorLancesMus
         EvaluadorManoMus.Resultado a,
         EvaluadorManoMus.Resultado b)
     {
-        // Primero comparamos la categorÌa:
+        // Primero comparamos la categor√≠a:
         // Duples > Medias > Par > Sin pares.
         int diferencia = a.Pares.CompareTo(b.Pares);
 
@@ -161,7 +161,7 @@ public static class ComparadorLancesMus
             case EvaluadorManoMus.TipoPares.Medias:
 
                 // En unas medias el rango de la
-                // posiciÛn 1 siempre pertenece al trÌo.
+                // posici√≥n 1 siempre pertenece al tr√≠o.
                 return a.RangosOrdenados[1].CompareTo(
                     b.RangosOrdenados[1]
                 );
@@ -210,7 +210,7 @@ public static class ComparadorLancesMus
         {
             if (resultado == null)
                 throw new ArgumentException(
-                    "Falta una evaluaciÛn de jugador."
+                    "Falta una evaluaci√≥n de jugador."
                 );
 
             if (resultado.TieneJuego)
@@ -229,7 +229,7 @@ public static class ComparadorLancesMus
             );
         }
 
-        // Si nadie tiene Juego, gana el Punto m·s alto.
+        // Si nadie tiene Juego, gana el Punto m√°s alto.
         return BuscarGanador(
             resultados,
             jugadorMano,

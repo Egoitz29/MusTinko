@@ -78,7 +78,7 @@ public static class EvaluadorManoMus
         for (int i = 0; i < 4; i++)
         {
             if (string.IsNullOrWhiteSpace(mano[i]))
-                throw new ArgumentException("Carta vacía.");
+                throw new ArgumentException("Carta vacÃ­a.");
 
             // Formato actual: "REY\nOROS"
             string valor = mano[i]

@@ -15,9 +15,9 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
     [Range(0, 3)]
     [SerializeField] private int posicionCarta = 0;
 
-    // El PNG Cartas_Tatú.png debe estar en Assets/Resources/Baraja/.
+    // El PNG Cartas_TatÃº.png debe estar en Assets/Resources/Baraja/.
     // Ya debe estar cortado en 40 sprites (Multiple, 10 x 4).
-    [Header("Baraja en Resources (Cartas_Tinko = nueva, Cartas_Tatú = antigua)")]
+    [Header("Baraja en Resources (Cartas_Tinko = nueva, Cartas_TatÃº = antigua)")]
     [SerializeField] private string rutaBaraja = "Baraja/Cartas_Tinko";
 
     private readonly Sprite[] spritesPorIndice = new Sprite[40];
@@ -32,7 +32,7 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
         Sprite[] sprites = Resources.LoadAll<Sprite>(rutaBaraja);
         foreach (Sprite sprite in sprites)
         {
-            // Unity crea nombres como Cartas_Tatú_0 ... Cartas_Tatú_39.
+            // Unity crea nombres como Cartas_TatÃº_0 ... Cartas_TatÃº_39.
             int separador = sprite.name.LastIndexOf('_');
             if (separador < 0 ||
                 !int.TryParse(sprite.name.Substring(separador + 1), out int indice) ||
@@ -108,7 +108,7 @@ public class DibujoCartaAutomaticoMus : MonoBehaviour
             default: return false;
         }
 
-        // Orden de las filas de Cartas_Tatú tal como se ve en Unity.
+        // Orden de las filas de Cartas_TatÃº tal como se ve en Unity.
         int fila;
         switch (palo)
         {

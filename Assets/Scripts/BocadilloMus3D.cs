@@ -29,7 +29,7 @@ public class BocadilloMus3D : MonoBehaviour
         Ocultar();
 
         if (probarAlIniciar)
-            Mostrar("¡ENVIDO 2!");
+            Mostrar("Â¡ENVIDO 2!");
     }
 
     // Mensaje temporal: desaparece solo.

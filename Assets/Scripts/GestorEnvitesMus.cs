@@ -63,7 +63,7 @@ public class GestorEnvitesMus : MonoBehaviour
 
     private readonly string[] nombresJugadores =
     {
-        "T⁄", "RIVAL DERECHO", "COMPA—ERO", "RIVAL IZQUIERDO"
+        "T√ö", "RIVAL DERECHO", "COMPA√ëERO", "RIVAL IZQUIERDO"
     };
 
     public bool LanceCerrado =>
@@ -157,9 +157,9 @@ public class GestorEnvitesMus : MonoBehaviour
                 : manos[jugador].TieneJuego;
 
             string mensaje = nombresJugadores[jugador] + ": " + lance +
-                             (tiene ? " SÕ" : " NO");
+                             (tiene ? " S√ç" : " NO");
             MostrarAnuncio(mensaje);
-            MostrarBocadillo(jugador, lance + (tiene ? " SÕ" : " NO"));
+            MostrarBocadillo(jugador, lance + (tiene ? " S√ç" : " NO"));
             Debug.Log(mensaje);
             yield return new WaitForSeconds(tiempoEntreAnuncios);
         }
@@ -247,7 +247,7 @@ public class GestorEnvitesMus : MonoBehaviour
         string mensaje = nombresJugadores[jugador] +
             (respondiendo ? ": RESPONDE AL ENVITE" : ": PUEDE PASAR O ENVIDAR");
         if (turnos.Motor.Estado == MotorEnvitesMus.EstadoEnvite.OrdagoPendiente)
-            mensaje = nombresJugadores[jugador] + ": RESPONDE AL ”RDAGO";
+            mensaje = nombresJugadores[jugador] + ": RESPONDE AL √ìRDAGO";
 
         MostrarAnuncio(mensaje);
         Debug.Log("TURNO DE " + nombresJugadores[jugador] +
@@ -302,7 +302,7 @@ public class GestorEnvitesMus : MonoBehaviour
             if (reenvida)
             {
                 resultado = turnos.Reenvidar(jugador);
-                accion = "REENVIDA 2 M¡S";
+                accion = "REENVIDA 2 M√ÅS";
             }
             else
             {
@@ -363,7 +363,7 @@ public class GestorEnvitesMus : MonoBehaviour
     public void Pasar()
     {
         if (!EsTurnoHumano() || !turnos.Pasar(0)) return;
-        Debug.Log("T⁄ PASAS.");
+        Debug.Log("T√ö PASAS.");
         RegistrarAccionVisual(0, "PASA");
         ProcesarSiguienteTurno();
     }
@@ -371,7 +371,7 @@ public class GestorEnvitesMus : MonoBehaviour
     public void Envidar()
     {
         if (!EsTurnoHumano() || !turnos.Envidar(0)) return;
-        Debug.Log("T⁄ ENVIDAS 2.");
+        Debug.Log("T√ö ENVIDAS 2.");
         RegistrarAccionVisual(0, "ENVIDA 2");
         ProcesarSiguienteTurno();
     }
@@ -379,7 +379,7 @@ public class GestorEnvitesMus : MonoBehaviour
     public void Quiero()
     {
         if (!EsTurnoHumano() || !turnos.Quiero(0)) return;
-        Debug.Log("T⁄ DICES QUIERO.");
+        Debug.Log("T√ö DICES QUIERO.");
         RegistrarAccionVisual(0, "DICE QUIERO");
         ProcesarSiguienteTurno();
     }
@@ -387,7 +387,7 @@ public class GestorEnvitesMus : MonoBehaviour
     public void NoQuiero()
     {
         if (!EsTurnoHumano() || !turnos.NoQuiero(0)) return;
-        Debug.Log("T⁄ DICES NO QUIERO (POR MI PARTE).");
+        Debug.Log("T√ö DICES NO QUIERO (POR MI PARTE).");
         RegistrarAccionVisual(0, "DICE NO QUIERO (POR MI PARTE)");
         ProcesarSiguienteTurno();
     }
@@ -395,16 +395,16 @@ public class GestorEnvitesMus : MonoBehaviour
     public void Mas()
     {
         if (!EsTurnoHumano() || !turnos.Reenvidar(0)) return;
-        Debug.Log("T⁄ REENVIDAS 2 M¡S. TOTAL: " + turnos.Motor.TantosApostados);
-        RegistrarAccionVisual(0, "REENVIDA 2 M¡S");
+        Debug.Log("T√ö REENVIDAS 2 M√ÅS. TOTAL: " + turnos.Motor.TantosApostados);
+        RegistrarAccionVisual(0, "REENVIDA 2 M√ÅS");
         ProcesarSiguienteTurno();
     }
 
     public void Ordago()
     {
         if (!EsTurnoHumano() || !turnos.LanzarOrdago(0)) return;
-        Debug.Log("T⁄ LANZAS ”RDAGO.");
-        RegistrarAccionVisual(0, "LANZA ”RDAGO");
+        Debug.Log("T√ö LANZAS √ìRDAGO.");
+        RegistrarAccionVisual(0, "LANZA √ìRDAGO");
         ProcesarSiguienteTurno();
     }
 
@@ -442,7 +442,7 @@ public class GestorEnvitesMus : MonoBehaviour
                           " pareja " + motor.ParejaGanadoraNegada + ".");
                 break;
             case MotorEnvitesMus.EstadoEnvite.OrdagoAceptado:
-                Debug.Log("”RDAGO ACEPTADO. Se resuelve el juego.");
+                Debug.Log("√ìRDAGO ACEPTADO. Se resuelve el juego.");
                 break;
         }
 
@@ -488,7 +488,7 @@ public class GestorEnvitesMus : MonoBehaviour
             if (turnos.Motor.Estado == MotorEnvitesMus.EstadoEnvite.PendienteRespuesta)
                 apuesta = "ENVITE ACTUAL: " + turnos.Motor.TantosApostados + " tantos";
             else if (turnos.Motor.Estado == MotorEnvitesMus.EstadoEnvite.OrdagoPendiente)
-                apuesta = "°”RDAGO PENDIENTE!";
+                apuesta = "¬°√ìRDAGO PENDIENTE!";
         }
 
         string contenido = string.IsNullOrEmpty(pendientes)
@@ -502,8 +502,8 @@ public class GestorEnvitesMus : MonoBehaviour
     private void RegistrarAccionVisual(int jugador, string accion)
     {
         if (accion == "ENVIDA 2" ||
-            accion == "REENVIDA 2 M¡S" ||
-            accion == "LANZA ”RDAGO")
+            accion == "REENVIDA 2 M√ÅS" ||
+            accion == "LANZA √ìRDAGO")
         {
             OcultarTodosLosBocadillos();
         }
@@ -544,11 +544,11 @@ public class GestorEnvitesMus : MonoBehaviour
         switch (accion)
         {
             case "PASA": return "PASO";
-            case "ENVIDA 2": return "°ENVIDO 2!";
+            case "ENVIDA 2": return "¬°ENVIDO 2!";
             case "DICE QUIERO": return "QUIERO";
             case "DICE NO QUIERO (POR MI PARTE)": return "NO QUIERO";
-            case "REENVIDA 2 M¡S": return "°M¡S 2!";
-            case "LANZA ”RDAGO": return "°”RDAGO!";
+            case "REENVIDA 2 M√ÅS": return "¬°M√ÅS 2!";
+            case "LANZA √ìRDAGO": return "¬°√ìRDAGO!";
             default: return accion;
         }
     }

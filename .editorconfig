@@ -1,0 +1,9 @@
+# Mantiene todos los scripts en UTF-8 para que tildes y eñes
+# se vean igual en cualquier equipo (Windows, Mac o servidor de builds).
+root = true
+
+[*.cs]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true

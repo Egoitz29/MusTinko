@@ -35,8 +35,8 @@ public class PantallaVictoriaMus : MonoBehaviour
             if (textoTitulo != null)
             {
                 textoTitulo.text = marcador.ParejaGanadoraJuego == 0
-                    ? "¡VICTORIA DE TU PAREJA!"
-                    : "¡VICTORIA DE LOS RIVALES!";
+                    ? "Â¡VICTORIA DE TU PAREJA!"
+                    : "Â¡VICTORIA DE LOS RIVALES!";
             }
 
             if (textoDetalle != null)

@@ -15,7 +15,7 @@ public class IAEnvitesPorSenalesMus : MonoBehaviour
     private ReceptorSenalesMus[] receptores =
         new ReceptorSenalesMus[4];
 
-    [Header("Influencia de las señas")]
+    [Header("Influencia de las seÃ±as")]
     [Range(0f, 0.5f)]
     [SerializeField] private float aumentoEnvidar = 0.25f;
 
@@ -97,7 +97,7 @@ public class IAEnvitesPorSenalesMus : MonoBehaviour
         return receptor.ConoceSenal(tipo);
     }
 
-    [ContextMenu("Diagnosticar influencia de señas")]
+    [ContextMenu("Diagnosticar influencia de seÃ±as")]
     private void Diagnosticar()
     {
         if (!Application.isPlaying)
