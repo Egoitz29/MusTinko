@@ -45,7 +45,8 @@ public class PartidaMus
     private int turnoDescarte;
     private int descartesHechos;
 
-    public int Limite { get; }
+    public ReglasPartidaMus Reglas { get; }
+    public int Limite => Reglas.Limite;
     public int MaxRondasMus { get; }
     public int TantosEnvite { get; set; } = 2;
 
@@ -89,10 +90,16 @@ public class PartidaMus
     public bool LeMira(int observador, int observado) => !SenasRequierenMirada || mirando[observador] == observado;
 
     public PartidaMus(int semilla, int limite = 40, int maxRondasMus = 0)
+        : this(semilla, new ReglasPartidaMus { Limite = limite }, maxRondasMus)
+    {
+    }
+
+    public PartidaMus(int semilla, ReglasPartidaMus reglas, int maxRondasMus = 0)
     {
         azar = new Random(semilla);
         baraja = new BarajaMus(azar);
-        Limite = Math.Max(1, limite);
+        Reglas = (reglas ?? new ReglasPartidaMus()).Copia();
+        Reglas.Limite = Math.Max(1, Reglas.Limite);
         MaxRondasMus = Math.Max(0, maxRondasMus);
     }
 
@@ -676,7 +683,7 @@ public class PartidaMus
             case 0: return ComparadorLancesMus.GanadorGrande(evaluaciones, Mano);
             case 1: return ComparadorLancesMus.GanadorChica(evaluaciones, Mano);
             case 2: return ComparadorLancesMus.GanadorPares(evaluaciones, Mano);
-            case 3: return ComparadorLancesMus.GanadorJuegoPunto(evaluaciones, out hayJuego, Mano);
+            case 3: return ComparadorLancesMus.GanadorJuegoPunto(evaluaciones, out hayJuego, Mano, Reglas.LaReal);
             default: return -1;
         }
     }

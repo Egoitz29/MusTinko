@@ -299,6 +299,33 @@ public static class PruebasNucleoMus
         Comprobar(log, SumaLance(nt, 3, 0, TipoConceptoMus.Punto) == 1 && SumaLance(nt, 3, 1, TipoConceptoMus.Punto) == 0,
             "Punto no querido: quien envida cobra deje + el tanto del punto y el rival nada");
 
+        log("== Regla callejera: la Real ==");
+        int[] treintaYUnaNormal = { C("SOTA", "OROS"), C("CABALLO", "OROS"), C("7", "OROS"), C("4", "OROS") };
+        int[] real = { C("7", "COPAS"), C("7", "ESPADAS"), C("7", "BASTOS"), C("SOTA", "COPAS") };
+        int[] sinJuego = { C("AS", "OROS"), C("4", "COPAS"), C("5", "COPAS"), C("6", "COPAS") };
+        int[] sinJuego2 = { C("AS", "BASTOS"), C("4", "ESPADAS"), C("5", "ESPADAS"), C("6", "ESPADAS") };
+        EvaluadorManoMus.Resultado[] evReal =
+        {
+            CartasMus.Evaluar(treintaYUnaNormal), CartasMus.Evaluar(real),
+            CartasMus.Evaluar(sinJuego), CartasMus.Evaluar(sinJuego2)
+        };
+        Comprobar(log, evReal[1].EsReal && !evReal[0].EsReal && evReal[1].PuntosJuego == 31, "Tres sietes y sota es la Real (31)");
+        Comprobar(log, ComparadorLancesMus.GanadorJuegoPunto(evReal, out _, 0) == 0,
+            "Sin la Real, dos 31 empatan y gana el mano (jugador 0)");
+        Comprobar(log, ComparadorLancesMus.GanadorJuegoPunto(evReal, out _, 0, true) == 1,
+            "Con la Real, el 31 de tres sietes y sota gana al 31 del mano");
+
+        ReglasPartidaMus conReal = new() { LaReal = true };
+        PartidaMus pReal = new(3, conReal);
+        pReal.IniciarPartida();
+        pReal.PrepararManosFijas(new[] { treintaYUnaNormal, real, sinJuego, sinJuego2 });
+        pReal.Aplicar(0, AccionMus.NoHayMus);
+        while (PartidaMus.EsLance(pReal.Fase)) pReal.Aplicar(pReal.JugadorActual, AccionMus.Pasar);
+        Comprobar(log, SumaLance(pReal, 3, 1, TipoConceptoMus.Juego) == 3 && SumaLance(pReal, 3, 0, TipoConceptoMus.Juego) == 0,
+            "En la partida con la Real, el juego (3 tantos) se lo lleva la pareja de la Real");
+        Comprobar(log, new PartidaMus(1).Reglas.Limite == 40 && !new PartidaMus(1).Reglas.LaReal && new PartidaMus(1, 30).Limite == 30,
+            "Por defecto: 40 tantos y sin reglas callejeras; se puede jugar a 30");
+
         log("== Senales ==");
         PartidaMus sn = ManoFija(
             new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },

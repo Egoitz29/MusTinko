@@ -196,7 +196,8 @@ public static class ComparadorLancesMus
     public static int GanadorJuegoPunto(
         EvaluadorManoMus.Resultado[] resultados,
         out bool hayJuego,
-        int jugadorMano = 0)
+        int jugadorMano = 0,
+        bool laReal = false)
     {
         if (resultados == null || resultados.Length != 4)
             throw new ArgumentException(
@@ -221,11 +222,12 @@ public static class ComparadorLancesMus
         {
             // En Juego utilizamos el orden especial:
             // 31 > 32 > 40 > 37 > 36 > 35 > 34 > 33.
+            // Con La Real activada, el 31 de tres sietes y sota gana a cualquier otro 31.
             return BuscarGanador(
                 resultados,
                 jugadorMano,
-                (a, b) => PrioridadJuego(a.PuntosJuego)
-                    .CompareTo(PrioridadJuego(b.PuntosJuego))
+                (a, b) => PrioridadJuego(a, laReal)
+                    .CompareTo(PrioridadJuego(b, laReal))
             );
         }
 
@@ -237,9 +239,12 @@ public static class ComparadorLancesMus
         );
     }
 
-    private static int PrioridadJuego(int puntos)
+    private static int PrioridadJuego(EvaluadorManoMus.Resultado resultado, bool laReal)
     {
-        switch (puntos)
+        if (laReal && resultado.EsReal)
+            return 9;
+
+        switch (resultado.PuntosJuego)
         {
             case 31: return 8;
             case 32: return 7;

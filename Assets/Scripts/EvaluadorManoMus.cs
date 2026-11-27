@@ -32,6 +32,20 @@ public static class EvaluadorManoMus
 
         public bool TieneJuego => PuntosJuego >= 31;
 
+        // La Real (regla callejera opcional): 31 hecho con tres sietes y una sota.
+        public bool EsReal => PuntosJuego == 31 && Contar(5) == 3 && Contar(6) == 1;
+
+        private int Contar(int rango)
+        {
+            int cuenta = 0;
+
+            foreach (int r in RangosOrdenados)
+                if (r == rango)
+                    cuenta++;
+
+            return cuenta;
+        }
+
         public Resultado(
             int[] rangos,
             TipoPares pares,
