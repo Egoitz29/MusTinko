@@ -345,10 +345,9 @@ public partial class VistaMesaOnlineMus
             }, out _);
         CrearTarjetaModo(p, 565, 196, "Salas por Internet", "Entra en una mesa abierta o crea la tuya. Minimo 2 personas; el resto, bots.",
             "rojo", "VER SALAS", () => IrA(PantallaMenu.Salas), out txtSalasAbiertas);
-        CrearTarjetaModo(p, 0, 466, "Con amigos", "Invita a tus amigos a tu mesa o unete a la suya.",
-            "morado", "AMIGOS", () => IrA(PantallaMenu.Amigos), out _);
-        CrearTarjetaModo(p, 565, 466, "Misma WiFi", "Para jugar con quien tienes al lado, aunque no haya Internet.",
-            "azul", "ABRIR", () => IrA(PantallaMenu.Wifi), out _);
+        // "Misma WiFi" fuera del menu por ahora: se juega por salas de Internet (la pantalla sigue en el codigo).
+        CrearTarjetaModo(p, 0, 466, "Con amigos", "Invita a tus amigos a tu mesa o unete a la suya. Pasales tu codigo de amigo desde AMIGOS.",
+            "morado", "AMIGOS", () => IrA(PantallaMenu.Amigos), out _, 1110);
 
         RectTransform reto = Caja("Reto", p, 0, 736, 1110, 112, "panel_pergamino");
         Letra(reto, 28, 14, 760, 40, "Reto de la semana: gana " + PerfilMus.RetoVictorias + " partidas", 28, Tinta, false, TextAlignmentOptions.MidlineLeft, false)
@@ -377,15 +376,15 @@ public partial class VistaMesaOnlineMus
     }
 
     private void CrearTarjetaModo(Transform padre, float x, float y, string titulo, string texto, string color, string boton, UnityAction accion,
-        out TextMeshProUGUI extra)
+        out TextMeshProUGUI extra, float ancho = 545)
     {
-        // Cada modo es un naipe de papel, un poco girado, como una mano de cuatro cartas.
-        RectTransform c = Caja("Modo_" + titulo, padre, x, y, 545, 250, "panel_pergamino");
-        float giro = (x < 100f ? -1.2f : 1.2f) * (y < 300f ? 1f : -1f);
+        // Cada modo es un naipe de papel, un poco girado, como una mano de cartas.
+        RectTransform c = Caja("Modo_" + titulo, padre, x, y, ancho, 250, "panel_pergamino");
+        float giro = ancho > 600f ? -0.6f : (x < 100f ? -1.2f : 1.2f) * (y < 300f ? 1f : -1f);
         c.localRotation = Quaternion.Euler(0f, 0f, giro);
         Color tintaSuave = new(0.35f, 0.27f, 0.2f);
-        Letra(c, 28, 20, 489, 60, titulo, 44, Tinta, true, TextAlignmentOptions.TopLeft, false);
-        Letra(c, 28, 80, 489, 72, texto, 24, tintaSuave, false, TextAlignmentOptions.TopLeft, false);
+        Letra(c, 28, 20, ancho - 100, 60, titulo, 44, Tinta, true, TextAlignmentOptions.TopLeft, false);
+        Letra(c, 28, 80, ancho - 56, 72, texto, 24, tintaSuave, false, TextAlignmentOptions.TopLeft, false);
         BotonEn(c, 28, 158, 290, 70, color, boton, accion, 28);
         extra = Letra(c, 330, 168, 190, 50, "", 22, Tinta, false, TextAlignmentOptions.MidlineLeft, false);
 
@@ -432,7 +431,7 @@ public partial class VistaMesaOnlineMus
     {
         string nombre = string.IsNullOrWhiteSpace(NombreLocal) ? "jugador" : NombreLocal;
         txtSaludo.text = "¡Kaixo, " + nombre + "!";
-        caraInicio.Fondo.color = ColoresJugadoresMus.Colores[Mathf.Clamp(TaquillaMus.PersonajeMio, 0, 3)];
+        caraInicio.Fondo.color = TaquillaMus.ColorRopaMio;
         caraInicio.Letra.text = Inicial(nombre);
         txtNivelInicio.text = "Nivel " + PerfilMus.Nivel;
         Llenar(barraXpInicio, (float)PerfilMus.XpEnNivel / PerfilMus.XpParaSubir);
@@ -801,7 +800,7 @@ public partial class VistaMesaOnlineMus
         txtXpPerfil = Letra(card, 200, 496, 202, 36, "", 20, CremaApagada, false, TextAlignmentOptions.MidlineRight);
         barraXpPerfil = Barra(card, 28, 538, 374, 22);
         txtParejaPerfil = Letra(card, 28, 574, 374, 72, "", 22, CremaApagada);
-        BotonEn(card, 28, 652, 374, 70, "morado", "CAMBIAR ASPECTO", AbrirTaquilla, 28);
+        BotonEn(card, 28, 652, 374, 70, "morado", "MI PERSONAJE", () => AbrirCreador(false), 28);
         Letra(card, 28, 738, 374, 32, "Tu nombre", 22, Crema).fontStyle = FontStyles.Bold;
         campoNombreUI = Campo(card, new Vector2(0, -774), new Vector2(374, 66), "Escribe tu apodo", NombreLocal);
         campoNombreUI.characterLimit = PartidaOnlineMus.LargoMaximoNombre;
@@ -870,7 +869,7 @@ public partial class VistaMesaOnlineMus
     private void ActualizarPerfil()
     {
         string nombre = string.IsNullOrWhiteSpace(NombreLocal) ? "Sin nombre" : NombreLocal;
-        caraPerfil.Fondo.color = ColoresJugadoresMus.Colores[Mathf.Clamp(TaquillaMus.PersonajeMio, 0, 3)];
+        caraPerfil.Fondo.color = TaquillaMus.ColorRopaMio;
         caraPerfil.Letra.text = Inicial(nombre);
         txtNombrePerfil.text = nombre;
 #if !MUS_TINKO_SIN_INTERNET
@@ -1002,6 +1001,15 @@ public partial class VistaMesaOnlineMus
         campoCodigoAmigo = Campo(anadir, new Vector2(0, -106), new Vector2(374, 66), "Nombre#1234", "");
         BotonEn(anadir, 28, 196, 374, 66, "verde", "ENVIAR SOLICITUD", () =>
         {
+            if (MonederoMus.EsCodigoDesarrollador(campoCodigoAmigo.text))
+            {
+                campoCodigoAmigo.text = "";
+                MostrarAvisoMonedas(MonederoMus.CanjearCodigoDesarrollador()
+                    ? "+" + MonederoMus.Formato(MonederoMus.PremioDesarrollador) + " monedas. ¡A disfrutar!"
+                    : "Ese codigo ya lo has usado.");
+                return;
+            }
+
 #if !MUS_TINKO_SIN_INTERNET
             SocialMus.Instancia.AnadirPorCodigo(campoCodigoAmigo.text);
             campoCodigoAmigo.text = "";

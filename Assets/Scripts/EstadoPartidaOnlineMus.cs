@@ -24,6 +24,10 @@ public class EstadoPartidaOnlineMus : NetworkBehaviour
 
     private void OnGUI()
     {
+        // Panel de pruebas: con la interfaz nueva no se ensena (no debe salir en la build).
+        if (VistaMesaOnlineMus.InterfazNuevaActiva)
+            return;
+
         GUILayout.BeginArea(
             new Rect(20, 250, 350, 150),
             "MUS TINKO - ESTADO COMPARTIDO",

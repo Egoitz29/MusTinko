@@ -84,6 +84,7 @@ public partial class VistaMesaOnlineMus
         CrearRelojes();
         CrearMinimapa();
         CrearPanelSenas();
+        CrearMandoMirada();
         CrearHistorial();
         CrearPanelHost();
         CrearSala();
@@ -1089,9 +1090,10 @@ public partial class VistaMesaOnlineMus
     {
         Color c = ColoresJugadoresMus.ColorDe(puesto) * 0.62f;
         string hex = "#" + ColorUtility.ToHtmlStringRGB(c);
-        string apodo = partida.ClienteEnSitio(puesto) != PartidaOnlineMus.SinCliente ? partida.NombreEnSitio(puesto) : "bot";
-        return "<b><color=" + hex + ">" + ColoresJugadoresMus.Nombres[ColoresJugadoresMus.PersonajeDe(puesto)] + "</color></b>  <size=72%>" +
-               (puesto == local && partida.PuestoLocal >= 0 ? "(tu) " : "") + apodo + "</size>";
+        bool persona = partida.ClienteEnSitio(puesto) != PartidaOnlineMus.SinCliente;
+        string nombre = persona ? partida.NombreEnSitio(puesto) : ColoresJugadoresMus.Nombres[ColoresJugadoresMus.PersonajeDe(puesto)];
+        return "<b><color=" + hex + ">" + nombre + "</color></b>  <size=72%>" +
+               (puesto == local && partida.PuestoLocal >= 0 ? "(tu)" : persona ? "" : "bot") + "</size>";
     }
 
     private void Etiqueta(Transform padre, Vector2 pos, Vector2 tamano, string texto, float letra, bool titulo, TextAlignmentOptions alineacion, Vector2 ancla)
@@ -1258,7 +1260,10 @@ public partial class VistaMesaOnlineMus
 
             txtEstadoMenuUI.text = estadoMenu;
             ActualizarMenuNuevo();
+            ComprobarBienvenida();
         }
+
+        ActualizarCreador();
 
         EnviarNombreAlEntrar(enMesa);
         ActualizarMonedas(conectado, enMesa);
@@ -1271,6 +1276,7 @@ public partial class VistaMesaOnlineMus
         ActualizarSala(enMesa, empezada);
         AjustarInterfazDemo(enMesa, empezada, revision);
         ActualizarMinimapa(empezada, revision);
+        ActualizarMandoMirada(empezada && !revision);
 
         if (!empezada)
         {
@@ -1318,7 +1324,7 @@ public partial class VistaMesaOnlineMus
 
         txtHostUI.text = texto;
         botonEmpezarUI.gameObject.SetActive(!empezada || !partida.Estado.EnCurso);
-        botonPausaUI.gameObject.SetActive(empezada && partida.Estado.EnCurso);
+        botonPausaUI.gameObject.SetActive(HistorialYPausa && empezada && partida.Estado.EnCurso);
 
         if (botonPausaUI.gameObject.activeSelf)
             botonPausaUI.GetComponentInChildren<TextMeshProUGUI>().text = partida.Pausado ? "REANUDAR" : "PAUSA";
@@ -1436,10 +1442,13 @@ public partial class VistaMesaOnlineMus
             : mirada.Length > 0 ? mirada : "a tu companero";
     }
 
+    // Para esta build de prueba no se ensena el historial (ni la pausa): ponlo a true para recuperarlos.
+    private const bool HistorialYPausa = false;
+
     private void ActualizarHistorialUI(bool revision)
     {
-        botonHistorialUI.gameObject.SetActive(!revision);
-        panelHistorialUI.SetActive(!revision && historialAbiertoUI);
+        botonHistorialUI.gameObject.SetActive(HistorialYPausa && !revision);
+        panelHistorialUI.SetActive(HistorialYPausa && !revision && historialAbiertoUI);
         botonHistorialUI.GetComponentInChildren<TextMeshProUGUI>().text = historialAbiertoUI ? "OCULTAR" : "HISTORIAL";
 
         if (!panelHistorialUI.activeSelf || partida.VersionHistorial == versionHistorialMostrada)

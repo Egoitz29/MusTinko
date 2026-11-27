@@ -250,6 +250,10 @@ public class PruebaTurnosMusOnline : NetworkBehaviour
 
     private void OnGUI()
     {
+        // Panel de pruebas: con la interfaz nueva no se ensena (no debe salir en la build).
+        if (VistaMesaOnlineMus.InterfazNuevaActiva)
+            return;
+
         float ancho = Mathf.Min(320f, Screen.width - 40f);
         float x = Mathf.Max(20f, Screen.width - ancho - 20f);
 

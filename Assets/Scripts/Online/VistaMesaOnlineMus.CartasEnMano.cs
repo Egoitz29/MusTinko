@@ -33,6 +33,9 @@ public partial class VistaMesaOnlineMus
     [Tooltip("Si el modelo no tiene manos, se multiplica el tamano por esto.")]
     [SerializeField] private float escalaSinManos = 2.5f;
 
+    // Multiplica el tamano de las cartas que sujetan los personajes (1 = como antes).
+    private const float AumentoCartasEnMano = 1.5f;
+
     private sealed class AbanicoMano
     {
         public GameObject Raiz;
@@ -244,6 +247,9 @@ public partial class VistaMesaOnlineMus
                 escala = escalaSinManos;
                 ancla = CuerpoDe(a.Modelo) + Vector3.up * alturaCartasEnMano + haciaCentro * adelanteCartasEnMano;
             }
+
+            // En el movil se veian pequenas: todas un poco mas grandes.
+            escala *= AumentoCartasEnMano;
 
             // Al mirarlas suben un poco y se acercan a la cara, sin irse por encima de la cabeza.
             float altoCarta = tamanoCartaEnMano.y * escala;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -133,7 +134,7 @@ public partial class VistaMesaOnlineMus
             if (teclado.digit4Key.wasPressedThisFrame) MirarCartasMirada();
         }
 
-        bool pulsado = false, empieza = false, suelta = false;
+        bool pulsado = false, empieza = false, suelta = false, tactil = false;
         Vector2 puntero = Vector2.zero;
 
         if (Touchscreen.current != null && (Touchscreen.current.primaryTouch.press.isPressed || Touchscreen.current.primaryTouch.press.wasReleasedThisFrame))
@@ -143,6 +144,7 @@ public partial class VistaMesaOnlineMus
             pulsado = dedo.press.isPressed;
             empieza = dedo.press.wasPressedThisFrame;
             suelta = dedo.press.wasReleasedThisFrame;
+            tactil = true;
         }
         else if (Mouse.current != null)
         {
@@ -165,6 +167,27 @@ public partial class VistaMesaOnlineMus
 
             if (!arrastrandoMirada)
                 posibleToque = false;
+        }
+
+        // En el movil arrastrar libre era impreciso: el dedo hace GESTOS (deslizar a un lado = mirar a ese
+        // jugador, hacia abajo = tus cartas, hacia arriba = de frente) y la vista salta sola, sin girar a mano.
+        if (tactil && arrastrandoMirada)
+        {
+            if (pulsado && (puntero - inicioToque).magnitude > Screen.height * 0.02f)
+                posibleToque = false;
+
+            if (suelta)
+            {
+                arrastrandoMirada = false;
+                Vector2 gesto = puntero - inicioToque;
+
+                if (posibleToque && Time.time - momentoToque < 0.35f)
+                    TocarParaMirar(cam, puntero);
+                else if (gesto.magnitude > Screen.height * 0.06f)
+                    GestoMirada(gesto);
+            }
+
+            return;
         }
 
         if (arrastrandoMirada && pulsado)
@@ -234,6 +257,113 @@ public partial class VistaMesaOnlineMus
             MirarSitio(cam, mejor);
     }
 
+    // ---------- Mando de mirada (movil): izquierda, frente, derecha y tus cartas ----------
+
+    private const int MirarIzquierda = 0, MirarFrente = 1, MirarDerecha = 2, MirarCartas = 3;
+    private GameObject mandoMirada;
+    private readonly Image[] fondosMando = new Image[4];
+    private int posicionMirada = MirarFrente;
+
+    private void CrearMandoMirada()
+    {
+        mandoMirada = new GameObject("MandoMirada", typeof(RectTransform));
+        RectTransform r = Rect(mandoMirada, raizUI, new Vector2(1f, 0.5f), new Vector2(-24f, 30f), new Vector2(310, 310));
+        Imagen("Fondo", r, "circulo", 310, new Color(0.1f, 0.06f, 0.03f, 0.45f));
+
+        Vector2[] sitios = { new(-100, 0), new(0, 100), new(100, 0), new(0, -100) };
+        float[] giros = { 90f, 0f, -90f, 180f };
+        string[] textos = { "IZQ", "FRENTE", "DCHA", "CARTAS" };
+
+        for (int i = 0; i < 4; i++)
+        {
+            int indice = i;
+            GameObject b = new("Mirar_" + textos[i], typeof(RectTransform), typeof(Image), typeof(Button));
+            Rect(b, r, new Vector2(0.5f, 0.5f), sitios[i], new Vector2(108, 108));
+            Image fondo = b.GetComponent<Image>();
+            fondo.sprite = SpriteUI("circulo", 0);
+            b.GetComponent<Button>().onClick.AddListener(() => MirarPosicion(indice));
+            fondosMando[i] = fondo;
+
+            Image flecha = Imagen("Flecha", b.transform, "flecha", 46, Color.white);
+            flecha.rectTransform.anchoredPosition = new Vector2(0f, 14f);
+            flecha.rectTransform.localEulerAngles = new Vector3(0f, 0f, giros[i]);
+
+            GameObject etiqueta = new("Texto", typeof(RectTransform));
+            Rect(etiqueta, b.transform, new Vector2(0.5f, 0f), new Vector2(0f, 8f), new Vector2(100, 34));
+            Texto(etiqueta.transform, textos[i], 20, Crema, false, TextAlignmentOptions.Center).fontStyle = FontStyles.Bold;
+        }
+
+        mandoMirada.SetActive(false);
+    }
+
+    private void ActualizarMandoMirada(bool enJuego)
+    {
+        if (mandoMirada == null)
+            return;
+
+        bool tapado = taquillaAbierta || (panelTanteoUI != null && panelTanteoUI.activeSelf);
+        bool ver = enJuego && MiradaLibreActiva && !tapado && SillaCamara >= 0;
+        mandoMirada.SetActive(ver);
+
+        if (!ver)
+            return;
+
+        // Se ilumina a donde estas mirando de verdad.
+        int actual = sitioMirado == 4 ? MirarCartas : PosicionDeSitio(sitioMirado);
+
+        for (int i = 0; i < 4; i++)
+            fondosMando[i].color = i == actual ? new Color(0.89f, 0.66f, 0.2f, 0.95f) : new Color(0.24f, 0.15f, 0.09f, 0.85f);
+    }
+
+    private int SitioDePosicion(int posicion) => posicion switch
+    {
+        MirarIzquierda => (SillaCamara + 3) % 4,
+        MirarFrente => (SillaCamara + 2) % 4,
+        MirarDerecha => (SillaCamara + 1) % 4,
+        _ => -1
+    };
+
+    private int PosicionDeSitio(int sitio)
+    {
+        for (int p = MirarIzquierda; p <= MirarDerecha; p++)
+            if (sitio >= 0 && SitioDePosicion(p) == sitio)
+                return p;
+
+        return -1;
+    }
+
+    private void MirarPosicion(int posicion)
+    {
+        Camera cam = camaraJugador != null ? camaraJugador : Camera.main;
+
+        if (cam == null)
+            return;
+
+        posicionMirada = posicion;
+
+        if (posicion == MirarCartas)
+            MirarCartasMirada();
+        else
+            MirarSitio(cam, SitioDePosicion(posicion));
+    }
+
+    // Deslizar: a los lados pasa al jugador de al lado; abajo, tus cartas; arriba, de frente.
+    private void GestoMirada(Vector2 gesto)
+    {
+        if (Mathf.Abs(gesto.y) > Mathf.Abs(gesto.x))
+        {
+            MirarPosicion(gesto.y < 0f ? MirarCartas : MirarFrente);
+            return;
+        }
+
+        int derecha = gesto.x > 0f ? 1 : -1;
+
+        if (posicionMirada == MirarCartas)
+            MirarPosicion(derecha > 0 ? MirarDerecha : MirarIzquierda);
+        else
+            MirarPosicion(Mathf.Clamp(posicionMirada + derecha, MirarIzquierda, MirarDerecha));
+    }
+
     // Al soltar: si hay alguien cerca del centro, la vista se va hacia el; si miras muy abajo, a las cartas.
     private void Imantar(Camera cam)
     {
@@ -281,6 +411,8 @@ public partial class VistaMesaOnlineMus
         Vector3 dir = CabezaDe(m) - Vector3.up * (alto * 0.08f) - cam.transform.position;
         Quaternion q = Quaternion.LookRotation(dir, Vector3.up);
         Vector3 e = q.eulerAngles;
+        int posicion = PosicionDeSitio(sitio);
+        if (posicion >= 0) posicionMirada = posicion;
         yawObjetivo = yawBase + Mathf.Clamp(Mathf.DeltaAngle(yawBase, e.y), -giroMaximoMirada, giroMaximoMirada);
         pitchObjetivo = Mathf.DeltaAngle(0f, e.x);
         miradaElegida = true;
@@ -291,10 +423,12 @@ public partial class VistaMesaOnlineMus
         yawObjetivo = yawBase;
         pitchObjetivo = pitchBase;
         miradaElegida = false;
+        posicionMirada = MirarFrente;
     }
 
     private void MirarCartasMirada()
     {
+        posicionMirada = MirarCartas;
         miradaElegida = false;
         yawObjetivo = yawBase;
         pitchObjetivo = pitchBase + inclinacionCartasMirada;

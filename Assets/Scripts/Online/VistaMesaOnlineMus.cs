@@ -97,6 +97,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
     private int puestoColoreado = -2;
     private int versionSalaColoreada = -1;
     private int trajeProbador = -1;
+    private int aspectoColoreado;
     private int probadorColoreado = -1;
     private int declaracionesJuego;
     private bool algunoTieneJuego;
@@ -189,6 +190,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         puestoColoreado = partida.PuestoLocal;
         versionSalaColoreada = partida.VersionSala;
         probadorColoreado = trajeProbador;
+        aspectoColoreado = TaquillaMus.AspectoPropio;
         necesitaColorear = false;
         int local = Mathf.Max(0, puestoColoreado);
         int mio = MiPuesto();
@@ -197,14 +199,16 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
         {
             GameObject posicion = ModeloEnSitio(sitio);
             int puesto = sitio;
-            int traje = TaquillaMus.TrajeDe(AspectoDePuesto(puesto));
+            int aspecto = AspectoDePuesto(puesto);
 
             // Tu personaje lleva siempre lo que tienes puesto (y en el probador, lo que te estas probando).
             if (puesto == mio)
-                traje = trajeProbador >= 0 ? trajeProbador : TaquillaMus.Equipado(CategoriaTaquilla.Traje);
+                aspecto = TaquillaMus.AspectoPropio;
+
+            int traje = puesto == mio && trajeProbador >= 0 ? trajeProbador : TaquillaMus.TrajeDe(aspecto);
 
             if (aspectoPorPiezas)
-                ColoresJugadoresMus.AplicarAspecto(posicion, ColoresJugadoresMus.PersonajeDe(puesto), saturacionRopa, brilloMaterial, traje);
+                ColoresJugadoresMus.AplicarAspecto(posicion, aspecto, puesto, saturacionRopa, brilloMaterial, traje);
             else
                 ColoresJugadoresMus.Colorear(posicion, ColoresJugadoresMus.ColorDe(puesto), intensidadColorSuave);
         }
@@ -626,7 +630,7 @@ public partial class VistaMesaOnlineMus : MonoBehaviour
             ActualizarOjitos(enJuegoVision);
 
         if (colorearPersonajes && (partida.PuestoLocal != puestoColoreado || partida.VersionSala != versionSalaColoreada ||
-                                   trajeProbador != probadorColoreado || necesitaColorear))
+                                   trajeProbador != probadorColoreado || necesitaColorear || aspectoColoreado != TaquillaMus.AspectoPropio))
             ColorearPersonajes();
 
         partida.EsperandoAnimaciones = cola.Count > 0;

@@ -365,7 +365,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         int[] pedidos = new int[4];
 
         for (int p = 0; p < 4; p++)
-            pedidos[p] = sitiosSala[p] == SinCliente ? -1 : TaquillaMus.PersonajeDe(AspectoDe(sitiosSala[p]));
+            pedidos[p] = -1;   // ya no hay personajes que elegir: cada silla usa su modelo y cada uno lo viste a su gusto
 
         int[] pj = ColoresJugadoresMus.Repartir(pedidos);
 
@@ -430,6 +430,7 @@ public class PartidaOnlineMus : NetworkBehaviour
         aspectosVistos[1] = a1;
         aspectosVistos[2] = a2;
         aspectosVistos[3] = a3;
+        ColoresJugadoresMus.PonerAspectos(c0 == SinCliente ? 0 : a0, c1 == SinCliente ? 0 : a1, c2 == SinCliente ? 0 : a2, c3 == SinCliente ? 0 : a3);
         VersionSala++;
         nombresSalaVistos[0] = n0;
         nombresSalaVistos[1] = n1;

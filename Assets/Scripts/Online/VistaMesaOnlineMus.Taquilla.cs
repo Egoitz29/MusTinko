@@ -17,6 +17,9 @@ public partial class VistaMesaOnlineMus
 
     public void AbrirTaquilla()
     {
+        if (creadorAbierto)
+            CerrarCreador();
+
         if (panelTaquilla == null)
             CrearTaquilla();
 
@@ -62,7 +65,12 @@ public partial class VistaMesaOnlineMus
         h.childControlWidth = h.childControlHeight = true;
         h.childForceExpandWidth = h.childForceExpandHeight = false;
 
-        AnadirPestana(pestanas.transform, CategoriaTaquilla.Personaje, "PERSONAJE");
+        // Ya no hay personajes que comprar: MI PERSONAJE abre el creador (colores gratis, lo tuyo).
+        Boton(pestanas.transform, "verde", "MI PERSONAJE", new Vector2(240, 66), () =>
+        {
+            CerrarTaquilla();
+            AbrirCreador(false);
+        }, 26);
         AnadirPestana(pestanas.transform, CategoriaTaquilla.Traje, "TRAJES");
         AnadirPestana(pestanas.transform, CategoriaTaquilla.Complemento, "EXTRAS");
         AnadirPestana(pestanas.transform, CategoriaTaquilla.Reverso, "CARTAS");
@@ -109,7 +117,7 @@ public partial class VistaMesaOnlineMus
 
     private void AnadirPestana(Transform padre, CategoriaTaquilla cat, string texto)
     {
-        Button b = Boton(padre, "azul", texto, new Vector2(208, 66), () => MostrarCategoria(cat), 28);
+        Button b = Boton(padre, "azul", texto, new Vector2(196, 66), () => MostrarCategoria(cat), 28);
         pestanasTaquilla[cat] = b;
     }
 
@@ -133,9 +141,7 @@ public partial class VistaMesaOnlineMus
             if (a.Categoria == cat)
                 CrearTarjeta(a);
 
-        if (cat == CategoriaTaquilla.Personaje)
-            MensajeTaquilla("Tu personaje va contigo a la silla donde te sientes.", false);
-        else if (cat == CategoriaTaquilla.Traje || cat == CategoriaTaquilla.Complemento)
+        if (cat == CategoriaTaquilla.Traje || cat == CategoriaTaquilla.Complemento)
             MensajeTaquilla("Toca una tarjeta para probartelo: miralo en tu personaje.", false);
         else if (cat == CategoriaTaquilla.Reverso)
             MensajeTaquilla("Es la parte de atras de tus cartas: mira las que tiene en la mano.", false);
@@ -158,8 +164,22 @@ public partial class VistaMesaOnlineMus
         tarjeta.GetComponent<Button>().onClick.AddListener(() => Probar(a));
 
         GameObject nombre = new("Nombre", typeof(RectTransform));
-        Rect(nombre, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -10), new Vector2(336, 60));
-        Texto(nombre.transform, a.Nombre, 44, Tinta, true, TextAlignmentOptions.Center, false);
+        Rect(nombre, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -12), new Vector2(300, 60));
+        Texto(nombre.transform, a.Nombre, 40, Tinta, true, TextAlignmentOptions.Center, false);
+
+        // Sello en la esquina: PUESTO (lo llevas) o TUYO (comprado).
+        if (puesto || TaquillaMus.Tiene(a))
+        {
+            GameObject sello = new("Sello", typeof(RectTransform), typeof(Image));
+            Rect(sello, tarjeta.transform, new Vector2(1f, 1f), new Vector2(8, 10), new Vector2(112, 36));
+            sello.transform.localEulerAngles = new Vector3(0f, 0f, -12f);
+            Image fondoSello = sello.GetComponent<Image>();
+            fondoSello.sprite = SpriteUI("placa", 12);
+            fondoSello.type = Image.Type.Sliced;
+            fondoSello.color = puesto ? new Color(0.89f, 0.6f, 0.15f) : new Color(0.18f, 0.52f, 0.25f);
+            fondoSello.raycastTarget = false;
+            Texto(sello.transform, puesto ? "PUESTO" : "TUYO", 18, Color.white, true, TextAlignmentOptions.Center, false);
+        }
 
         GameObject muestra = new("Muestra", typeof(RectTransform));
         Rect(muestra, tarjeta.transform, new Vector2(0.5f, 1f), new Vector2(0, -74), new Vector2(326, 110));
@@ -172,11 +192,23 @@ public partial class VistaMesaOnlineMus
         bool tiene = TaquillaMus.Tiene(a);
         bool quitable = puesto && a.Categoria == CategoriaTaquilla.Complemento;
         string color = quitable ? "rojo" : puesto ? "gris" : tiene ? "verde" : "dorado";
-        string texto = quitable ? "QUITAR" : puesto ? "LO LLEVAS" : tiene ? "PONER" : MonederoMus.Formato(a.Precio) + " MONEDAS";
+        string texto = quitable ? "QUITAR" : puesto ? "LO LLEVAS" : tiene ? "PONER" : "      " + MonederoMus.Formato(a.Precio);
 
-        Button boton = Boton(tarjeta.transform, color, texto, new Vector2(310, 66), () => PulsarArticulo(a), 28);
+        Button boton = Boton(tarjeta.transform, color, texto, new Vector2(310, 66), () => PulsarArticulo(a), 30);
         Rect(boton.gameObject, tarjeta.transform, new Vector2(0.5f, 0f), new Vector2(0, 14), new Vector2(310, 66));
         boton.interactable = !puesto || quitable;
+
+        // Precio con su moneda (y en rojo si no te llega).
+        if (!tiene)
+        {
+            Image moneda = Icono(boton.transform, new Vector2(0.5f, 0.5f), Vector2.zero, 40);
+            RectTransform rm = moneda.rectTransform;
+            rm.pivot = new Vector2(0.5f, 0.5f);
+            rm.anchoredPosition = new Vector2(-24f - 9f * MonederoMus.Formato(a.Precio).Length, 2f);
+
+            if (!MonederoMus.PuedePagar(a.Precio))
+                boton.GetComponentInChildren<TextMeshProUGUI>(true).color = new Color(1f, 0.72f, 0.66f);
+        }
     }
 
     private void Probar(ArticuloTaquilla a)

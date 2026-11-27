@@ -2,11 +2,14 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public static class AndroidMus
 {
     private const string EscenaJuego = "Assets/Scenes/MesamusOnline.unity";
+    private const string EscenaCarga = "Assets/Scenes/Carga.unity";
     private const string Identificador = "com.mustinko.juego";
     private const string CarpetaBuilds = "Builds/Android";
 
@@ -18,6 +21,9 @@ public static class AndroidMus
         PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.Android.forceInternetPermission = true;
+        // Activity normal en vez de GameActivity: GameActivity necesita "prefab", que falla si la carpeta
+        // del usuario de Windows tiene una ñ (ClassNotFoundException: com.google.prefab.cli.AppKt).
+        PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
 
         string actual = PlayerSettings.GetApplicationIdentifier(android);
         if (string.IsNullOrEmpty(actual) || actual.StartsWith("com.DefaultCompany") || actual.StartsWith("com.Unity"))
@@ -28,6 +34,9 @@ public static class AndroidMus
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
+
+        // El logo de Unity sale sobre el mismo marron de la pantalla de carga (no sobre gris).
+        PlayerSettings.SplashScreen.backgroundColor = new Color(0.16f, 0.10f, 0.06f);
 
         if (PlayerSettings.productName == "MusTinko")
             PlayerSettings.productName = "Mus TINKO";
@@ -57,7 +66,10 @@ public static class AndroidMus
     public static void GenerarApkDesarrollo() => Construir(true, false);
 
     [MenuItem("Mus TINKO/Android/4. Generar e instalar en el movil conectado por USB")]
-    public static void GenerarEInstalar() => Construir(true, true);
+    public static void GenerarEInstalar() => Construir(false, true);
+
+    [MenuItem("Mus TINKO/Android/4b. Generar e instalar (desarrollo, con logs)")]
+    public static void GenerarEInstalarDesarrollo() => Construir(true, true);
 
     [MenuItem("Mus TINKO/Android/5. Build rapida de prueba (Mono, ARMv7)")]
     public static void BuildRapida()
@@ -103,6 +115,30 @@ public static class AndroidMus
                   ". Unity recompilara los scripts (si estas en Play, para y vuelve a darle).");
     }
 
+    // Crea Carga.unity (si no existe): una camara y la PantallaCargaMus, nada mas.
+    [MenuItem("Mus TINKO/Android/Crear escena de carga")]
+    public static void AsegurarEscenaCarga()
+    {
+        if (File.Exists(EscenaCarga))
+            return;
+
+        Scene escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+
+        GameObject camara = new("Camara", typeof(Camera));
+        Camera cam = camara.GetComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0.16f, 0.10f, 0.06f);
+        SceneManager.MoveGameObjectToScene(camara, escena);
+
+        GameObject carga = new("PantallaCarga", typeof(RectTransform), typeof(PantallaCargaMus));
+        SceneManager.MoveGameObjectToScene(carga, escena);
+
+        EditorSceneManager.SaveScene(escena, EscenaCarga);
+        EditorSceneManager.CloseScene(escena, true);
+        AssetDatabase.Refresh();
+        Debug.Log("[ANDROID] Escena de carga creada: " + EscenaCarga);
+    }
+
     private static void Construir(bool desarrollo, bool instalar)
     {
         if (!File.Exists(EscenaJuego))
@@ -119,6 +155,7 @@ public static class AndroidMus
                 return;
         }
 
+        PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
         Directory.CreateDirectory(CarpetaBuilds);
         string ruta = Path.Combine(CarpetaBuilds, "MusTinko" + (desarrollo ? "_dev" : "") + ".apk");
 
@@ -126,9 +163,12 @@ public static class AndroidMus
         if (desarrollo) opciones |= BuildOptions.Development;
         if (instalar) opciones |= BuildOptions.AutoRunPlayer;
 
+        AsegurarEscenaCarga();
+
         BuildPlayerOptions configuracion = new()
         {
-            scenes = new[] { EscenaJuego },
+            // Primero la pantalla de carga (ligera, sale enseguida) y ella carga la mesa.
+            scenes = new[] { EscenaCarga, EscenaJuego },
             locationPathName = ruta,
             target = BuildTarget.Android,
             targetGroup = BuildTargetGroup.Android,

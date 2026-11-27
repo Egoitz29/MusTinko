@@ -38,9 +38,23 @@ public static class ColoresJugadoresMus
     }
     public static int Version { get; private set; }
 
+    // El "personaje" de cada silla ya solo es que modelo 3D se usa ahi: el aspecto (colores, traje,
+    // complementos) lo pone cada jugador. Los bots siguen con los colores de la silla.
     public static int PersonajeDe(int puesto) => puesto >= 0 && puesto < 4 ? personajeDePuesto[puesto] : 0;
-    public static string HexDe(int puesto) => Hex[PersonajeDe(puesto)];
-    public static Color ColorDe(int puesto) => Colores[PersonajeDe(puesto)];
+    public static string HexDe(int puesto) => "#" + ColorUtility.ToHtmlStringRGB(ColorDe(puesto));
+    public static Color ColorDe(int puesto) =>
+        puesto >= 0 && puesto < 4 ? TaquillaMus.ColoresRopa[TaquillaMus.RopaDe(aspectos[puesto], puesto)] : Colores[0];
+
+    // Aspecto de quien esta en cada silla (0 = bot o nadie).
+    private static readonly int[] aspectos = new int[4];
+
+    public static void PonerAspectos(int a0, int a1, int a2, int a3)
+    {
+        aspectos[0] = a0;
+        aspectos[1] = a1;
+        aspectos[2] = a2;
+        aspectos[3] = a3;
+    }
 
     public static void PonerPersonajes(int p0, int p1, int p2, int p3)
     {
@@ -98,7 +112,7 @@ public static class ColoresJugadoresMus
         if (puesto < 0 || puesto > 3)
             return "-";
 
-        return "<color=" + Hex[PersonajeDe(puesto)] + "><b>" + NombresPorPuesto[puesto] + "</b></color>";
+        return "<color=" + HexDe(puesto) + "><b>" + NombresPorPuesto[puesto] + "</b></color>";
     }
 
     private static readonly Color Piel = new(1f, 0.85f, 0.72f);
@@ -113,18 +127,32 @@ public static class ColoresJugadoresMus
         new(0.58f, 0.24f, 0.12f)
     };
 
-    // "personaje" es 0 LILA, 1 MOSTAZA, 2 MENTA, 3 CORAL (sus colores de ropa y pelo).
+    // Colores de los personajes de antes (0 LILA, 1 MOSTAZA, 2 MENTA, 3 CORAL): para la escena local y los bots.
     public static void AplicarAspecto(GameObject raiz, int puesto, float saturacionRopa, float brillo, int traje = 0)
     {
-        TrajeMus t = TaquillaMus.Trajes[Mathf.Clamp(traje, 0, TaquillaMus.Trajes.Length - 1)];
-        if (raiz == null || puesto < 0 || puesto > 3)
+        if (puesto < 0 || puesto > 3)
             return;
 
-        Color ropa = Color.Lerp(Color.white, Colores[puesto], Mathf.Clamp01(saturacionRopa));
+        AplicarAspecto(raiz, Colores[puesto], Piel, Pelo[puesto], saturacionRopa, brillo, traje);
+    }
+
+    // Aspecto de un jugador segun lo que lleva (su numero de aspecto) y la silla (para los bots).
+    public static void AplicarAspecto(GameObject raiz, int aspecto, int silla, float saturacionRopa, float brillo, int traje)
+    {
+        AplicarAspecto(raiz, TaquillaMus.ColoresRopa[TaquillaMus.RopaDe(aspecto, silla)], TaquillaMus.TonosPiel[TaquillaMus.PielDe(aspecto)],
+            TaquillaMus.ColoresPelo[TaquillaMus.PeloDe(aspecto, silla)], saturacionRopa, brillo, traje);
+    }
+
+    public static void AplicarAspecto(GameObject raiz, Color colorRopa, Color piel, Color pelo, float saturacionRopa, float brillo, int traje)
+    {
+        TrajeMus t = TaquillaMus.Trajes[Mathf.Clamp(traje, 0, TaquillaMus.Trajes.Length - 1)];
+        if (raiz == null)
+            return;
+
+        Color ropa = Color.Lerp(Color.white, colorRopa, Mathf.Clamp01(saturacionRopa));
         Color ropaOscura = ropa * 0.82f;
         ropaOscura.a = 1f;
         Color manoplas = Color.Lerp(ropa, Color.white, 0.55f);
-        Color pelo = Pelo[puesto];
         MaterialPropertyBlock bloque = new();
 
         foreach (Renderer r in raiz.GetComponentsInChildren<Renderer>(true))
@@ -136,7 +164,7 @@ public static class ColoresJugadoresMus
                 continue;
 
             string pieza = Pieza(r.name);
-            Color? color = ColorDeTraje(pieza, t) ?? ColorDePieza(pieza, ropa, ropaOscura, manoplas, pelo);
+            Color? color = ColorDeTraje(pieza, t) ?? ColorDePieza(pieza, ropa, ropaOscura, manoplas, pelo, piel);
 
             if (!color.HasValue)
                 continue;
@@ -174,12 +202,12 @@ public static class ColoresJugadoresMus
         return null;
     }
 
-    private static Color? ColorDePieza(string pieza, Color ropa, Color ropaOscura, Color manoplas, Color pelo)
+    private static Color? ColorDePieza(string pieza, Color ropa, Color ropaOscura, Color manoplas, Color pelo, Color piel)
     {
         if (pieza.StartsWith("Cabeza") || pieza.StartsWith("Oreja") || pieza == "Cuello" || pieza.StartsWith("Parpado"))
-            return Piel;
-        if (pieza.StartsWith("Nariz")) return new Color(1f, 0.76f, 0.66f);
-        if (pieza.StartsWith("Mejilla")) return new Color(1f, 0.58f, 0.58f);
+            return piel;
+        if (pieza.StartsWith("Nariz")) return new Color(piel.r, piel.g * 0.89f, piel.b * 0.92f);
+        if (pieza.StartsWith("Mejilla")) return Color.Lerp(piel, new Color(1f, 0.4f, 0.42f), 0.55f);
         if (pieza.StartsWith("BlancoOjo") || pieza.StartsWith("BrilloOjo")) return new Color(0.98f, 0.98f, 0.98f);
         if (pieza.StartsWith("Pupila")) return new Color(0.1f, 0.08f, 0.08f);
         if (pieza.StartsWith("CEJA") || pieza.StartsWith("Pelo") || pieza.StartsWith("Flequillo")) return pelo;

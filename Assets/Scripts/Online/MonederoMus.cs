@@ -112,6 +112,26 @@ public static class MonederoMus
         return true;
     }
 
+    // Codigo de desarrollador: escribiendo "monedas" donde se anaden amigos te da 10.000 monedas.
+    // Solo funciona una vez en cada movil. No lo cuentes :)
+    public const string CodigoDesarrollador = "monedas";
+    public const int PremioDesarrollador = 10000;
+    private const string ClaveCodigoDesarrollador = "MusTinko_CodigoDev";
+
+    public static bool EsCodigoDesarrollador(string texto) =>
+        string.Equals((texto ?? "").Trim(), CodigoDesarrollador, StringComparison.OrdinalIgnoreCase);
+
+    // true si se han dado las monedas; false si ya se habia usado.
+    public static bool CanjearCodigoDesarrollador()
+    {
+        if (LeerEntero(ClaveCodigoDesarrollador) != 0)
+            return false;
+
+        EscribirEntero(ClaveCodigoDesarrollador, 1);
+        Cobrar(PremioDesarrollador);
+        return true;
+    }
+
     // Con puntos de miles: 12500 -> "12.500".
     public static string Formato(int cantidad) => cantidad.ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", ".");
 

@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-// Cada jugador lleva SU personaje (elegido en la taquilla) a la silla donde se sienta:
-// los modelos 3D se cambian de silla, y se les ponen sus complementos (bigote, gafas, sombrero...).
+// Cada jugador se viste a su gusto (colores, traje y complementos): el modelo 3D de cada silla se colorea
+// con lo que lleva quien se sienta ahi, y se le ponen sus complementos (bigote, gafas, sombrero...).
 // Ademas, con la taquilla abierta la camara se pone delante de tu personaje (probador).
 public partial class VistaMesaOnlineMus
 {
@@ -126,8 +126,8 @@ public partial class VistaMesaOnlineMus
         // Sin conexion: yo en la silla 0 con mi personaje, el resto los que sobran.
         if (!EnLaRed)
         {
-            int[] r = ColoresJugadoresMus.Repartir(new[] { TaquillaMus.PersonajeMio, -1, -1, -1 });
-            ColoresJugadoresMus.PonerPersonajes(r[0], r[1], r[2], r[3]);
+            ColoresJugadoresMus.PonerPersonajes(0, 1, 2, 3);
+            ColoresJugadoresMus.PonerAspectos(TaquillaMus.AspectoPropio, 0, 0, 0);
         }
 
         ColocarPersonajes();
@@ -481,7 +481,7 @@ public partial class VistaMesaOnlineMus
         for (int puesto = 0; puesto < 4; puesto++)
         {
             int k = ColoresJugadoresMus.PersonajeDe(puesto);
-            int mascara = TaquillaMus.ComplementosDe(AspectoDePuesto(puesto), k);
+            int mascara = TaquillaMus.ComplementosDe(AspectoDePuesto(puesto), puesto);
 
             // En tu silla se ve siempre lo que llevas puesto ahora (y lo que te estas probando).
             if (puesto == mio)
@@ -609,7 +609,7 @@ public partial class VistaMesaOnlineMus
         if (modeloDePersonaje == null)
             return null;
 
-        int k = puesto >= 0 ? ColoresJugadoresMus.PersonajeDe(puesto) : TaquillaMus.PersonajeMio;
+        int k = ColoresJugadoresMus.PersonajeDe(Mathf.Max(0, puesto));
         return modeloDePersonaje[k];
     }
 
