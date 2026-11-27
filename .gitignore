@@ -113,3 +113,25 @@ InitTestScene*.unity*
 
 # Videos del trailer (Mus TINKO > Trailer > Grabar trailer en MP4)
 /[Tt]railer/
+
+# ===== MusTinko =====
+# Builds comprimidas
+*.zip
+*.symbols.zip
+
+# Firma Android: NUNCA subir el keystore ni sus contrasenas
+*.keystore
+*.jks
+keystore.properties
+
+# Copias de recuperacion que crea Unity tras un cierre inesperado
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
+
+# Salida de compilacion de las herramientas .NET
+Herramientas/**/bin/
+Herramientas/**/obj/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
