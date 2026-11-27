@@ -42,13 +42,14 @@ public partial class VistaMesaOnlineMus
         panelTaquilla.GetComponent<RectTransform>().pivot = new Vector2(0f, 0.5f);
 
         GameObject titulo = new("Titulo", typeof(RectTransform));
-        Rect(titulo, panelTaquilla.transform, new Vector2(0f, 1f), new Vector2(40, -14), new Vector2(520, 100));
+        Rect(titulo, panelTaquilla.transform, new Vector2(0f, 1f), new Vector2(40, -14), new Vector2(500, 100));
         Texto(titulo.transform, "TAQUILLA", 84, Oro, true, TextAlignmentOptions.Left);
 
-        Icono(panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-470, -26), 70);
+        // Saldo pegado a la derecha y la moneda detras (antes la moneda caia encima de las cifras).
         GameObject saldo = new("Saldo", typeof(RectTransform));
-        Rect(saldo, panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-390, -22), new Vector2(220, 80));
-        txtSaldoTaquilla = Texto(saldo.transform, "", 48, Oro, true, TextAlignmentOptions.Left);
+        Rect(saldo, panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-376, -22), new Vector2(210, 80));
+        txtSaldoTaquilla = Texto(saldo.transform, "", 48, Oro, true, TextAlignmentOptions.Right);
+        Icono(panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-292, -26), 70);
 
         Button cerrar = Boton(panelTaquilla.transform, "rojo", "CERRAR", new Vector2(160, 66), CerrarTaquilla, 26);
         Rect(cerrar.gameObject, panelTaquilla.transform, new Vector2(1f, 1f), new Vector2(-110, -30), new Vector2(160, 66));

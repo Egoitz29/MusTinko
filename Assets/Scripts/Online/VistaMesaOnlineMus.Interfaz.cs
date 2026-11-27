@@ -150,6 +150,7 @@ public partial class VistaMesaOnlineMus
             TextMeshProUGUI t = Texto(go.transform, "", 30, Tinta, false, TextAlignmentOptions.Center, false);
             t.fontStyle = FontStyles.Bold;
             t.enableWordWrapping = false;
+            t.enableAutoSizing = false;   // el bocadillo se ensancha segun el texto
             t.rectTransform.offsetMin = new Vector2(18, 14);
             t.rectTransform.offsetMax = new Vector2(-18, -12);
 
@@ -378,8 +379,15 @@ public partial class VistaMesaOnlineMus
         t.color = color;
         t.alignment = alineacion;
         t.richText = true;
-        t.enableWordWrapping = true;
         t.raycastTarget = false;
+
+        // Las letras nuevas (sobre todo Alfa Slab One) son mas anchas que la de antes: para que nada se salga
+        // de su caja ni pise lo de al lado, el texto se encoge lo que haga falta (hasta la mitad).
+        // Los titulos van siempre en una linea; los textos pueden partirse en varias.
+        t.enableWordWrapping = !titulo;
+        t.enableAutoSizing = true;
+        t.fontSizeMax = tamano;
+        t.fontSizeMin = Mathf.Max(12f, tamano * 0.5f);
 
         if (contorno)
         {
@@ -1209,8 +1217,9 @@ public partial class VistaMesaOnlineMus
 
         TextMeshProUGUI texto = Texto(area.transform, "", 30, Tinta, false, TextAlignmentOptions.MidlineLeft, false);
         texto.enableWordWrapping = false;
+        texto.enableAutoSizing = false;   // lo que escribes no cambia de tamano al teclear
         TextMeshProUGUI pista = Texto(area.transform, marcador, 30, new Color(Tinta.r, Tinta.g, Tinta.b, 0.45f), false, TextAlignmentOptions.MidlineLeft, false);
-        pista.fontStyle = FontStyles.Italic;
+        pista.enableWordWrapping = false;
 
         TMP_InputField campo = go.GetComponent<TMP_InputField>();
         campo.textViewport = ra;

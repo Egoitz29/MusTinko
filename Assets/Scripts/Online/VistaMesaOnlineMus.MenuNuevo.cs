@@ -201,7 +201,9 @@ public partial class VistaMesaOnlineMus
     private void CrearNavegacion()
     {
         RectTransform nav = Caja("Navegacion", marcoMenu, 0, 0, 300, 1000, "panel_madera_oscura");
-        Letra(nav, 0, 26, 300, 90, "Mus TINKO", 76, Oro, true, TextAlignmentOptions.Center);
+        // Logo en dos lineas: con la letra de cartel "Mus TINKO" no cabe en una y pisaba el boton INICIO.
+        TextMeshProUGUI logo = Letra(nav, 14, 10, 272, 120, "<size=70%>Mus</size>\nTINKO", 64, Oro, true, TextAlignmentOptions.Center);
+        logo.lineSpacing = -28f;
 
         (PantallaMenu, string)[] items =
         {
@@ -229,8 +231,9 @@ public partial class VistaMesaOnlineMus
         RectTransform caja = Caja("Monedas", nav, 18, 742, 264, 236, "panel_madera");
         Image moneda = Imagen("Moneda", caja, "moneda", 70, Color.white);
         Rect(moneda.gameObject, caja, new Vector2(0f, 1f), new Vector2(18, -18), new Vector2(70, 70));
-        txtSaldoMenu = Letra(caja, 98, 18, 150, 72, "", 60, Oro, true, TextAlignmentOptions.MidlineLeft);
-        txtEstadisticasMenu = Letra(caja, 16, 96, 232, 34, "", 20, Crema, false, TextAlignmentOptions.Center);
+        txtSaldoMenu = Letra(caja, 98, 18, 154, 70, "", 54, Oro, true, TextAlignmentOptions.MidlineLeft);
+        txtEstadisticasMenu = Letra(caja, 12, 96, 240, 36, "", 20, Crema, false, TextAlignmentOptions.Center);
+        txtEstadisticasMenu.enableWordWrapping = false;
         botonRegaloMenu = BotonEn(caja, 16, 140, 232, 76, "dorado", "REGALO +" + MonederoMus.RegaloDiario, () =>
         {
             if (MonederoMus.ReclamarRegalo())
