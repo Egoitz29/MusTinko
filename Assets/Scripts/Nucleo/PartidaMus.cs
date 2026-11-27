@@ -18,6 +18,7 @@ public class PartidaMus
         public bool Registrado;
         public TipoRegistro Tipo;
         public int Tantos;
+        public int ParejaQueEnvido;   // en un envite no querido, quien lo hizo (cobra el deje y sus jugadas)
     }
 
     private readonly Random azar;
@@ -508,6 +509,7 @@ public class PartidaMus
             case MotorEnvitesMus.EstadoEnvite.Rechazado:
                 registro.Tipo = TipoRegistro.Rechazado;
                 registro.Tantos = motor.TantosPorNegada;
+                registro.ParejaQueEnvido = motor.ParejaGanadoraNegada;
                 puntos[motor.ParejaGanadoraNegada] += motor.TantosPorNegada;
                 desglose.Add(new ConceptoTanteoMus(indice, TipoConceptoMus.NoQuerido,
                     motor.ParejaGanadoraNegada, motor.TantosPorNegada));
@@ -565,6 +567,12 @@ public class PartidaMus
             int ganador = GanadorLance(lance, out bool hayJuego);
             int pareja = ganador >= 0 ? ganador % 2 : -1;
             RegistroLance registro = registros[lance];
+
+            // Envite no querido en Pares o Juego/Punto: la pareja que envido cobra, ademas del deje
+            // (ya sumado al momento), sus propias jugadas; los rivales no cobran nada en ese lance
+            // aunque tuvieran mejores cartas, porque no las han ensenado.
+            if (lance >= 2 && registro.Tipo == TipoRegistro.Rechazado)
+                pareja = registro.ParejaQueEnvido;
 
             if (registro.Tipo == TipoRegistro.Aceptado)
             {

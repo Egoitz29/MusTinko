@@ -253,6 +253,52 @@ public static class PruebasNucleoMus
         Comprobar(log, o.PartidaTerminada && o.VictoriaPorOrdago && o.ParejaGanadora == 0,
             "Ordago a Grande querido: gana la pareja con mejor Grande (0-2)");
 
+        log("== Envite no querido en Pares y Juego ==");
+        // Pares: los rivales tienen mejores pares (cuatro reyes), pero no quieren el envite.
+        PartidaMus np = ManoFija(
+            new[] { C("SOTA", "OROS"), C("SOTA", "COPAS"), C("CABALLO", "OROS"), C("CABALLO", "COPAS") }, // duples (3)
+            new[] { C("REY", "ESPADAS"), C("REY", "BASTOS"), C("3", "OROS"), C("3", "COPAS") },             // duples de reyes
+            new[] { C("4", "OROS"), C("4", "COPAS"), C("5", "OROS"), C("6", "OROS") },                      // par (1)
+            new[] { C("AS", "OROS"), C("5", "COPAS"), C("6", "COPAS"), C("7", "OROS") });                   // sin pares
+        PasarLance(np);   // Grande
+        PasarLance(np);   // Chica
+        np.Aplicar(0, AccionMus.Envidar(2));
+        np.Aplicar(1, AccionMus.NoQuiero);   // el 3 no tiene pares: no habla
+        Comprobar(log, np.Fase == FaseMus.JuegoPunto && np.Puntos(0) == 1, "Pares no querido: deje de 1 al momento");
+        PasarLance(np);   // Juego
+        Comprobar(log, SumaLance(np, 2, 0, TipoConceptoMus.Pares) == 4 && SumaLance(np, 2, 1, TipoConceptoMus.Pares) == 0,
+            "Pares no querido: quien envida cobra sus duples y el par del companero (3+1) y el rival nada");
+
+        // Juego: el rival tiene 31, pero no quiere; quien envida (33) cobra su juego.
+        PartidaMus nj = ManoFija(
+            new[] { C("REY", "ESPADAS"), C("REY", "BASTOS"), C("7", "ESPADAS"), C("6", "ESPADAS") }, // 33
+            new[] { C("SOTA", "OROS"), C("CABALLO", "OROS"), C("7", "OROS"), C("4", "OROS") },      // 31
+            new[] { C("AS", "ESPADAS"), C("4", "COPAS"), C("5", "COPAS"), C("6", "COPAS") },        // 16
+            new[] { C("AS", "BASTOS"), C("5", "BASTOS"), C("6", "BASTOS"), C("7", "BASTOS") });     // 19
+        PasarLance(nj);   // Grande
+        PasarLance(nj);   // Chica (Pares se cierra solo: solo una pareja tiene)
+        Comprobar(log, nj.Fase == FaseMus.JuegoPunto && nj.JugadorActual == 0, "Solo una pareja con pares: se salta a Juego");
+        nj.Aplicar(0, AccionMus.Envidar(2));
+        nj.Aplicar(1, AccionMus.NoQuiero);   // el 3 no tiene juego: no habla
+        Comprobar(log, nj.Fase == FaseMus.FinMano, "Juego no querido cierra la mano");
+        Comprobar(log, SumaLance(nj, 3, 0, TipoConceptoMus.Juego) == 2 && SumaLance(nj, 3, 1, TipoConceptoMus.Juego) == 0 &&
+                       SumaLance(nj, 3, 0, TipoConceptoMus.NoQuerido) == 1,
+            "Juego no querido: quien envida cobra deje + su juego (1+2) aunque el rival tenga 31");
+
+        // Punto: nadie tiene juego; el rival tiene mejor punto (28) pero no quiere.
+        PartidaMus nt = ManoFija(
+            new[] { C("AS", "OROS"), C("4", "OROS"), C("5", "OROS"), C("6", "OROS") },              // 16
+            new[] { C("SOTA", "OROS"), C("CABALLO", "OROS"), C("7", "OROS"), C("AS", "COPAS") },    // 28
+            new[] { C("4", "COPAS"), C("5", "COPAS"), C("6", "COPAS"), C("AS", "ESPADAS") },        // 16
+            new[] { C("4", "ESPADAS"), C("5", "ESPADAS"), C("6", "ESPADAS"), C("AS", "BASTOS") });  // 16
+        PasarLance(nt);   // Grande
+        PasarLance(nt);   // Chica (nadie tiene pares)
+        nt.Aplicar(0, AccionMus.Envidar(2));
+        nt.Aplicar(1, AccionMus.NoQuiero);
+        nt.Aplicar(3, AccionMus.NoQuiero);
+        Comprobar(log, SumaLance(nt, 3, 0, TipoConceptoMus.Punto) == 1 && SumaLance(nt, 3, 1, TipoConceptoMus.Punto) == 0,
+            "Punto no querido: quien envida cobra deje + el tanto del punto y el rival nada");
+
         log("== Senales ==");
         PartidaMus sn = ManoFija(
             new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },
@@ -369,6 +415,24 @@ public static class PruebasNucleoMus
         p.PrepararManosFijas(new[] { j0, j1, j2, j3 });
         p.Aplicar(0, AccionMus.NoHayMus);
         return p;
+    }
+
+    // Todos pasan hasta que cambia el lance.
+    private static void PasarLance(PartidaMus p)
+    {
+        FaseMus fase = p.Fase;
+        int seguridad = 0;
+        while (p.Fase == fase && PartidaMus.EsLance(fase) && seguridad++ < 8)
+            p.Aplicar(p.JugadorActual, AccionMus.Pasar);
+    }
+
+    private static int SumaLance(PartidaMus p, int lance, int pareja, TipoConceptoMus tipo)
+    {
+        int suma = 0;
+        foreach (ConceptoTanteoMus c in p.Desglose)
+            if (c.Lance == lance && c.Pareja == pareja && c.Tipo == tipo)
+                suma += c.Tantos;
+        return suma;
     }
 
     private static bool SinDuplicados(PartidaMus p)
