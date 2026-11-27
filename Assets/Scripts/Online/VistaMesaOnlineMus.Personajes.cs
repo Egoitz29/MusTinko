@@ -581,6 +581,7 @@ public partial class VistaMesaOnlineMus
 
                 GameObject copia = Instantiate(pieza.gameObject, destino, false);
                 copia.name = pieza.name;
+                AjustarComplemento(c.Nombre, copia.transform);
                 copia.SetActive(true);
                 puestos.Add(copia);
                 renders.AddRange(copia.GetComponentsInChildren<Renderer>(true));
@@ -594,6 +595,37 @@ public partial class VistaMesaOnlineMus
                         ocultas.Add(r);
                     }
         }
+    }
+
+    // Con las cabezas tan grandes, la pajarita y la bufanda quedaban debajo de la barbilla y dentro del poncho
+    // (no se veian), y el pendiente era diminuto. Se agrandan y se sacan hacia fuera.
+    // Ejes de las piezas (como en Blender): -Y hacia delante, +Z hacia arriba (respecto al CONTROL_RAIZ).
+    private static void AjustarComplemento(string nombre, Transform pieza)
+    {
+        switch (nombre)
+        {
+            case "Pajarita":
+                Escalar(pieza, new Vector3(0f, -0.43f, 1.37f), 1.9f, new Vector3(0f, -0.14f, -0.12f));
+                break;
+            case "Bufanda":
+                Escalar(pieza, new Vector3(0f, -0.07f, 1.27f), 1.22f, new Vector3(0f, -0.04f, -0.02f));
+                pieza.localScale = Vector3.Scale(pieza.localScale, new Vector3(1f, 1f, 1.5f));
+                break;
+            case "Pendiente":
+                // Solo cuelga de un lado: se agranda sobre si mismo y baja un poco de la oreja.
+                pieza.localScale *= 2.4f;
+                pieza.localPosition += new Vector3(0f, 0f, -0.08f);
+                break;
+        }
+    }
+
+    private static void Escalar(Transform pieza, Vector3 centro, float factor, Vector3 mover)
+    {
+        // El centro solo se usa en Y y Z (en X todas estas piezas son simetricas).
+        Vector3 p = pieza.localPosition;
+        Vector3 c = new(p.x, centro.y, centro.z);
+        pieza.localPosition = c + (p - c) * factor + new Vector3(p.x * (factor - 1f), 0f, 0f) + mover;
+        pieza.localScale *= factor;
     }
 
     // ---------- Camara del probador ----------

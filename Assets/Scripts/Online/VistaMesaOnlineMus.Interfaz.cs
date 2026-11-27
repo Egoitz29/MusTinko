@@ -1264,6 +1264,7 @@ public partial class VistaMesaOnlineMus
         }
 
         ActualizarCreador();
+        ActualizarTutorial(conectado);
 
         EnviarNombreAlEntrar(enMesa);
         ActualizarMonedas(conectado, enMesa);

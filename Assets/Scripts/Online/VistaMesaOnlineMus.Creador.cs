@@ -369,7 +369,12 @@ public partial class VistaMesaOnlineMus
         {
             TaquillaMus.TerminarCreacion();
             CerrarCreador();
-            MostrarAvisoMonedas("¡Kaixo, " + nombre + "! Tienes " + MonederoMus.Formato(MonederoMus.Saldo) + " monedas para empezar.");
+
+            // Recien llegado: directo a la partida tutorial (se puede saltar).
+            if (!TutorialHecho)
+                EmpezarTutorial();
+            else
+                MostrarAvisoMonedas("¡Kaixo, " + nombre + "! Tienes " + MonederoMus.Formato(MonederoMus.Saldo) + " monedas para empezar.");
             return;
         }
 

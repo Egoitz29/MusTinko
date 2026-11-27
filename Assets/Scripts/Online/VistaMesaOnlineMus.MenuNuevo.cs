@@ -346,8 +346,10 @@ public partial class VistaMesaOnlineMus
         CrearTarjetaModo(p, 565, 196, "Salas por Internet", "Entra en una mesa abierta o crea la tuya. Minimo 2 personas; el resto, bots.",
             "rojo", "VER SALAS", () => IrA(PantallaMenu.Salas), out txtSalasAbiertas);
         // "Misma WiFi" fuera del menu por ahora: se juega por salas de Internet (la pantalla sigue en el codigo).
-        CrearTarjetaModo(p, 0, 466, "Con amigos", "Invita a tus amigos a tu mesa o unete a la suya. Pasales tu codigo de amigo desde AMIGOS.",
-            "morado", "AMIGOS", () => IrA(PantallaMenu.Amigos), out _, 1110);
+        CrearTarjetaModo(p, 0, 466, "Con amigos", "Invita a tus amigos a tu mesa o unete a la suya.",
+            "morado", "AMIGOS", () => IrA(PantallaMenu.Amigos), out _);
+        CrearTarjetaModo(p, 565, 466, "Tutorial", "Una partida guiada: aprende a mirar a la mesa, las senas y los botones.",
+            "azul", "APRENDER", EmpezarTutorial, out _);
 
         RectTransform reto = Caja("Reto", p, 0, 736, 1110, 112, "panel_pergamino");
         Letra(reto, 28, 14, 760, 40, "Reto de la semana: gana " + PerfilMus.RetoVictorias + " partidas", 28, Tinta, false, TextAlignmentOptions.MidlineLeft, false)

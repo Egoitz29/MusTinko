@@ -253,7 +253,22 @@ public partial class VistaMesaOnlineMus
 
             // Al mirarlas suben un poco y se acercan a la cara, sin irse por encima de la cabeza.
             float altoCarta = tamanoCartaEnMano.y * escala;
-            ancla += Vector3.up * (subidaCartasAlMirar * altoCarta * w) - haciaCentro * (acercarCartasAlMirar * altoCarta * w);
+            ancla += Vector3.up * (subidaCartasAlMirar * 0.5f * altoCarta * w) - haciaCentro * (acercarCartasAlMirar * 0.3f * altoCarta * w);
+
+            // Nunca dentro de la cabeza: el abanico se queda siempre por delante de la cara
+            // (con las cartas mas grandes, antes se las metian en la cabeza al mirarlas).
+            float altoPersonaje = Mathf.Max(0.2f, cabeza.y - CuerpoDe(a.Modelo).y);
+            float delante = Vector3.Dot(ancla - cabeza, haciaCentro);
+            float minimo = altoPersonaje * 0.42f + altoCarta * 0.15f;
+
+            if (delante < minimo)
+                ancla += haciaCentro * (minimo - delante);
+
+            // Y por debajo de la barbilla: se las ve mirar sin taparse la cara.
+            float techo = cabeza.y - altoPersonaje * 0.18f - altoCarta * 0.5f;
+            if (ancla.y > techo)
+                ancla.y = techo;
+
             a.Raiz.transform.localScale = Vector3.one * escala;
 
             // El reverso mira hacia la mesa; inclinado hacia atras para que se vea desde las otras sillas.

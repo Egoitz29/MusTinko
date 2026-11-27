@@ -103,7 +103,7 @@ public partial class VistaMesaOnlineMus
             desdeCuandoMiras = Time.time;
         }
 
-        bool fija = miradaElegida && !arrastrandoMirada && sitioMirado >= 0 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
+        bool fija = ZoomActivado && miradaElegida && !arrastrandoMirada && sitioMirado >= 0 && sitioMirado <= 3 && Time.time - desdeCuandoMiras > segundosParaZoom;
         float fovObjetivo = fija ? fovBase * zoomMiradaFija : fovBase;
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, fovObjetivo, 1f - Mathf.Exp(-Time.deltaTime * 3f));
     }
@@ -169,8 +169,9 @@ public partial class VistaMesaOnlineMus
                 posibleToque = false;
         }
 
-        // En el movil arrastrar libre era impreciso: el dedo hace GESTOS (deslizar a un lado = mirar a ese
-        // jugador, hacia abajo = tus cartas, hacia arriba = de frente) y la vista salta sola, sin girar a mano.
+        // En el movil arrastrar libre era impreciso. Ahora se TOCA la pantalla: abajo = tus cartas,
+        // a la derecha / izquierda = el jugador de ese lado, en el medio = la mesa (vista normal).
+        // Deslizar tambien vale (a un lado, abajo o arriba) y la vista salta sola, sin girar a mano.
         if (tactil && arrastrandoMirada)
         {
             if (pulsado && (puntero - inicioToque).magnitude > Screen.height * 0.02f)
@@ -182,7 +183,7 @@ public partial class VistaMesaOnlineMus
                 Vector2 gesto = puntero - inicioToque;
 
                 if (posibleToque && Time.time - momentoToque < 0.35f)
-                    TocarParaMirar(cam, puntero);
+                    TocarZona(puntero);
                 else if (gesto.magnitude > Screen.height * 0.06f)
                     GestoMirada(gesto);
             }
@@ -209,7 +210,7 @@ public partial class VistaMesaOnlineMus
             arrastrandoMirada = false;
 
             if (posibleToque && Time.time - momentoToque < 0.35f)
-                TocarParaMirar(cam, puntero);
+                TocarZona(puntero);
             else
                 Imantar(cam);
         }
@@ -257,62 +258,70 @@ public partial class VistaMesaOnlineMus
             MirarSitio(cam, mejor);
     }
 
-    // ---------- Mando de mirada (movil): izquierda, frente, derecha y tus cartas ----------
+    // ---------- Mirar tocando la pantalla, y el zoom (opcional) ----------
 
     private const int MirarIzquierda = 0, MirarFrente = 1, MirarDerecha = 2, MirarCartas = 3;
-    private GameObject mandoMirada;
-    private readonly Image[] fondosMando = new Image[4];
     private int posicionMirada = MirarFrente;
+    private Button botonZoom;
+    private TextMeshProUGUI txtBotonZoom;
+    private const string ClaveZoom = "MusTinko_Zoom";
+
+    // Acercar la camara al que miras: apagado si no lo eliges tu.
+    private bool ZoomActivado
+    {
+        get
+        {
+            try { return PlayerPrefs.GetInt(ClaveZoom, 0) == 1; }
+            catch { return false; }
+        }
+        set
+        {
+            try
+            {
+                PlayerPrefs.SetInt(ClaveZoom, value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
+            catch
+            {
+            }
+        }
+    }
 
     private void CrearMandoMirada()
     {
-        mandoMirada = new GameObject("MandoMirada", typeof(RectTransform));
-        RectTransform r = Rect(mandoMirada, raizUI, new Vector2(1f, 0.5f), new Vector2(-24f, 30f), new Vector2(310, 310));
-        Imagen("Fondo", r, "circulo", 310, new Color(0.1f, 0.06f, 0.03f, 0.45f));
-
-        Vector2[] sitios = { new(-100, 0), new(0, 100), new(100, 0), new(0, -100) };
-        float[] giros = { 90f, 0f, -90f, 180f };
-        string[] textos = { "IZQ", "FRENTE", "DCHA", "CARTAS" };
-
-        for (int i = 0; i < 4; i++)
-        {
-            int indice = i;
-            GameObject b = new("Mirar_" + textos[i], typeof(RectTransform), typeof(Image), typeof(Button));
-            Rect(b, r, new Vector2(0.5f, 0.5f), sitios[i], new Vector2(108, 108));
-            Image fondo = b.GetComponent<Image>();
-            fondo.sprite = SpriteUI("circulo", 0);
-            b.GetComponent<Button>().onClick.AddListener(() => MirarPosicion(indice));
-            fondosMando[i] = fondo;
-
-            Image flecha = Imagen("Flecha", b.transform, "flecha", 46, Color.white);
-            flecha.rectTransform.anchoredPosition = new Vector2(0f, 14f);
-            flecha.rectTransform.localEulerAngles = new Vector3(0f, 0f, giros[i]);
-
-            GameObject etiqueta = new("Texto", typeof(RectTransform));
-            Rect(etiqueta, b.transform, new Vector2(0.5f, 0f), new Vector2(0f, 8f), new Vector2(100, 34));
-            Texto(etiqueta.transform, textos[i], 20, Crema, false, TextAlignmentOptions.Center).fontStyle = FontStyles.Bold;
-        }
-
-        mandoMirada.SetActive(false);
+        botonZoom = Boton(raizUI, "gris", "ZOOM: NO", new Vector2(200, 60), () => ZoomActivado = !ZoomActivado, 24);
+        Rect(botonZoom.gameObject, raizUI, new Vector2(1f, 1f), new Vector2(-20, -20), new Vector2(200, 60));
+        txtBotonZoom = botonZoom.GetComponentInChildren<TextMeshProUGUI>(true);
+        botonZoom.gameObject.SetActive(false);
     }
 
     private void ActualizarMandoMirada(bool enJuego)
     {
-        if (mandoMirada == null)
+        if (botonZoom == null)
             return;
 
         bool tapado = taquillaAbierta || (panelTanteoUI != null && panelTanteoUI.activeSelf);
-        bool ver = enJuego && MiradaLibreActiva && !tapado && SillaCamara >= 0;
-        mandoMirada.SetActive(ver);
+        bool ver = enJuego && MiradaLibreActiva && !tapado;
+        botonZoom.gameObject.SetActive(ver);
 
-        if (!ver)
-            return;
+        if (ver)
+            txtBotonZoom.text = ZoomActivado ? "ZOOM: SI" : "ZOOM: NO";
+    }
 
-        // Se ilumina a donde estas mirando de verdad.
-        int actual = sitioMirado == 4 ? MirarCartas : PosicionDeSitio(sitioMirado);
+    // Toque corto: segun la zona de la pantalla.
+    private void TocarZona(Vector2 puntero)
+    {
+        float x = puntero.x / Mathf.Max(1f, Screen.width);
+        float y = puntero.y / Mathf.Max(1f, Screen.height);
 
-        for (int i = 0; i < 4; i++)
-            fondosMando[i].color = i == actual ? new Color(0.89f, 0.66f, 0.2f, 0.95f) : new Color(0.24f, 0.15f, 0.09f, 0.85f);
+        if (y < 0.3f)
+            MirarPosicion(MirarCartas);
+        else if (x < 0.3f)
+            MirarPosicion(MirarIzquierda);
+        else if (x > 0.7f)
+            MirarPosicion(MirarDerecha);
+        else
+            RecentrarMirada();
     }
 
     private int SitioDePosicion(int posicion) => posicion switch
