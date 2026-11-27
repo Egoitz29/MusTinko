@@ -63,6 +63,8 @@ public static class TablaTanteoMus
                 return "Punto +" + c.Tantos;
             case TipoConceptoMus.Ordago:
                 return "ORDAGO ganado por " + quien;
+            case TipoConceptoMus.Pedrete:
+                return "Pedrete de " + quien + " +" + c.Tantos + " (ya sumado)";
             default:
                 return c.Tipo + " +" + c.Tantos;
         }
@@ -86,7 +88,7 @@ public static class TablaTanteoMus
             else fila.Ellos.Add(texto);
 
             // El "no quiero" se cobra aunque no se gane con las cartas: no cuenta como ganador del lance.
-            if (c.Tipo != TipoConceptoMus.NoQuerido)
+            if (c.Tipo != TipoConceptoMus.NoQuerido && c.Tipo != TipoConceptoMus.Pedrete)
                 fila.Ganador = nuestro ? 0 : 1;
 
             if (c.Tipo == TipoConceptoMus.Ordago)

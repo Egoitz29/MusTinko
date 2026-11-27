@@ -221,6 +221,8 @@ public class PartidaMus
                 if (MusPermitido)
                     legales.Add(AccionMus.Mus);
                 legales.Add(AccionMus.NoHayMus);
+                if (Reglas.Pedrete && EsPedrete(CartasDe(jugador)))
+                    legales.Add(AccionMus.Pedrete);
                 break;
 
             case FaseMus.Descarte:
@@ -335,6 +337,9 @@ public class PartidaMus
             return true;
         }
 
+        if (accion.Tipo == TipoAccionMus.Pedrete)
+            return AplicarPedrete(jugador);
+
         if (accion.Tipo != TipoAccionMus.NoHayMus)
             return false;
 
@@ -347,6 +352,46 @@ public class PartidaMus
         }
 
         IniciarLance(FaseMus.Grande);
+        return true;
+    }
+
+    // Pedrete: 1 tanto al momento para su pareja y cuatro cartas nuevas. Sigue siendo su turno
+    // de mus (con las cartas nuevas decide si da mus o lo corta).
+    private bool AplicarPedrete(int jugador)
+    {
+        if (!Reglas.Pedrete || !EsPedrete(CartasDe(jugador)))
+            return false;
+
+        int pareja = jugador % 2;
+        puntos[pareja] += 1;
+        desglose.Add(new ConceptoTanteoMus(0, TipoConceptoMus.Pedrete, pareja, 1, jugador));
+        Registrar(TipoEventoMus.Accion, jugador, AccionMus.Pedrete);
+
+        CambiarCartas(jugador, 0b1111);
+        evaluaciones[jugador] = CartasMus.Evaluar(CartasDe(jugador));
+
+        ComprobarVictoria(0, 0, "Pedrete");
+        return true;
+    }
+
+    // Un 4, un 5, un 6 y un 7, de cualquier palo.
+    public static bool EsPedrete(int[] cartas)
+    {
+        if (cartas == null || cartas.Length != CartasPorJugador)
+            return false;
+
+        int vistos = 0;
+
+        foreach (int carta in cartas)
+        {
+            int valor = CartasMus.Valor(carta);   // 3 = "4" ... 6 = "7"
+
+            if (valor < 3 || valor > 6 || (vistos & (1 << valor)) != 0)
+                return false;
+
+            vistos |= 1 << valor;
+        }
+
         return true;
     }
 
@@ -867,6 +912,8 @@ public class PartidaMus
             }
         }
 
+        // El mazo se rehace sin estas cartas: asi los descartes y el pedrete no pueden repetirlas.
+        baraja.ReiniciarSin(usadas);
         EvaluarManos();
     }
 }

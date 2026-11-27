@@ -23,7 +23,8 @@ public enum TipoAccionMus
     Reenvidar,
     Quiero,
     NoQuiero,
-    Ordago
+    Ordago,
+    Pedrete      // siempre al final: el valor numerico viaja por la red
 }
 
 public enum TipoSenalMus
@@ -76,7 +77,8 @@ public enum TipoConceptoMus
     Pares,
     Juego,
     Punto,
-    Ordago
+    Ordago,
+    Pedrete      // siempre al final: el valor numerico viaja por la red
 }
 
 public readonly struct ConceptoTanteoMus
@@ -96,7 +98,7 @@ public readonly struct ConceptoTanteoMus
         Jugador = jugador;
     }
 
-    public bool CobradoAlMomento => Tipo == TipoConceptoMus.NoQuerido;
+    public bool CobradoAlMomento => Tipo == TipoConceptoMus.NoQuerido || Tipo == TipoConceptoMus.Pedrete;
 }
 
 public enum TipoEventoMus
@@ -124,6 +126,7 @@ public readonly struct AccionMus : IEquatable<AccionMus>
     public static AccionMus Quiero => new(TipoAccionMus.Quiero);
     public static AccionMus NoQuiero => new(TipoAccionMus.NoQuiero);
     public static AccionMus Ordago => new(TipoAccionMus.Ordago);
+    public static AccionMus Pedrete => new(TipoAccionMus.Pedrete);
     public static AccionMus Envidar(int tantos = 2) => new(TipoAccionMus.Envidar, tantos);
     public static AccionMus Reenvidar(int tantos = 2) => new(TipoAccionMus.Reenvidar, tantos);
     public static AccionMus Descartar(int mascara) => new(TipoAccionMus.Descartar, mascara);
@@ -145,6 +148,7 @@ public readonly struct AccionMus : IEquatable<AccionMus>
             case TipoAccionMus.Quiero: return "QUIERO";
             case TipoAccionMus.NoQuiero: return "NO QUIERO";
             case TipoAccionMus.Ordago: return "ORDAGO";
+            case TipoAccionMus.Pedrete: return "PEDRETE";
             default: return Tipo.ToString();
         }
     }

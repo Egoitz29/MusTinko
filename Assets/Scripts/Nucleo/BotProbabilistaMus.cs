@@ -144,6 +144,10 @@ public class BotProbabilistaMus : IBotMus
 
     private AccionMus DecidirMus(ObservacionMus obs, IReadOnlyList<AccionMus> legales)
     {
+        // 4-5-6-7 es una mano muy mala: el pedrete da un tanto y cartas nuevas.
+        if (Contiene(legales, TipoAccionMus.Pedrete))
+            return AccionMus.Pedrete;
+
         if (!Contiene(legales, TipoAccionMus.Mus))
             return AccionMus.NoHayMus;
 

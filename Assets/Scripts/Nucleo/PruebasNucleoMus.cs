@@ -326,6 +326,75 @@ public static class PruebasNucleoMus
         Comprobar(log, new PartidaMus(1).Reglas.Limite == 40 && !new PartidaMus(1).Reglas.LaReal && new PartidaMus(1, 30).Limite == 30,
             "Por defecto: 40 tantos y sin reglas callejeras; se puede jugar a 30");
 
+        log("== Regla callejera: el pedrete ==");
+        int[] pedrete = { C("4", "OROS"), C("5", "COPAS"), C("6", "ESPADAS"), C("7", "BASTOS") };
+        int[][] manosPedrete =
+        {
+            pedrete,
+            new[] { C("REY", "OROS"), C("REY", "COPAS"), C("SOTA", "OROS"), C("AS", "OROS") },
+            new[] { C("4", "COPAS"), C("5", "OROS"), C("6", "OROS"), C("6", "COPAS") },
+            new[] { C("CABALLO", "OROS"), C("CABALLO", "COPAS"), C("7", "OROS"), C("AS", "COPAS") }
+        };
+        Comprobar(log, PartidaMus.EsPedrete(pedrete) && !PartidaMus.EsPedrete(manosPedrete[2]) && !PartidaMus.EsPedrete(manosPedrete[1]),
+            "4-5-6-7 de cualquier palo es pedrete; 4-5-6-6 no");
+
+        PartidaMus sinPedrete = new(3);
+        sinPedrete.IniciarPartida();
+        sinPedrete.PrepararManosFijas(manosPedrete);
+        Comprobar(log, !sinPedrete.AccionesLegales(0).Contains(AccionMus.Pedrete) && !sinPedrete.Aplicar(0, AccionMus.Pedrete),
+            "Sin la regla activada no se puede cantar pedrete");
+
+        PartidaMus pp = new(3, new ReglasPartidaMus { Pedrete = true });
+        pp.IniciarPartida();
+        pp.PrepararManosFijas(manosPedrete);
+        Comprobar(log, pp.AccionesLegales(0).Contains(AccionMus.Pedrete), "Con la regla, quien tiene pedrete puede cantarlo en su turno de mus");
+        Comprobar(log, !pp.Aplicar(1, AccionMus.Pedrete), "No se puede cantar fuera de turno ni sin tener pedrete");
+        Comprobar(log, pp.Aplicar(0, AccionMus.Pedrete), "El jugador 0 canta pedrete");
+        int[] nuevasPedrete = pp.CartasDe(0);
+        bool todasNuevas = true;
+        foreach (int c in nuevasPedrete) if (Array.IndexOf(pedrete, c) >= 0) todasNuevas = false;
+        Comprobar(log, pp.Puntos(0) == 1 && pp.Puntos(1) == 0 && todasNuevas && SinDuplicados(pp),
+            "Pedrete: 1 tanto al momento para su pareja y cuatro cartas nuevas");
+        Comprobar(log, pp.Fase == FaseMus.Mus && pp.JugadorActual == 0 && pp.AccionesLegales(0).Contains(AccionMus.Mus),
+            "Tras el pedrete sigue su turno de mus con las cartas nuevas");
+        Comprobar(log, SumaLance(pp, 0, 0, TipoConceptoMus.Pedrete) == 1, "El pedrete aparece en el desglose del tanteo");
+
+        PartidaMus ppTarde = new(3, new ReglasPartidaMus { Pedrete = true });
+        ppTarde.IniciarPartida();
+        ppTarde.PrepararManosFijas(manosPedrete);
+        ppTarde.Aplicar(0, AccionMus.NoHayMus);
+        Comprobar(log, !ppTarde.Aplicar(0, AccionMus.Pedrete) && ppTarde.Puntos(0) == 0,
+            "Fuera de la fase de mus ya no se puede cantar: se queda con el pedrete");
+
+        // Partidas aleatorias con todas las reglas callejeras: sin bloqueos y con el desglose cuadrado.
+        bool callejerasOk = true;
+        int pedretesCantados = 0;
+        for (int s = 0; s < 500 && callejerasOk; s++)
+        {
+            PartidaMus pk = new(70000 + s, new ReglasPartidaMus { LaReal = true, Pedrete = true }, 4);
+            Random azarK = new(s);
+            pk.IniciarPartida();
+            int pasosK = 0;
+            while (!pk.PartidaTerminada && pasosK++ < 20000)
+            {
+                if (pk.Fase == FaseMus.FinMano)
+                {
+                    int s0 = 0, s1 = 0;
+                    foreach (ConceptoTanteoMus c in pk.Desglose) { if (c.Pareja == 0) s0 += c.Tantos; else s1 += c.Tantos; }
+                    if (s0 != pk.PuntosGanadosEnMano(0) || s1 != pk.PuntosGanadosEnMano(1)) callejerasOk = false;
+                    pk.SiguienteMano();
+                    continue;
+                }
+                List<AccionMus> lk = pk.AccionesLegales(pk.JugadorActual);
+                AccionMus ak = lk[azarK.Next(lk.Count)];
+                if (ak.Tipo == TipoAccionMus.Pedrete) pedretesCantados++;
+                if (!pk.Aplicar(pk.JugadorActual, ak) || !SinDuplicados(pk)) callejerasOk = false;
+            }
+            if (!pk.PartidaTerminada) callejerasOk = false;
+        }
+        Comprobar(log, callejerasOk && pedretesCantados > 0,
+            "500 partidas aleatorias con la Real y el pedrete terminan bien (" + pedretesCantados + " pedretes)");
+
         log("== Senales ==");
         PartidaMus sn = ManoFija(
             new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },

@@ -11,10 +11,15 @@ public class ReglasPartidaMus
     // Regla callejera: el 31 de tres sietes y una sota ("la Real") gana a cualquier otro 31.
     public bool LaReal;
 
+    // Regla callejera: quien tenga un 4, un 5, un 6 y un 7 (de cualquier palo) puede cantar
+    // "pedrete" en su turno de mus: cobra 1 tanto al momento y cambia sus cuatro cartas.
+    // Es voluntario: si no lo canta, se queda con esas cartas.
+    public bool Pedrete;
+
     public ReglasPartidaMus Copia() => (ReglasPartidaMus)MemberwiseClone();
 
     public override string ToString()
     {
-        return Limite + " tantos" + (LaReal ? ", la Real" : "");
+        return Limite + " tantos" + (LaReal ? ", la Real" : "") + (Pedrete ? ", pedrete" : "");
     }
 }

@@ -129,6 +129,13 @@ public class BarajaMus
         descartes.Add(carta);
     }
 
+    // Baraja completa salvo las cartas indicadas (las que ya estan en las manos).
+    public void ReiniciarSin(ICollection<int> enManos)
+    {
+        Reiniciar();
+        mazo.RemoveAll(enManos.Contains);
+    }
+
     private void Barajar(List<int> cartas)
     {
         for (int i = cartas.Count - 1; i > 0; i--)
