@@ -42,7 +42,7 @@ public class GestorFasesMus : MonoBehaviour
     [SerializeField] private RepartoPrueba reparto;
     [SerializeField] private CartaSeleccionable[] cartas;
 
-    [Header("Puntuación")]
+    [Header("PuntuaciÃ³n")]
     [SerializeField] private MarcadorMus marcador;
 
     [Header("Revelado de cartas")]
@@ -83,9 +83,9 @@ public class GestorFasesMus : MonoBehaviour
 
     private readonly string[] nombresJugadores =
     {
-        "TÚ",
+        "TÃš",
         "RIVAL DERECHO",
-        "COMPAÑERO",
+        "COMPAÃ‘ERO",
         "RIVAL IZQUIERDO"
     };
 
@@ -152,9 +152,9 @@ public class GestorFasesMus : MonoBehaviour
         if (!PuedeDecidirJugadorLocal())
             return;
 
-        Debug.Log("TÚ dices MUS.");
+        Debug.Log("TÃš dices MUS.");
 
-        // Solo presentación: la lógica del Mus sigue separada.
+        // Solo presentaciÃ³n: la lÃ³gica del Mus sigue separada.
         if (gestorEnvites != null)
             gestorEnvites.MostrarBocadillo(0, "MUS");
 
@@ -166,7 +166,7 @@ public class GestorFasesMus : MonoBehaviour
         if (!PuedeDecidirJugadorLocal())
             return;
 
-        Debug.Log("TÚ dices NO HAY MUS.");
+        Debug.Log("TÃš dices NO HAY MUS.");
 
         if (gestorEnvites != null)
             gestorEnvites.MostrarBocadillo(0, "NO HAY MUS");
@@ -291,7 +291,7 @@ public class GestorFasesMus : MonoBehaviour
                 " dice NO HAY MUS."
             );
 
-            // Mostramos la declaración en el bocadillo del bot.
+            // Mostramos la declaraciÃ³n en el bocadillo del bot.
             if (gestorEnvites != null)
                 gestorEnvites.MostrarBocadillo(jugador, "NO HAY MUS");
 
@@ -442,7 +442,7 @@ public class GestorFasesMus : MonoBehaviour
             cantidadLocal + " cartas."
         );
 
-        // Después descartan los tres bots.
+        // DespuÃ©s descartan los tres bots.
         for (int jugador = 1; jugador <= 3; jugador++)
         {
             // Entre cero y cuatro cartas.
@@ -598,7 +598,7 @@ public class GestorFasesMus : MonoBehaviour
     }
 
     // =====================================================
-    // ACTUALIZACIÓN DE INTERFAZ
+    // ACTUALIZACIÃ“N DE INTERFAZ
     // =====================================================
 
     private void ActualizarInterfaz()
@@ -628,7 +628,7 @@ public class GestorFasesMus : MonoBehaviour
             botonNoHayMus.gameObject.SetActive(turnoLocal);
 
         // -------------------------------------------------
-        // BOTÓN DE DESCARTE
+        // BOTÃ“N DE DESCARTE
         // -------------------------------------------------
 
         if (botonConfirmarDescarte != null)
@@ -639,7 +639,7 @@ public class GestorFasesMus : MonoBehaviour
         }
 
         // -------------------------------------------------
-        // BOTÓN DE LANCES (PROVISIONAL)
+        // BOTÃ“N DE LANCES (PROVISIONAL)
         // -------------------------------------------------
 
         if (botonSiguienteLance != null)
@@ -650,7 +650,7 @@ public class GestorFasesMus : MonoBehaviour
         }
 
         // -------------------------------------------------
-        // SELECCIÓN DE CARTAS
+        // SELECCIÃ“N DE CARTAS
         // -------------------------------------------------
 
         if (cartas != null)
@@ -693,7 +693,7 @@ public class GestorFasesMus : MonoBehaviour
                 if (turnoMus == 0)
                 {
                     textoFase.text = prefijoMus +
-                        "TU TURNO: ¿MUS O NO HAY MUS?";
+                        "TU TURNO: Â¿MUS O NO HAY MUS?";
                 }
                 else
                 {
@@ -743,7 +743,7 @@ public class GestorFasesMus : MonoBehaviour
             return;
         }
 
-        // Si se acepta un órdago,
+        // Si se acepta un Ã³rdago,
         // el juego termina inmediatamente.
         if (motor.Estado ==
             MotorEnvitesMus.EstadoEnvite.OrdagoAceptado)

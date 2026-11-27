@@ -31,7 +31,7 @@ public class RepartoPrueba : MonoBehaviour
     // Jugadores:
     // 0 = Nosotros
     // 1 = Rival derecha
-    // 2 = Compañero enfrente
+    // 2 = CompaÃ±ero enfrente
     // 3 = Rival izquierda
     private readonly string[,] manos =
         new string[NumeroJugadores, CartasPorJugador];
@@ -72,7 +72,7 @@ public class RepartoPrueba : MonoBehaviour
         mazo.Clear();
         descartadas.Clear();
 
-        // Creamos la baraja española de 40 cartas.
+        // Creamos la baraja espaÃ±ola de 40 cartas.
         foreach (string palo in palos)
         {
             foreach (string valor in valores)
@@ -121,14 +121,14 @@ public class RepartoPrueba : MonoBehaviour
                 posiciones.Add(i);
         }
 
-        // Conservar las cuatro cartas es válido.
+        // Conservar las cuatro cartas es vÃ¡lido.
         if (posiciones.Count == 0)
         {
             Debug.Log("El jugador conserva sus cuatro cartas.");
             return 0;
         }
 
-        // Retiramos únicamente nuestras cartas elegidas.
+        // Retiramos Ãºnicamente nuestras cartas elegidas.
         foreach (int posicion in posiciones)
         {
             descartadas.Add(manos[0, posicion]);
@@ -156,7 +156,7 @@ public class RepartoPrueba : MonoBehaviour
     {
         if (mazo.Count == 0)
         {
-            // Provisional para pruebas de múltiples descartes.
+            // Provisional para pruebas de mÃºltiples descartes.
             mazo.AddRange(descartadas);
             descartadas.Clear();
             BarajarMazo();
@@ -209,12 +209,12 @@ public class RepartoPrueba : MonoBehaviour
             manoLocal[i] = manos[0, i];
         }
 
-        // Evaluar la mano según las reglas del Mus
+        // Evaluar la mano segÃºn las reglas del Mus
         EvaluadorManoMus.Resultado resultado =
             EvaluadorManoMus.Evaluar(manoLocal);
 
         // Mostrar el resultado en la consola
-        Debug.Log("EVALUACIÓN DE NUESTRA MANO:\n" + resultado);
+        Debug.Log("EVALUACIÃ“N DE NUESTRA MANO:\n" + resultado);
     }
 
 
@@ -264,7 +264,7 @@ public class RepartoPrueba : MonoBehaviour
 
         if (ganador == -1)
         {
-            Debug.Log("PARES: Ningún jugador tiene pares.");
+            Debug.Log("PARES: NingÃºn jugador tiene pares.");
             return;
         }
 
@@ -273,7 +273,7 @@ public class RepartoPrueba : MonoBehaviour
         );
 
         Debug.Log(
-            "Combinación ganadora: " +
+            "CombinaciÃ³n ganadora: " +
             resultados[ganador].DetallePares
         );
 
@@ -444,7 +444,7 @@ public class RepartoPrueba : MonoBehaviour
     {
         if (jugador < 0 || jugador >= NumeroJugadores)
         {
-            Debug.LogError("Jugador inválido: " + jugador);
+            Debug.LogError("Jugador invÃ¡lido: " + jugador);
             return null;
         }
 

@@ -90,7 +90,7 @@ public class PruebaEnvitesMus : MonoBehaviour
     }
 
     // ==========================================
-    // PRUEBA 4 - ÓRDAGO ACEPTADO
+    // PRUEBA 4 - Ã“RDAGO ACEPTADO
     // ==========================================
 
     [ContextMenu("Prueba - Ordago aceptado")]
@@ -103,7 +103,7 @@ public class PruebaEnvitesMus : MonoBehaviour
             motor.Quiero(1);
 
         Debug.Log(
-            "ÓRDAGO ACEPTADO\n" +
+            "Ã“RDAGO ACEPTADO\n" +
             "Estado: " + motor.Estado + "\n" +
             "Resolver inmediatamente el lance."
         );
@@ -112,12 +112,12 @@ public class PruebaEnvitesMus : MonoBehaviour
             motor.Estado !=
             MotorEnvitesMus.EstadoEnvite.OrdagoAceptado)
         {
-            Debug.LogError("ERROR: Órdago aceptado.");
+            Debug.LogError("ERROR: Ã“rdago aceptado.");
         }
     }
 
     // ==========================================
-    // PRUEBA 5 - ÓRDAGO RECHAZADO
+    // PRUEBA 5 - Ã“RDAGO RECHAZADO
     // ==========================================
 
     [ContextMenu("Prueba - Ordago rechazado")]
@@ -130,7 +130,7 @@ public class PruebaEnvitesMus : MonoBehaviour
             motor.NoQuiero(1);
 
         Debug.Log(
-            "ÓRDAGO RECHAZADO\n" +
+            "Ã“RDAGO RECHAZADO\n" +
             "Estado: " + motor.Estado + "\n" +
             "Pareja ganadora: " +
             motor.ParejaGanadoraNegada + "\n" +
@@ -140,12 +140,12 @@ public class PruebaEnvitesMus : MonoBehaviour
 
         if (!correcto || motor.TantosPorNegada != 1)
         {
-            Debug.LogError("ERROR: Órdago rechazado.");
+            Debug.LogError("ERROR: Ã“rdago rechazado.");
         }
     }
 
     // ==========================================
-    // PRUEBA 6 - ÓRDAGO TRAS REENVIDO
+    // PRUEBA 6 - Ã“RDAGO TRAS REENVIDO
     // ==========================================
 
     [ContextMenu("Prueba - Ordago tras reenvido")]
@@ -160,7 +160,7 @@ public class PruebaEnvitesMus : MonoBehaviour
             motor.NoQuiero(1);
 
         Debug.Log(
-            "ÓRDAGO TRAS REENVIDO RECHAZADO\n" +
+            "Ã“RDAGO TRAS REENVIDO RECHAZADO\n" +
             "Estado: " + motor.Estado + "\n" +
             "Pareja ganadora: " +
             motor.ParejaGanadoraNegada + "\n" +
@@ -170,7 +170,7 @@ public class PruebaEnvitesMus : MonoBehaviour
 
         if (!correcto || motor.TantosPorNegada != 4)
         {
-            Debug.LogError("ERROR: Órdago tras reenvido.");
+            Debug.LogError("ERROR: Ã“rdago tras reenvido.");
         }
     }
 }

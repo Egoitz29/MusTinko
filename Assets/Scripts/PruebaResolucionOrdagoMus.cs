@@ -6,7 +6,7 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private RepartoPrueba reparto;
 
-    [Header("Configuraci髇 de prueba")]
+    [Header("Configuraci贸n de prueba")]
     [Range(0, 3)]
     [SerializeField] private int jugadorMano = 0;
 
@@ -39,7 +39,7 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
         if (!Application.isPlaying)
         {
             Debug.LogWarning(
-                "Inicia Play antes de probar el 髍dago."
+                "Inicia Play antes de probar el 贸rdago."
             );
             return;
         }
@@ -52,7 +52,7 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
             return;
         }
 
-        // Simulamos un 髍dago de la pareja 0
+        // Simulamos un 贸rdago de la pareja 0
         // aceptado por la pareja 1.
         MotorEnvitesMus motor = new MotorEnvitesMus();
 
@@ -64,7 +64,7 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
             motor.Estado !=
             MotorEnvitesMus.EstadoEnvite.OrdagoAceptado)
         {
-            Debug.LogError("No se pudo aceptar el 髍dago.");
+            Debug.LogError("No se pudo aceptar el 贸rdago.");
             return;
         }
 
@@ -125,15 +125,15 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
                 break;
 
             default:
-                Debug.LogError("Lance no v醠ido.");
+                Debug.LogError("Lance no v谩lido.");
                 return;
         }
 
         if (ganador == -1)
         {
             Debug.Log(
-                "覴DAGO A " + nombreLance +
-                "\nNo hay ganador v醠ido para este lance."
+                "脫RDAGO A " + nombreLance +
+                "\nNo hay ganador v谩lido para este lance."
             );
             return;
         }
@@ -145,7 +145,7 @@ public class PruebaResolucionOrdagoMus : MonoBehaviour
             : "RIVALES (1 Y 3)";
 
         Debug.Log(
-            "========== 覴DAGO ACEPTADO ==========\n" +
+            "========== 脫RDAGO ACEPTADO ==========\n" +
             "LANCE: " + nombreLance + "\n" +
             "JUGADOR GANADOR: " + ganador + "\n" +
             "PAREJA GANADORA: " + nombrePareja + "\n" +

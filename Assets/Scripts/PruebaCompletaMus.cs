@@ -22,7 +22,7 @@ public class PruebaCompletaMus : MonoBehaviour
         }
 
         // Para asegurar el resultado esperado,
-        // ejecuta la prueba en una sesiÛn nueva de Play.
+        // ejecuta la prueba en una sesi√≥n nueva de Play.
         if (marcador.PuntosPareja02 != 0 ||
             marcador.PuntosPareja13 != 0)
         {
@@ -62,7 +62,7 @@ public class PruebaCompletaMus : MonoBehaviour
             GestorFasesMus.Fase.Pares, pares);
 
         // JUEGO: envidamos 2,
-        // los rivales reenvidan 2 m·s
+        // los rivales reenvidan 2 m√°s
         // y nosotros aceptamos.
         MotorEnvitesMus juego = new MotorEnvitesMus();
 

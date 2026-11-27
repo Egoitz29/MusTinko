@@ -73,7 +73,7 @@ public class MotorEnvitesMus
     }
 
     // ========================================
-    // ÓRDAGO
+    // Ã“RDAGO
     // ========================================
 
     public bool LanzarOrdago(int pareja)
@@ -81,7 +81,7 @@ public class MotorEnvitesMus
         if (!ParejaValida(pareja))
             return false;
 
-        // Órdago directo, sin apuestas anteriores.
+        // Ã“rdago directo, sin apuestas anteriores.
         if (Estado == EstadoEnvite.SinApuesta)
         {
             ParejaEnvidante = pareja;
@@ -94,13 +94,13 @@ public class MotorEnvitesMus
             return true;
         }
 
-        // Órdago como respuesta a un envite
+        // Ã“rdago como respuesta a un envite
         // o reenvido de la pareja contraria.
         if (Estado == EstadoEnvite.PendienteRespuesta &&
             PuedeResponder(pareja))
         {
-            // Guardamos la última apuesta ofrecida.
-            // Si rechazan el órdago, se ganará
+            // Guardamos la Ãºltima apuesta ofrecida.
+            // Si rechazan el Ã³rdago, se ganarÃ¡
             // ese importe anterior.
             TantosAnteriores = TantosApostados;
 
@@ -125,7 +125,7 @@ public class MotorEnvitesMus
 
         if (Estado == EstadoEnvite.OrdagoPendiente)
         {
-            // Aquí debe resolverse inmediatamente
+            // AquÃ­ debe resolverse inmediatamente
             // el lance comparando las cuatro manos.
             Estado = EstadoEnvite.OrdagoAceptado;
         }
