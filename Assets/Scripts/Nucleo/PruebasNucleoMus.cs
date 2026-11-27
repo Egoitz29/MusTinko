@@ -142,6 +142,44 @@ public static class PruebasNucleoMus
         Comprobar(log, d.Fase == FaseMus.Mus && d.RondaMus == 2, "Tras los cuatro descartes vuelve a Mus (ronda 2)");
         Comprobar(log, SinDuplicados(d), "No hay cartas repetidas entre las manos tras descartar");
 
+        // Con muchas rondas de mus el mazo se agota y hay que rebarajar los descartes:
+        // nadie puede recibir en el mismo descarte las cartas que acaba de tirar.
+        bool nuncaPropias = true;
+        int descartesHechos = 0;
+        for (int s = 0; s < 300 && nuncaPropias; s++)
+        {
+            PartidaMus pr = new(30000 + s, 40, 0);
+            Random azarR = new(s);
+            pr.IniciarPartida();
+            int pasosR = 0;
+            while (!pr.PartidaTerminada && pasosR++ < 4000)
+            {
+                if (pr.Fase == FaseMus.FinMano) { pr.SiguienteMano(); continue; }
+                int j = pr.JugadorActual;
+                AccionMus a;
+                if (pr.Fase == FaseMus.Mus)
+                    a = azarR.Next(6) == 0 ? AccionMus.NoHayMus : AccionMus.Mus;
+                else if (pr.Fase == FaseMus.Descarte)
+                    a = AccionMus.Descartar(1 + azarR.Next(15));
+                else
+                {
+                    List<AccionMus> lr = pr.AccionesLegales(j);
+                    a = lr[azarR.Next(lr.Count)];
+                }
+                int[] antesR = pr.CartasDe(j);
+                pr.Aplicar(j, a);
+                if (a.Tipo != TipoAccionMus.Descartar) continue;
+                descartesHechos++;
+                int[] despuesR = pr.CartasDe(j);
+                for (int c = 0; c < 4; c++)
+                    if ((a.Valor & (1 << c)) != 0 && Array.IndexOf(antesR, despuesR[c]) >= 0)
+                        nuncaPropias = false;
+                if (!SinDuplicados(pr)) nuncaPropias = false;
+            }
+        }
+        Comprobar(log, nuncaPropias && descartesHechos > 1000,
+            "Al rebarajar nadie recibe las cartas que acaba de tirar (" + descartesHechos + " descartes)");
+
         log("== Tanteo en paso frente a TanteoEnPasoMus ==");
         int coincidencias = 0;
         int casos = 300;

@@ -352,14 +352,7 @@ public class PartidaMus
         if (mascara < 1 || mascara > 15)
             return false;
 
-        for (int c = 0; c < CartasPorJugador; c++)
-        {
-            if ((mascara & (1 << c)) == 0)
-                continue;
-
-            baraja.Descartar(manos[jugador, c]);
-            manos[jugador, c] = baraja.Sacar();
-        }
+        CambiarCartas(jugador, mascara);
 
         yaDescarto[jugador] = true;
         cartasDescartadas[jugador] = AccionMus.ContarBits(mascara);
@@ -378,6 +371,26 @@ public class PartidaMus
         }
 
         return true;
+    }
+
+    // Cambia las cartas marcadas en la mascara. Primero se roban las nuevas y despues se tiran las
+    // viejas: si el mazo se agota a mitad, se rebarajan los descartes de los demas, nunca los que
+    // este jugador acaba de soltar (no puede volver a recibir sus propias cartas).
+    private void CambiarCartas(int jugador, int mascara)
+    {
+        List<int> soltadas = new(CartasPorJugador);
+
+        for (int c = 0; c < CartasPorJugador; c++)
+        {
+            if ((mascara & (1 << c)) == 0)
+                continue;
+
+            soltadas.Add(manos[jugador, c]);
+            manos[jugador, c] = baraja.Sacar();
+        }
+
+        foreach (int carta in soltadas)
+            baraja.Descartar(carta);
     }
 
     private bool AplicarLance(int jugador, AccionMus accion)
