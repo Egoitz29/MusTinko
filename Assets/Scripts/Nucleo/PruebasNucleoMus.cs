@@ -395,6 +395,60 @@ public static class PruebasNucleoMus
         Comprobar(log, callejerasOk && pedretesCantados > 0,
             "500 partidas aleatorias con la Real y el pedrete terminan bien (" + pedretesCantados + " pedretes)");
 
+        log("== Partidas a varios juegos ==");
+        PartidaMus serie = new(3, new ReglasPartidaMus { JuegosParaGanar = 2 });
+        serie.IniciarPartida();
+        serie.PrepararManosFijas(new[]
+        {
+            new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },
+            new[] { C("AS", "OROS"), C("AS", "COPAS"), C("5", "OROS"), C("6", "OROS") },
+            new[] { C("SOTA", "OROS"), C("7", "OROS"), C("5", "COPAS"), C("6", "COPAS") },
+            new[] { C("4", "COPAS"), C("7", "COPAS"), C("SOTA", "COPAS"), C("CABALLO", "COPAS") }
+        });
+        serie.Aplicar(0, AccionMus.NoHayMus);
+        serie.Aplicar(0, AccionMus.Ordago);
+        serie.Aplicar(1, AccionMus.Quiero);
+        Comprobar(log, !serie.PartidaTerminada && serie.Fase == FaseMus.FinMano && serie.JuegoRecienTerminado &&
+                       serie.JuegosGanados(0) == 1 && serie.JuegosGanados(1) == 0 && serie.ParejaGanadoraUltimoJuego == 0,
+            "Al mejor de 3: un ordago ganado da un juego, pero la partida sigue");
+        int manoAntes = serie.Mano;
+        serie.SiguienteMano();
+        Comprobar(log, serie.Puntos(0) == 0 && serie.Puntos(1) == 0 && serie.Fase == FaseMus.Mus && !serie.JuegoRecienTerminado &&
+                       serie.Mano == (manoAntes + 1) % 4,
+            "El juego siguiente empieza 0-0 y la mano sigue rotando");
+
+        bool seriesOk = true;
+        int juegosIntermedios = 0;
+        for (int s = 0; s < 300 && seriesOk; s++)
+        {
+            PartidaMus ps3 = new(80000 + s, new ReglasPartidaMus { Limite = 10, JuegosParaGanar = 2 }, 4);
+            Random azarS = new(s);
+            ps3.IniciarPartida();
+            int pasosS = 0;
+            while (!ps3.PartidaTerminada && pasosS++ < 40000)
+            {
+                if (ps3.Fase == FaseMus.FinMano)
+                {
+                    bool nuevoJuego = ps3.JuegoRecienTerminado;
+                    if (nuevoJuego)
+                    {
+                        juegosIntermedios++;
+                        if (!ps3.VictoriaPorOrdago && Math.Max(ps3.Puntos(0), ps3.Puntos(1)) < 10) seriesOk = false;
+                    }
+                    ps3.SiguienteMano();
+                    if (nuevoJuego && ps3.Puntos(0) + ps3.Puntos(1) != 0) seriesOk = false;
+                    continue;
+                }
+                List<AccionMus> ls = ps3.AccionesLegales(ps3.JugadorActual);
+                if (!ps3.Aplicar(ps3.JugadorActual, ls[azarS.Next(ls.Count)])) seriesOk = false;
+            }
+            int g = ps3.ParejaGanadora;
+            if (!ps3.PartidaTerminada || g < 0 || ps3.JuegosGanados(g) != 2 || ps3.JuegosGanados(1 - g) > 1)
+                seriesOk = false;
+        }
+        Comprobar(log, seriesOk && juegosIntermedios > 0,
+            "300 partidas al mejor de 3 (a 10 tantos): gana quien llega a 2 juegos (" + juegosIntermedios + " juegos intermedios)");
+
         log("== Senales ==");
         PartidaMus sn = ManoFija(
             new[] { C("REY", "OROS"), C("REY", "COPAS"), C("CABALLO", "OROS"), C("4", "OROS") },

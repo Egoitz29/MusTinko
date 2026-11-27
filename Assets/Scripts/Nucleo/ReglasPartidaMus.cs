@@ -8,6 +8,9 @@ public class ReglasPartidaMus
     // Tantos para ganar un juego (30 o 40).
     public int Limite = 40;
 
+    // Juegos que hay que ganar para llevarse la partida: 1 = un solo juego, 2 = al mejor de 3.
+    public int JuegosParaGanar = 1;
+
     // Regla callejera: el 31 de tres sietes y una sota ("la Real") gana a cualquier otro 31.
     public bool LaReal;
 
@@ -20,6 +23,6 @@ public class ReglasPartidaMus
 
     public override string ToString()
     {
-        return Limite + " tantos" + (LaReal ? ", la Real" : "") + (Pedrete ? ", pedrete" : "");
+        return Limite + " tantos" + (JuegosParaGanar > 1 ? ", al mejor de " + (JuegosParaGanar * 2 - 1) + " juegos" : "") + (LaReal ? ", la Real" : "") + (Pedrete ? ", pedrete" : "");
     }
 }

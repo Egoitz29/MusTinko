@@ -59,6 +59,16 @@ public class PartidaMus
     public bool VictoriaPorOrdago { get; private set; }
     public string MotivoVictoria { get; private set; } = "";
     public bool PartidaTerminada => Fase == FaseMus.FinPartida;
+
+    // Partidas a varios juegos (ReglasPartidaMus.JuegosParaGanar). Con 1 juego todo es como siempre.
+    private readonly int[] juegosGanados = new int[2];
+    private bool juegoCerrado;                           // el juego en curso ya tiene ganador
+    public int JuegosGanados(int pareja) => juegosGanados[pareja];
+    public int JuegosParaGanar => Reglas.JuegosParaGanar;
+    // Fin de mano en la que acaba de ganarse un juego pero la partida sigue: en la mano siguiente
+    // los tantos vuelven a 0-0.
+    public bool JuegoRecienTerminado { get; private set; }
+    public int ParejaGanadoraUltimoJuego { get; private set; } = -1;
     public IReadOnlyList<EventoMus> Historial => historial;
     public IReadOnlyList<ConceptoTanteoMus> Desglose => desglose;
     public MotorEnvitesMus Envite => turnos.Motor;
@@ -100,6 +110,7 @@ public class PartidaMus
         baraja = new BarajaMus(azar);
         Reglas = (reglas ?? new ReglasPartidaMus()).Copia();
         Reglas.Limite = Math.Max(1, Reglas.Limite);
+        Reglas.JuegosParaGanar = Math.Max(1, Reglas.JuegosParaGanar);
         MaxRondasMus = Math.Max(0, maxRondasMus);
     }
 
@@ -148,6 +159,10 @@ public class PartidaMus
         ParejaGanadora = -1;
         VictoriaPorOrdago = false;
         MotivoVictoria = "";
+        juegosGanados[0] = 0;
+        juegosGanados[1] = 0;
+        JuegoRecienTerminado = false;
+        ParejaGanadoraUltimoJuego = -1;
         EmpezarMano();
     }
 
@@ -155,6 +170,14 @@ public class PartidaMus
     {
         if (Fase != FaseMus.FinMano)
             return false;
+
+        if (JuegoRecienTerminado)
+        {
+            // Empieza el juego siguiente de la partida.
+            puntos[0] = 0;
+            puntos[1] = 0;
+            JuegoRecienTerminado = false;
+        }
 
         Mano = (Mano + 1) % Jugadores;
         EmpezarMano();
@@ -181,6 +204,7 @@ public class PartidaMus
 
         historial.Clear();
         desglose.Clear();
+        juegoCerrado = false;
         puntosInicioMano[0] = puntos[0];
         puntosInicioMano[1] = puntos[1];
         turnos.Reiniciar();
@@ -613,7 +637,7 @@ public class PartidaMus
 
         for (int lance = 0; lance < 4; lance++)
         {
-            if (PartidaTerminada)
+            if (juegoCerrado)
                 return;
 
             int ganador = GanadorLance(lance, out bool hayJuego);
@@ -670,7 +694,7 @@ public class PartidaMus
             }
         }
 
-        if (PartidaTerminada)
+        if (juegoCerrado)
             return;
 
         puntos[0] += ganancia0;
@@ -682,7 +706,7 @@ public class PartidaMus
 
     private void Sumar(ConceptoTanteoMus concepto, ref int ganancia0, ref int ganancia1)
     {
-        if (PartidaTerminada || concepto.Tantos <= 0)
+        if (juegoCerrado || concepto.Tantos <= 0)
             return;
 
         if (concepto.Pareja == 0) ganancia0 += concepto.Tantos;
@@ -694,7 +718,7 @@ public class PartidaMus
 
     private bool ComprobarVictoria(int pendientes0, int pendientes1, string motivo)
     {
-        if (PartidaTerminada)
+        if (juegoCerrado)
             return true;
 
         int total0 = puntos[0] + pendientes0;
@@ -709,13 +733,28 @@ public class PartidaMus
         return true;
     }
 
+    // Termina el juego en curso. Si con el la pareja llega a los juegos necesarios, termina la
+    // partida; si no, la mano acaba (FinMano) y la siguiente empieza otro juego a 0-0.
     private void TerminarPartida(int pareja, bool porOrdago, string motivo)
     {
-        ParejaGanadora = pareja;
+        juegoCerrado = true;
+        juegosGanados[pareja]++;
+        ParejaGanadoraUltimoJuego = pareja;
         VictoriaPorOrdago = porOrdago;
         MotivoVictoria = motivo;
         ManosJugadas++;
-        Fase = FaseMus.FinPartida;
+
+        if (juegosGanados[pareja] >= Reglas.JuegosParaGanar)
+        {
+            ParejaGanadora = pareja;
+            Fase = FaseMus.FinPartida;
+        }
+        else
+        {
+            JuegoRecienTerminado = true;
+            Fase = FaseMus.FinMano;
+        }
+
         Registrar(TipoEventoMus.FinMano, -1, default);
     }
 
